@@ -1,0 +1,23 @@
+# Auto-detect text files and normalize line endings to LF
+* text=auto eol=lf
+
+# Explicit text files
+*.md text
+*.txt text
+*.py text
+*.html text
+*.css text
+*.js text
+*.json text
+*.csv text
+*.yml text
+*.yaml text
+
+# Binary files
+*.pdf binary
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.svg text
+*.zip binary
+
