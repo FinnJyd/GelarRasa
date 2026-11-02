@@ -10,7 +10,7 @@ CASE_STUDY_CONTEXT.md
 *.parquet
 *.feather
 dataset/processed/*.csv
-!dataset/dashboard_exports/*.json
+!dataset/dashboard/*.json
 
 # --- Python & Environments ---
 __pycache__/
