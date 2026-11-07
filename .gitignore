@@ -12,6 +12,8 @@ CASE_STUDY_CONTEXT.md
 dataset/processed/*.csv
 !dataset/dashboard/*.json
 
+notebooks/preview_dataset.ipynb
+
 # --- Python & Environments ---
 __pycache__/
 *.py[cod]
