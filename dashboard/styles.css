@@ -1,0 +1,524 @@
+/* =====================================================================
+   PRANA DASHBOARD - STYLESHEET (REVISI #2: ICON-RAIL COLLAPSIBLE SIDEBAR)
+   - Collapsed Sidebar retains Dashboard Icons + Interactive Tooltips
+   - 80% Fullscreen Methodology Modal Popup
+   - Dual Theme Support (Light & Dark)
+   ===================================================================== */
+
+:root {
+  /* LIGHT MODE (Default) */
+  --prana-surface: #F9F6EE;
+  --prana-body-bg: #e6eff1; /* Senada dengan Prana air mist, sedikit lebih dalam dari F9F6EE */
+  --prana-border: rgba(6, 182, 212, 0.20);
+  --prana-border-hover: rgba(6, 182, 212, 0.45);
+  
+  --prana-text-main: #0f172a;
+  --prana-text-sub: #475569;
+  --prana-text-muted: #64748b;
+  --prana-card-sub: #F0EDE5;
+  --prana-border-sub: #D8D4CA;
+
+  /* Brand Tokens */
+  --prana-green: #10b981;
+  --prana-green-dark: #059669;
+  --prana-cyan: #06b6d4;
+  --prana-blue: #0284c7;
+  --prana-gradient: linear-gradient(135deg, #10b981 0%, #06b6d4 50%, #0284c7 100%);
+  --prana-gradient-hover: linear-gradient(135deg, #059669 0%, #0891b2 50%, #0369a1 100%);
+  
+  /* ISPU Standard Colors (Permen LHK 14/2020) */
+  --ispu-baik: #10b981;
+  --ispu-sedang: #0284c7;
+  --ispu-tidaksehat: #f59e0b;
+  --ispu-sangattidaksehat: #ef4444;
+  --ispu-berbahaya: #1e1b4b;
+}
+
+/* DARK MODE OVERRIDES */
+html.dark {
+  --prana-surface: #0f2430;      /* Dark oceanic surface: Sidebar, Topbar, Containers sama */
+  --prana-body-bg: #08141b;      /* Dark canvas: Senada tapi lebih dalam/pekat */
+  --prana-border: rgba(6, 182, 212, 0.22);
+  --prana-border-hover: rgba(6, 182, 212, 0.50);
+  
+  --prana-text-main: #f8fafc;
+  --prana-text-sub: #94a3b8;
+  --prana-text-muted: #64748b;
+  --prana-card-sub: #0a1b24;
+  --prana-border-sub: rgba(6, 182, 212, 0.16);
+}
+
+/* ── Light-mode only: warm Tailwind border overrides (dark mode unaffected) ── */
+html:not(.dark) .border-slate-200,
+html:not(.dark) .border-slate-200\/90,
+html:not(.dark) .border-slate-200\/80 {
+  --tw-border-opacity: 1;
+  border-color: #D8D4CA;
+}
+html:not(.dark) .border-slate-100 {
+  --tw-border-opacity: 1;
+  border-color: #E2DFDA;
+}
+html:not(.dark) .border-slate-300 {
+  --tw-border-opacity: 1;
+  border-color: #C6C2B8;
+}
+
+/* Base Body with Smooth Transitions */
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background-color: var(--prana-body-bg);
+  color: var(--prana-text-main);
+  overflow-x: hidden;
+  transition: background-color 0.25s ease, color 0.25s ease;
+}
+
+/* Prana Brand Text Gradient */
+.prana-text-gradient {
+  background: var(--prana-gradient);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.prana-bg-gradient {
+  background: var(--prana-gradient);
+}
+
+/* Team Title: Taller Display & Bold Treatment with Animated Moving Gradient (Space Grotesk) */
+.team-highlight-title {
+  font-family: 'Space Grotesk', -apple-system, sans-serif;
+  font-size: 1.60rem;
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  line-height: 1.1;
+  display: inline-block;
+  background: linear-gradient(120deg, #10b981 0%, #06b6d4 25%, #0284c7 50%, #06b6d4 75%, #10b981 100%);
+  background-size: 250% auto;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: pranaGradientMove 5s ease infinite;
+  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.05));
+  will-change: background-position;
+}
+
+@keyframes pranaGradientMove {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+
+/* =====================================================================
+   SIDEBAR COLLAPSIBLE TRANSITIONS (ICON RAIL MODE)
+   ===================================================================== */
+#app-sidebar {
+  width: 16rem; /* 256px when open */
+  transition: width 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow-x: hidden;
+}
+
+/* Sidebar Brand Header & Interactive Elements */
+.sidebar-header-box {
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  padding: 0 1rem;
+  border-bottom: 1px solid rgba(226, 232, 240, 0.9);
+  transition: background-color 0.2s ease, padding 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+html.dark .sidebar-header-box {
+  border-bottom-color: rgba(30, 41, 59, 0.8);
+}
+
+.sidebar-brand-wrapper {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  width: 100%;
+}
+
+.sidebar-brand-emblem {
+  height: 45px;
+  max-height: 75%;
+  width: auto;
+  object-fit: contain;
+  flex-shrink: 0;
+  user-select: none;
+  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), height 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.sidebar-header-box:hover .sidebar-brand-emblem {
+  transform: scale(1.06);
+}
+
+.sidebar-brand-text {
+  height: 45px;
+  width: auto;
+  object-fit: contain;
+  flex-shrink: 0;
+  user-select: none;
+  margin-left: 0.625rem;
+  max-width: 160px;
+  opacity: 1;
+  transform: translateX(0) scale(1);
+  transform-origin: left center;
+  transition: max-width 0.25s cubic-bezier(0.4, 0, 0.2, 1),
+              opacity 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+              transform 0.25s cubic-bezier(0.4, 0, 0.2, 1),
+              margin-left 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+#app-sidebar.sidebar-collapsed {
+  width: 4.75rem; /* ~76px icon-only rail when closed */
+}
+
+#app-sidebar.sidebar-collapsed .sidebar-text-element {
+  display: none !important;
+}
+
+#app-sidebar.sidebar-collapsed .sidebar-header-box {
+  justify-content: center;
+  padding: 0 0.5rem;
+}
+
+#app-sidebar.sidebar-collapsed .sidebar-brand-wrapper {
+  justify-content: center;
+  width: auto;
+}
+
+#app-sidebar.sidebar-collapsed .sidebar-brand-emblem {
+  height: 48px; /* ~80% coverage in collapsed rail */
+}
+
+#app-sidebar.sidebar-collapsed .sidebar-brand-text {
+  max-width: 0;
+  opacity: 0;
+  transform: translateX(-12px) scale(0.9);
+  margin-left: 0 !important;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+#app-sidebar.sidebar-collapsed .sidebar-nav-item {
+  justify-content: center;
+  padding-left: 0.5rem;
+  padding-right: 0.5rem;
+  border-left: none !important;
+}
+
+#app-sidebar.sidebar-collapsed .sidebar-nav-item.active {
+  border-left: none !important;
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.22) 0%, rgba(6, 182, 212, 0.16) 100%);
+  box-shadow: inset 0 0 0 2px #10b981;
+}
+
+#app-sidebar.sidebar-collapsed .sidebar-footer-box {
+  padding-left: 0.5rem;
+  padding-right: 0.5rem;
+}
+
+/* Sidebar Footer Gelar Rasa Logo States */
+.sidebar-glrs-open {
+  display: flex;
+}
+
+.sidebar-glrs-closed {
+  display: none;
+}
+
+#app-sidebar.sidebar-collapsed .sidebar-glrs-open {
+  display: none !important;
+}
+
+#app-sidebar.sidebar-collapsed .sidebar-glrs-closed {
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  padding: 0;
+  width: 100%;
+}
+
+/* Floating Tooltip in Collapsed Icon Rail Mode */
+#app-sidebar.sidebar-collapsed .sidebar-nav-item::after,
+#app-sidebar.sidebar-collapsed .sidebar-glrs-closed::after {
+  content: attr(data-title);
+  position: absolute;
+  left: calc(100% + 10px);
+  top: 50%;
+  transform: translateY(-50%) translateX(-6px);
+  padding: 0.35rem 0.65rem;
+  background-color: #0f172a;
+  color: #ffffff;
+  font-size: 0.75rem;
+  font-weight: 600;
+  white-space: nowrap;
+  border-radius: 0.375rem;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.18s ease, transform 0.18s ease;
+  z-index: 100;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
+}
+
+html.dark #app-sidebar.sidebar-collapsed .sidebar-nav-item::after,
+html.dark #app-sidebar.sidebar-collapsed .sidebar-glrs-closed::after {
+  background-color: #08141b;
+  border: 1px solid rgba(6, 182, 212, 0.35);
+  color: #f1f5f9;
+}
+
+#app-sidebar.sidebar-collapsed .sidebar-nav-item:hover::after,
+#app-sidebar.sidebar-collapsed .sidebar-glrs-closed:hover::after {
+  opacity: 1;
+  transform: translateY(-50%) translateX(0);
+}
+
+/* Container Cards on Canvas */
+.prana-card {
+  background-color: var(--prana-surface) !important;
+  border: 1px solid var(--prana-border) !important;
+  border-radius: 12px;
+  box-shadow: 0 4px 16px -2px rgba(6, 182, 212, 0.08), 0 2px 6px -1px rgba(15, 23, 42, 0.04);
+  transition: all 0.25s ease-in-out;
+}
+
+html.dark .prana-card {
+  box-shadow: 0 6px 20px -2px rgba(0, 0, 0, 0.4), 0 2px 8px -1px rgba(6, 182, 212, 0.08);
+}
+
+.prana-card:hover {
+  border-color: var(--prana-border-hover) !important;
+  box-shadow: 0 10px 28px -4px rgba(6, 182, 212, 0.16);
+}
+
+/* Sidebar Nav Items */
+.sidebar-nav-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--prana-text-sub);
+  transition: all 0.2s ease;
+  cursor: pointer;
+  position: relative;
+  user-select: none;
+}
+
+.sidebar-nav-item:hover {
+  color: var(--prana-text-main);
+  background: rgba(6, 182, 212, 0.08);
+}
+
+.sidebar-nav-item.active {
+  color: #0284c7;
+  background: linear-gradient(90deg, rgba(16, 185, 129, 0.14) 0%, rgba(6, 182, 212, 0.10) 100%);
+  border-left: 3.5px solid #10b981;
+  font-weight: 600;
+}
+
+html.dark .sidebar-nav-item.active {
+  color: #38bdf8;
+  background: linear-gradient(90deg, rgba(16, 185, 129, 0.22) 0%, rgba(6, 182, 212, 0.16) 100%);
+}
+
+.sidebar-nav-item.active svg {
+  color: #10b981;
+}
+
+/* Custom Scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: var(--prana-body-bg);
+}
+::-webkit-scrollbar-thumb {
+  background: #94a3b8;
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #64748b;
+}
+
+/* Leaflet Map Custom Styling */
+#national-map {
+  width: 100%;
+  height: 480px;
+  border-radius: 0.75rem;
+  z-index: 10;
+}
+
+.leaflet-popup-content-wrapper {
+  background-color: var(--prana-surface);
+  color: var(--prana-text-main);
+  border-radius: 8px;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.25);
+  border: 1px solid var(--prana-border);
+}
+
+.leaflet-popup-tip {
+  background-color: var(--prana-surface);
+}
+
+/* =====================================================================
+   POPUP MODAL 80% (METODOLOGI)
+   ===================================================================== */
+@keyframes modal-scale-in {
+  0% {
+    opacity: 0;
+    transform: scale(0.96) translateY(8px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.animate-modal-in {
+  animation: modal-scale-in 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Theme Toggle Button Interaction */
+.theme-toggle-btn {
+  transition: transform 0.2s ease, background-color 0.2s ease;
+}
+.theme-toggle-btn:active {
+  transform: scale(0.92);
+}
+
+/* =====================================================================
+   FILTER BAR — 4 Filter Boxes (Compact 60% Scale & Proportional)
+   ===================================================================== */
+.filter-bar {
+  border-top: 1px solid var(--prana-border-sub);
+}
+
+.filter-card {
+  transition: all 0.2s ease-in-out;
+}
+
+.filter-card:hover {
+  border-color: var(--prana-border-hover);
+}
+
+.filter-cell {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.filter-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--prana-text-muted);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.filter-select {
+  background-color: var(--prana-surface);
+  border: 1px solid var(--prana-border-sub);
+  border-radius: 4px;
+  padding: 2px 4px;
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--prana-text-main);
+  outline: none;
+  cursor: pointer;
+  min-width: 0;
+  height: 22px;
+}
+
+.filter-select:focus {
+  border-color: var(--prana-cyan);
+  box-shadow: 0 0 0 1px var(--prana-cyan);
+}
+
+/* =====================================================================
+   FUNFACT TICKER STRIP
+   ===================================================================== */
+.funfact-strip {
+  background: linear-gradient(90deg,
+    rgba(16, 185, 129, 0.06) 0%,
+    rgba(6, 182, 212, 0.05) 50%,
+    rgba(2, 132, 199, 0.04) 100%
+  );
+  border-top: 1px solid rgba(6, 182, 212, 0.14);
+}
+
+html.dark .funfact-strip {
+  background: linear-gradient(90deg,
+    rgba(16, 185, 129, 0.08) 0%,
+    rgba(6, 182, 212, 0.07) 50%,
+    rgba(2, 132, 199, 0.05) 100%
+  );
+  border-top: 1px solid rgba(6, 182, 212, 0.18);
+}
+
+.funfact-label {
+  font-size: 9px;
+  letter-spacing: 0.08em;
+  min-width: 60px;
+  clip-path: polygon(0 0, calc(100% - 8px) 0, 100% 50%, calc(100% - 8px) 100%, 0 100%);
+}
+
+.funfact-scroll-wrap {
+  mask-image: linear-gradient(to right, transparent 0px, black 16px, black calc(100% - 16px), transparent 100%);
+  -webkit-mask-image: linear-gradient(to right, transparent 0px, black 16px, black calc(100% - 16px), transparent 100%);
+}
+
+@keyframes funfact-scroll {
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+.funfact-ticker-inner {
+  animation: funfact-scroll 60s linear infinite;
+  will-change: transform;
+}
+
+.funfact-ticker-inner:hover {
+  animation-play-state: paused;
+}
+
+.funfact-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 24px;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--prana-text-sub);
+  white-space: nowrap;
+  border-right: 1px solid var(--prana-border-sub);
+}
+
+.funfact-item .funfact-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--prana-cyan);
+  flex-shrink: 0;
+  opacity: 0.7;
+}
+
+.funfact-item strong {
+  color: var(--prana-text-main);
+  font-weight: 600;
+}

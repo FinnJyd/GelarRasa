@@ -13,6 +13,7 @@ dataset/processed/*.csv
 !dataset/dashboard/*.json
 
 notebooks/preview_dataset.ipynb
+layout
 
 # --- Python & Environments ---
 __pycache__/

@@ -1,0 +1,662 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PRANA - Air & Health Intelligence | Gelar Rasa 2026</title>
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- Leaflet CSS & JS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  
+  <!-- Chart.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+
+  <!-- Google Fonts: Inter & Space Grotesk -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+
+  <!-- Custom CSS (Revisi #1.5: Dual Theme Engine) -->
+  <link rel="stylesheet" href="styles.css">
+  
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            prana: {
+              surface: 'var(--prana-surface)',
+              canvas: 'var(--prana-body-bg)',
+              green: '#10b981',
+              cyan: '#06b6d4',
+              blue: '#0284c7',
+              navy: '#091e28'
+            }
+          }
+        }
+      }
+    }
+  </script>
+</head>
+<body class="flex h-screen overflow-hidden">
+
+  <!-- ===================================================================
+       SIDEBAR NAVIGATION (Surface: Sama persis dengan Topbar & Containers)
+       Light: #ffffff | Dark: #0f2430
+       =================================================================== -->
+  <aside id="app-sidebar" class="w-64 bg-[#F9F6EE] dark:bg-[#0f2430] text-slate-800 dark:text-slate-100 flex flex-col justify-between border-r border-slate-200/90 dark:border-slate-800 flex-shrink-0 z-30 shadow-sm transition-colors duration-200">
+    <div>
+      <!-- Brand Header: Emblem + Textual Brand (klik untuk toggle sidebar) -->
+      <div id="sidebar-toggle-btn" class="sidebar-header-box cursor-pointer hover:bg-[#EEEAE2] dark:hover:bg-[#0a1b24] transition-colors overflow-hidden select-none" title="Klik untuk memperkecil/memperbesar sidebar">
+        <div class="sidebar-brand-wrapper">
+          <img src="../assets/Prana Emblem.png" alt="Prana Emblem" class="sidebar-brand-emblem">
+          <img src="../assets/Prana Textual.png" alt="PRANA" class="sidebar-brand-text">
+        </div>
+      </div>
+
+      <!-- Navigation Tabs (Max 2 words per tab) -->
+      <nav class="p-3 space-y-1">
+        <!-- Tab 1 -->
+        <button class="sidebar-nav-item active w-full" data-tab="tab-1" data-title="Ikhtisar Nasional" title="Ikhtisar Nasional">
+          <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+          <span class="sidebar-text-element truncate">Ikhtisar Nasional</span>
+        </button>
+
+        <!-- Tab 2 -->
+        <button class="sidebar-nav-item w-full" data-tab="tab-2" data-title="Kepatuhan Regulasi" title="Kepatuhan Regulasi">
+          <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+          <span class="sidebar-text-element truncate">Kepatuhan Regulasi</span>
+        </button>
+
+        <!-- Tab 3 -->
+        <button class="sidebar-nav-item w-full" data-tab="tab-3" data-title="Pola Waktu" title="Pola Waktu">
+          <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+          <span class="sidebar-text-element truncate">Pola Waktu</span>
+        </button>
+
+        <!-- Tab 4 -->
+        <button class="sidebar-nav-item w-full" data-tab="tab-4" data-title="Faktor Pemicu" title="Faktor Pemicu">
+          <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 10l-2 1m0 0l-2-1m2 1v2.5M20 7l-2 1m2-1l-2-1m2 1v2.5M14 4l-2-1-2 1M4 7l2-1M4 7l2 1M4 7v2.5M12 21l-2-1m2 1l2-1m-2 1v-2.5M6 18l-2-1v-2.5M18 18l2-1v-2.5"/></svg>
+          <span class="sidebar-text-element truncate">Faktor Pemicu</span>
+        </button>
+
+        <!-- Tab 5 -->
+        <button class="sidebar-nav-item w-full" data-tab="tab-5" data-title="Dampak Kesehatan" title="Dampak Kesehatan">
+          <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/></svg>
+          <span class="sidebar-text-element truncate">Dampak Kesehatan</span>
+        </button>
+
+        <!-- Tab 6 -->
+        <button class="sidebar-nav-item w-full" data-tab="tab-6" data-title="Rekomendasi Kebijakan" title="Rekomendasi Kebijakan">
+          <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+          <span class="sidebar-text-element truncate">Rekomendasi Kebijakan</span>
+        </button>
+      </nav>
+    </div>
+
+    <!-- Sidebar Bottom: Gelar Rasa Logo -->
+    <div class="sidebar-footer-box p-3 border-t border-slate-100 dark:border-slate-800/80">
+      
+      <!-- Open State: Left-aligned logo, tinggi 64px sama persis dengan saat closed -->
+      <div class="sidebar-glrs-open w-full flex items-center justify-start px-2.5 py-1.5 rounded-xl bg-[#F9F6EE] dark:bg-slate-100 border border-slate-200 dark:border-slate-300 shadow-sm select-none transition-all overflow-hidden h-[64px]">
+        <img src="../assets/Logo GELAR RASA Open.png" alt="Gelar Rasa 2026" class="h-full w-auto max-w-full object-contain object-left">
+      </div>
+
+      <!-- Closed State: Tinggi 64px sama persis dengan saat open -->
+      <div class="sidebar-glrs-closed hidden items-center justify-center select-none w-full" data-title="Gelar Rasa 2026" title="Gelar Rasa 2026">
+        <div class="w-full h-[64px] rounded-xl bg-[#F9F6EE] dark:bg-slate-100 border border-slate-200 dark:border-slate-300 shadow-xs flex items-center justify-center p-2 hover:scale-105 transition-transform">
+          <img src="../assets/Logo GELAR RASA Closed.png" alt="Gelar Rasa" class="h-full w-full object-contain">
+        </div>
+      </div>
+
+    </div>
+  </aside>
+
+  <!-- ===================================================================
+       MAIN VIEWPORT WRAPPER (TOPBAR + CANVAS BADAN PAGE)
+       =================================================================== -->
+  <div class="flex-1 flex flex-col h-screen overflow-hidden">
+    
+    <!-- TOPBAR (Surface: Sama persis dengan Sidebar & Containers)
+         Light: #ffffff | Dark: #0f2430 -->
+    <header class="bg-[#F9F6EE] dark:bg-[#0f2430] border-b border-slate-200/90 dark:border-slate-800 shadow-sm z-20 flex-shrink-0 transition-colors duration-200">
+
+      <!-- ROW 1: Team Title & Controls -->
+      <div class="px-5 flex items-center justify-between border-b border-slate-100 dark:border-slate-800" style="height:64px;">
+        <!-- Team Brand & Competition Badge -->
+        <div class="flex items-center gap-3.5 min-w-0">
+          <!-- Typographic Team Title (Lebih tinggi dari yang lain + bold) -->
+          <div class="flex items-center gap-2.5 flex-shrink-0 select-none">
+            <span class="text-xs font-black tracking-[0.2em] uppercase text-emerald-700 dark:text-emerald-300 font-['Space_Grotesk',sans-serif] px-2 py-0.5 rounded-md bg-emerald-500/15 dark:bg-emerald-400/20 border border-emerald-500/30">
+              TIM
+            </span>
+            <h1 class="team-highlight-title">
+              NASI BAKAR CUMI HITAM PAK KRIS
+            </h1>
+          </div>
+
+          <!-- Divider -->
+          <span class="h-6 w-px bg-slate-200 dark:bg-slate-700/80 hidden sm:inline-block"></span>
+
+          <!-- Badge Gelar Rasa 2026 (Di Kanan Nama Tim) -->
+          <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold bg-gradient-to-r from-emerald-500/10 via-cyan-500/15 to-emerald-500/10 dark:from-emerald-950/50 dark:via-cyan-950/50 dark:to-emerald-950/50 text-emerald-800 dark:text-emerald-300 border border-emerald-300/80 dark:border-emerald-700/60 shadow-xs flex-shrink-0">
+            <span class="relative flex h-2 w-2">
+              <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+              <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+            </span>
+            <span class="tracking-wide">Dashboard Analysis Gelar Rasa 2026</span>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-2 flex-shrink-0 ml-3">
+          <!-- Dataset Window Badge -->
+          <div class="hidden lg:flex items-center gap-1.5 bg-[#F0EDE5] dark:bg-[#0a1b24] text-slate-600 dark:text-slate-300 px-2.5 py-1.5 rounded-md text-[11px] font-medium border border-slate-200 dark:border-slate-800">
+            <svg class="w-3 h-3 text-cyan-600 dark:text-cyan-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+            <span>2024-01-01 – 2026-10-14 (1.019 Hari)</span>
+          </div>
+
+          <!-- Theme Toggle -->
+          <button id="theme-toggle-btn" class="theme-toggle-btn flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-medium border border-slate-200 dark:border-slate-700 bg-[#F0EDE5] dark:bg-[#0a1b24] text-slate-700 dark:text-slate-200 hover:bg-[#E8E5DD] dark:hover:bg-slate-800 transition" title="Ganti Mode Tampilan (Light / Dark)">
+            <svg id="theme-icon-light" class="w-3.5 h-3.5 text-amber-400 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
+            <svg id="theme-icon-dark" class="w-3.5 h-3.5 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/></svg>
+            <span class="text-[11px] font-semibold hidden md:inline">Tema</span>
+          </button>
+
+          <!-- Metodologi Button -->
+          <button class="trigger-methodology flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-semibold bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 transition">
+            <svg class="w-3.5 h-3.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            <span class="hidden sm:inline">Metodologi</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- ROW 2: FunFact Ticker Strip -->
+      <div class="funfact-strip border-b border-slate-100 dark:border-slate-800/80 overflow-hidden" style="height:30px;">
+        <div class="funfact-track flex items-center h-full gap-0">
+          <!-- Label pill (kiri, sticky) -->
+          <div class="funfact-label flex-shrink-0 flex items-center gap-1.5 px-3 h-full bg-gradient-to-r from-emerald-500 to-cyan-500 text-white text-[10px] font-bold tracking-widest uppercase z-10">
+            <svg class="w-3 h-3 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
+            Fakta
+          </div>
+          <!-- Scrolling ticker -->
+          <div class="funfact-scroll-wrap flex-1 overflow-hidden relative h-full">
+            <div id="funfact-ticker" class="funfact-ticker-inner flex items-center h-full whitespace-nowrap">
+              <!-- Items duplicated for seamless loop (injected by JS) -->
+            </div>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- SCROLLABLE CANVAS / BADAN PAGE
+         Light: #ebf4f6 | Dark: #08141b (Senada tapi tidak sama persis) -->
+    <main class="flex-1 overflow-y-auto p-6 space-y-6">
+      
+      <!-- ===============================================================
+           HEADER COMPONENT (Sesuai Sketsa layout/Header.png)
+           Box 1: NAMA TAB + SUBTITLE TAB (Pertanyaan Yang Ingin Dijawab)
+           Box 2: FILTER (4 Filter Box Proporsional)
+           =============================================================== -->
+      <div id="tab-header-card" class="prana-card p-4 space-y-3.5">
+        
+        <!-- Box 1: Nama Tab & Pertanyaan Kunci Analitik -->
+        <div class="bg-[#F0EDE5]/80 dark:bg-[#0a1b24]/70 p-5 rounded-xl border border-slate-200/80 dark:border-slate-800 space-y-3">
+          <!-- Nama Tab (Besar Brutal) -->
+          <div class="flex items-center gap-3">
+            <span class="w-3.5 h-3.5 rounded-full bg-cyan-500 animate-pulse flex-shrink-0"></span>
+            <h2 id="tab-name-display" class="text-3xl sm:text-4xl lg:text-[50px] font-black tracking-tight uppercase text-slate-900 dark:text-white font-['Space_Grotesk',sans-serif] leading-none">
+              IKHTISAR NASIONAL
+            </h2>
+          </div>
+
+          <!-- Subtitle: Pertanyaan Yang Ingin Dijawab Oleh Tab Ini -->
+          <div class="pt-3 border-t border-slate-200/60 dark:border-slate-800/80 flex items-start gap-2.5">
+            <span class="font-bold text-cyan-700 dark:text-cyan-300 flex-shrink-0 uppercase text-[10px] sm:text-xs tracking-wider px-2 py-0.5 rounded bg-cyan-50 dark:bg-cyan-950/60 border border-cyan-200 dark:border-cyan-800 mt-0.5">
+              Pertanyaan Riset
+            </span>
+            <p id="tab-header-question" class="text-xs sm:text-sm text-slate-700 dark:text-slate-200 font-medium italic leading-relaxed">
+              Bagaimana status kualitas udara nasional dan seberapa parah krisis polusi terhadap beban kesehatan masyarakat di 27 stasiun pemantau Indonesia selama 2024–2026?
+            </p>
+          </div>
+        </div>
+
+        <!-- Box 2: FILTER BAR (4 Filter Box Proporsional & Kompak) -->
+        <div class="filter-bar pt-1 text-xs">
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 w-full">
+
+            <!-- BOX 1: Tanggal Manual & Kategori -->
+            <div class="filter-card p-2 rounded-lg border border-slate-200/90 dark:border-slate-800 bg-[#F0EDE5]/60 dark:bg-[#0a1b24]/50 flex flex-col justify-center gap-1.5 min-w-0 shadow-sm">
+              <!-- Row 1: Tanggal Manual -->
+              <div class="flex items-center gap-1.5 min-w-0">
+                <span class="filter-label text-[10px] text-slate-500 dark:text-slate-400 font-semibold flex items-center gap-1 flex-shrink-0 w-12">
+                  <svg class="w-2.5 h-2.5 text-cyan-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                  Tanggal
+                </span>
+                <div class="inline-flex items-center gap-1 bg-[#F9F6EE] dark:bg-[#0f2430] px-1.5 py-0.5 rounded border border-slate-300 dark:border-slate-700/80 min-w-0 flex-1 justify-between">
+                  <input type="date" id="filter-date-start" min="2024-01-01" max="2026-10-14" value="2024-01-01" class="bg-transparent text-slate-800 dark:text-slate-100 font-mono text-[10px] outline-none cursor-pointer w-[76px] flex-shrink-0">
+                  <span class="text-slate-400 text-[9px] font-bold">–</span>
+                  <input type="date" id="filter-date-end" min="2024-01-01" max="2026-10-14" value="2026-10-14" class="bg-transparent text-slate-800 dark:text-slate-100 font-mono text-[10px] outline-none cursor-pointer w-[76px] flex-shrink-0">
+                </div>
+              </div>
+              <!-- Row 2: Periode Kategori -->
+              <div class="flex items-center gap-1.5 min-w-0">
+                <span class="filter-label text-[10px] text-slate-500 dark:text-slate-400 font-semibold flex-shrink-0 w-12">Periode</span>
+                <select id="filter-date-preset" class="filter-select text-[10px] py-0.5 px-1.5 rounded bg-[#F9F6EE] dark:bg-[#0f2430] border border-slate-300 dark:border-slate-700/80 text-slate-800 dark:text-slate-100 outline-none flex-1 min-w-0">
+                  <option value="all">Semua (2024–2026)</option>
+                  <option value="comparable">Sebanding (Jan–Okt)</option>
+                  <option value="2024">Tahun 2024</option>
+                  <option value="2025">Tahun 2025</option>
+                  <option value="2026">Tahun 2026</option>
+                  <option value="karhutla">Puncak Karhutla (Agu–Okt)</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- BOX 2: Wilayah & Zonasi -->
+            <div class="filter-card p-2 rounded-lg border border-slate-200/90 dark:border-slate-800 bg-[#F0EDE5]/60 dark:bg-[#0a1b24]/50 flex flex-col justify-center gap-1.5 min-w-0 shadow-sm">
+              <!-- Row 1: Wilayah -->
+              <div class="flex items-center gap-1.5 min-w-0">
+                <span class="filter-label text-[10px] text-slate-500 dark:text-slate-400 font-semibold flex-shrink-0 w-12">Wilayah</span>
+                <select id="filter-region" class="filter-select text-[10px] py-0.5 px-1.5 rounded bg-[#F9F6EE] dark:bg-[#0f2430] border border-slate-300 dark:border-slate-700/80 text-slate-800 dark:text-slate-100 outline-none flex-1 min-w-0">
+                  <option value="all">Semua Pulau (27 AQMS)</option>
+                  <option value="Jakarta">DKI Jakarta</option>
+                  <option value="Jawa">Pulau Jawa</option>
+                  <option value="Sumatera">Pulau Sumatera</option>
+                  <option value="Kalimantan">Pulau Kalimantan</option>
+                  <option value="Sulawesi">Pulau Sulawesi</option>
+                  <option value="Papua">Pulau Papua</option>
+                </select>
+              </div>
+              <!-- Row 2: Zonasi -->
+              <div class="flex items-center gap-1.5 min-w-0">
+                <span class="filter-label text-[10px] text-slate-500 dark:text-slate-400 font-semibold flex-shrink-0 w-12">Zonasi</span>
+                <select id="filter-type" class="filter-select text-[10px] py-0.5 px-1.5 rounded bg-[#F9F6EE] dark:bg-[#0f2430] border border-slate-300 dark:border-slate-700/80 text-slate-800 dark:text-slate-100 outline-none flex-1 min-w-0">
+                  <option value="all">Semua Tipologi</option>
+                  <option value="Urban">Perkotaan (Urban)</option>
+                  <option value="Peatland">Lahan Gambut</option>
+                  <option value="Traffic">Lalu Lintas</option>
+                  <option value="Industrial">Kawasan Industri</option>
+                  <option value="Clean Background">Latar Alami</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- BOX 3: Stasiun & Polutan -->
+            <div class="filter-card p-2 rounded-lg border border-slate-200/90 dark:border-slate-800 bg-[#F0EDE5]/60 dark:bg-[#0a1b24]/50 flex flex-col justify-center gap-1.5 min-w-0 shadow-sm">
+              <!-- Row 1: Stasiun -->
+              <div class="flex items-center gap-1.5 min-w-0">
+                <span class="filter-label text-[10px] text-slate-500 dark:text-slate-400 font-semibold flex-shrink-0 w-12">Stasiun</span>
+                <select id="filter-station" class="filter-select text-[10px] py-0.5 px-1.5 rounded bg-[#F9F6EE] dark:bg-[#0f2430] border border-slate-300 dark:border-slate-700/80 text-slate-800 dark:text-slate-100 outline-none flex-1 min-w-0">
+                  <option value="all">Semua Stasiun (27 AQMS)</option>
+                  <option value="AQMS-JKT-01">JKT-01 · Jakarta Pusat</option>
+                  <option value="AQMS-JKT-02">JKT-02 · Jakarta Utara</option>
+                  <option value="AQMS-JKT-03">JKT-03 · Jakarta Barat</option>
+                  <option value="AQMS-BGR-01">BGR-01 · Kab. Bogor</option>
+                  <option value="AQMS-BGR-02">BGR-02 · Kota Bogor</option>
+                  <option value="AQMS-YKY-01">YKY-01 · Sleman, DIY</option>
+                  <option value="AQMS-MLG-01">MLG-01 · Malang, Jatim</option>
+                  <option value="AQMS-IDP-01">IDP-01 · Aceh Besar</option>
+                  <option value="AQMS-MDN-01">MDN-01 · Medan</option>
+                  <option value="AQMS-KTB-01">KTB-01 · Agam, Sumbar</option>
+                  <option value="AQMS-PKU-01">PKU-01 · Pekanbaru</option>
+                  <option value="AQMS-BTM-01">BTM-01 · Batam</option>
+                  <option value="AQMS-JMB-01">JMB-01 · Kota Jambi</option>
+                  <option value="AQMS-JMB-02">JMB-02 · Muaro Jambi</option>
+                  <option value="AQMS-BGL-01">BGL-01 · Bengkulu</option>
+                  <option value="AQMS-PLB-01">PLB-01 · Palembang</option>
+                  <option value="AQMS-PSW-01">PSW-01 · Pesawaran</option>
+                  <option value="AQMS-STG-01">STG-01 · Sintang, Kalbar</option>
+                  <option value="AQMS-KTG-01">KTG-01 · Palangka Raya</option>
+                  <option value="AQMS-KTG-02">KTG-02 · Sampit</option>
+                  <option value="AQMS-PKN-01">PKN-01 · Pangkalan Bun</option>
+                  <option value="AQMS-BJB-01">BJB-01 · Banjarbaru</option>
+                  <option value="AQMS-SM2-01">SM2-01 · Samarinda</option>
+                  <option value="AQMS-MRS-01">MRS-01 · Maros, Sulsel</option>
+                  <option value="AQMS-PLU-01">PLU-01 · Poso, Sulteng</option>
+                  <option value="AQMS-SRG-01">SRG-01 · Sorong, Papua</option>
+                  <option value="AQMS-MER-01">MER-01 · Merauke, Papua</option>
+                </select>
+              </div>
+              <!-- Row 2: Polutan -->
+              <div class="flex items-center gap-1.5 min-w-0">
+                <span class="filter-label text-[10px] text-slate-500 dark:text-slate-400 font-semibold flex-shrink-0 w-12">Polutan</span>
+                <div class="inline-flex rounded border border-slate-300 dark:border-slate-700/80 bg-[#F9F6EE] dark:bg-[#0f2430] p-0.5 gap-0.5 flex-1 justify-between min-w-0" role="group">
+                  <button class="pollutant-btn active px-1.5 py-0.5 rounded text-[9.5px] font-bold bg-cyan-600 text-white flex-1 text-center" data-pollutant="PM2.5">PM2.5</button>
+                  <button class="pollutant-btn px-1.5 py-0.5 rounded text-[9.5px] text-slate-600 dark:text-slate-300 hover:bg-[#E8E5DD] dark:hover:bg-slate-800 flex-1 text-center" data-pollutant="PM10">PM10</button>
+                  <button class="pollutant-btn px-1.5 py-0.5 rounded text-[9.5px] text-slate-600 dark:text-slate-300 hover:bg-[#E8E5DD] dark:hover:bg-slate-800 flex-1 text-center" data-pollutant="SO2">SO2</button>
+                  <button class="pollutant-btn px-1.5 py-0.5 rounded text-[9.5px] text-slate-600 dark:text-slate-300 hover:bg-[#E8E5DD] dark:hover:bg-slate-800 flex-1 text-center" data-pollutant="CO">CO</button>
+                  <button class="pollutant-btn px-1.5 py-0.5 rounded text-[9.5px] text-slate-600 dark:text-slate-300 hover:bg-[#E8E5DD] dark:hover:bg-slate-800 flex-1 text-center" data-pollutant="O3">O3</button>
+                  <button class="pollutant-btn px-1.5 py-0.5 rounded text-[9.5px] text-slate-600 dark:text-slate-300 hover:bg-[#E8E5DD] dark:hover:bg-slate-800 flex-1 text-center" data-pollutant="NO2">NO2</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- BOX 4: Toggle Suspect & Reset Filter -->
+            <div class="filter-card p-2 rounded-lg border border-slate-200/90 dark:border-slate-800 bg-[#F0EDE5]/60 dark:bg-[#0a1b24]/50 flex flex-col justify-center gap-1.5 min-w-0 shadow-sm">
+              <!-- Row 1: Suspect Toggle -->
+              <div class="flex items-center justify-between min-w-0">
+                <label class="flex items-center gap-1.5 cursor-pointer select-none">
+                  <div class="relative flex-shrink-0">
+                    <input type="checkbox" id="filter-suspect" class="sr-only peer">
+                    <div class="w-7 h-3.5 rounded-full bg-slate-200 dark:bg-slate-700 peer-checked:bg-cyan-500 transition-colors duration-200"></div>
+                    <div class="absolute left-0.5 top-0.5 w-2.5 h-2.5 rounded-full bg-white shadow transition-transform duration-200 peer-checked:translate-x-3.5"></div>
+                  </div>
+                  <span class="text-slate-600 dark:text-slate-300 text-[10px] font-medium leading-tight">Data <code class="text-[9px] bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 px-1 py-0.2 rounded border border-amber-200 dark:border-amber-800">SUSPECT</code></span>
+                </label>
+              </div>
+              <!-- Row 2: Reset Filter Button -->
+              <div class="flex items-center justify-end min-w-0">
+                <button id="filter-reset" class="flex items-center gap-1 px-2.5 py-0.5 rounded border border-slate-300 dark:border-slate-700 bg-[#F9F6EE] dark:bg-[#0f2430] text-slate-500 dark:text-slate-400 hover:text-cyan-600 dark:hover:text-cyan-400 hover:border-cyan-400 font-medium transition text-[10px] w-full justify-center">
+                  <svg class="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                  Reset Filter
+                </button>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+      
+      <!-- ===============================================================
+           TAB 1: IKHTISAR NASIONAL (Prototype Skeleton)
+           =============================================================== -->
+      <section id="tab-1" class="tab-panel space-y-6">
+        <div class="prana-card p-6">
+          <div class="flex items-center justify-between pb-3 mb-4 border-b border-slate-100 dark:border-slate-800">
+            <div>
+              <h2 class="text-base font-bold text-slate-900 dark:text-white">National Executive Cockpit • Gambaran Komprehensif 27 Stasiun & Faskes</h2>
+              <p class="text-xs text-slate-500 dark:text-slate-400">Potret cepat situasi kualitas udara nasional, kepatuhan baku mutu, dan status surveilans faskes dalam tempo kurang dari 10 detik.</p>
+            </div>
+            <span class="text-xs bg-cyan-50 dark:bg-cyan-950/60 text-cyan-700 dark:text-cyan-300 px-2.5 py-1 rounded font-semibold border border-cyan-200 dark:border-cyan-800">Pipeline Tab 1</span>
+          </div>
+
+          <div class="border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-xl p-8 text-center bg-[#F0EDE5]/50 dark:bg-slate-900/30">
+            <div class="max-w-md mx-auto space-y-2">
+              <div class="w-12 h-12 mx-auto rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center font-bold text-xl">🏛️</div>
+              <h4 class="font-bold text-slate-800 dark:text-white text-sm">Modul Visualisasi Tab 1</h4>
+              <p class="text-xs text-slate-500 dark:text-slate-400">Mencakup: 4 Kartu KPI Utama, Distribusi Kategori ISPU Dominan Stasiun (Donut Chart), Peringkat Top 10 & Bottom 10 Rata-rata PM2.5, serta Peta Interaktif Sebaran 27 Stasiun AQMS & Faskes Rujukan.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===============================================================
+           TAB 2: KEPATUHAN REGULASI (Prototype Skeleton)
+           =============================================================== -->
+      <section id="tab-2" class="tab-panel hidden space-y-6">
+        <div class="prana-card p-6">
+          <div class="flex items-center justify-between pb-3 mb-4 border-b border-slate-100 dark:border-slate-800">
+            <div>
+              <h2 class="text-base font-bold text-slate-900 dark:text-white">Audit Kepatuhan Regulasi Udara Nasional (PP 22/2021 & Permen LHK 27/2021)</h2>
+              <p class="text-xs text-slate-500 dark:text-slate-400">Evaluasi batas tahunan 15 µg/m³, batas 24 jam 55 µg/m³, dan estimasi capaian Indeks Kualitas Udara (IKU) daerah.</p>
+            </div>
+            <span class="text-xs bg-cyan-50 dark:bg-cyan-950/60 text-cyan-700 dark:text-cyan-300 px-2.5 py-1 rounded font-semibold border border-cyan-200 dark:border-cyan-800">Pipeline Tab 2</span>
+          </div>
+
+          <div class="border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-xl p-8 text-center bg-[#F0EDE5]/50 dark:bg-slate-900/30">
+            <div class="max-w-md mx-auto space-y-2">
+              <div class="w-12 h-12 mx-auto rounded-full bg-cyan-100 dark:bg-cyan-950/60 text-cyan-600 dark:text-cyan-400 flex items-center justify-center font-bold text-xl">📊</div>
+              <h4 class="font-bold text-slate-800 dark:text-white text-sm">Modul Visualisasi Tab 2</h4>
+              <p class="text-xs text-slate-500 dark:text-slate-400">Mencakup: Heatmap Stasiun × Bulan (2024–2026), 100% Stacked Bar Kategori ISPU, Audit Kepatuhan PP 22/2021, dan Rekapitulasi Kinerja IKU per Provinsi dari dataset processed.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===============================================================
+           TAB 3: POLA WAKTU (Prototype Skeleton)
+           =============================================================== -->
+      <section id="tab-3" class="tab-panel hidden space-y-6">
+        <div class="prana-card p-6">
+          <div class="flex items-center justify-between pb-3 mb-4 border-b border-slate-100 dark:border-slate-800">
+            <div>
+              <h2 class="text-base font-bold text-slate-900 dark:text-white">Dinamika Temporal, Jam Sibuk & Episode Asap Gambut</h2>
+              <p class="text-xs text-slate-500 dark:text-slate-400">Analisis profil 24 jam (jam sibuk vs inversi malam), matriks hari × jam (weekday vs weekend), dan linimasa karhutla.</p>
+            </div>
+            <span class="text-xs bg-cyan-50 dark:bg-cyan-950/60 text-cyan-700 dark:text-cyan-300 px-2.5 py-1 rounded font-semibold border border-cyan-200 dark:border-cyan-800">Pipeline Tab 3</span>
+          </div>
+
+          <div class="border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-xl p-8 text-center bg-[#F0EDE5]/50 dark:bg-slate-900/30">
+            <div class="max-w-md mx-auto space-y-2">
+              <div class="w-12 h-12 mx-auto rounded-full bg-amber-100 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 flex items-center justify-center font-bold text-xl">⏱️</div>
+              <h4 class="font-bold text-slate-800 dark:text-white text-sm">Modul Visualisasi Tab 3</h4>
+              <p class="text-xs text-slate-500 dark:text-slate-400">Grafik diurnal per jam 00–23 per tipologi zonasi, heatmap hari × jam, deret waktu stasiun hotspot karhutla (KTG-01, KTG-02, JMB-01/02), dan durasi episode ekstrim.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===============================================================
+           TAB 4: FAKTOR PEMICU (Prototype Skeleton)
+           =============================================================== -->
+      <section id="tab-4" class="tab-panel hidden space-y-6">
+        <div class="prana-card p-6">
+          <div class="flex items-center justify-between pb-3 mb-4 border-b border-slate-100 dark:border-slate-800">
+            <div>
+              <h2 class="text-base font-bold text-slate-900 dark:text-white">Faktor Pemicu: Meteorologi & Emisi Koridor Lalu Lintas</h2>
+              <p class="text-xs text-slate-500 dark:text-slate-400">Korelasi peringkat Spearman, mawar polusi 16 sektor arah angin, dan interaksi volume kendaraan terhadap gas NO2/CO.</p>
+            </div>
+            <span class="text-xs bg-cyan-50 dark:bg-cyan-950/60 text-cyan-700 dark:text-cyan-300 px-2.5 py-1 rounded font-semibold border border-cyan-200 dark:border-cyan-800">Pipeline Tab 4</span>
+          </div>
+
+          <div class="border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-xl p-8 text-center bg-[#F0EDE5]/50 dark:bg-slate-900/30">
+            <div class="max-w-md mx-auto space-y-2">
+              <div class="w-12 h-12 mx-auto rounded-full bg-sky-100 dark:bg-sky-950/60 text-sky-600 dark:text-sky-400 flex items-center justify-center font-bold text-xl">🌪️</div>
+              <h4 class="font-bold text-slate-800 dark:text-white text-sm">Modul Visualisasi Tab 4</h4>
+              <p class="text-xs text-slate-500 dark:text-slate-400">Mawar polusi (Pollution Rose), heatmap matriks korelasi cuaca (suhu, kelembapan, angin), binned plot polusi vs angin, dan scatter plot intensitas lalu lintas.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===============================================================
+           TAB 5: DAMPAK KESEHATAN (Prototype Skeleton)
+           =============================================================== -->
+      <section id="tab-5" class="tab-panel hidden space-y-6">
+        <div class="prana-card p-6">
+          <div class="flex items-center justify-between pb-3 mb-4 border-b border-slate-100 dark:border-slate-800">
+            <div>
+              <h2 class="text-base font-bold text-slate-900 dark:text-white">Epidemiologi Lingkungan: Kerentanan Balita/Lansia & Tekanan RS</h2>
+              <p class="text-xs text-slate-500 dark:text-slate-400">Korelasi silang jeda waktu (Lag 0–7 Hari), kurva dosis-respons, dan event-study lonjakan admisi saat krisis.</p>
+            </div>
+            <span class="text-xs bg-cyan-50 dark:bg-cyan-950/60 text-cyan-700 dark:text-cyan-300 px-2.5 py-1 rounded font-semibold border border-cyan-200 dark:border-cyan-800">Pipeline Tab 5</span>
+          </div>
+
+          <div class="border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-xl p-8 text-center bg-[#F0EDE5]/50 dark:bg-slate-900/30">
+            <div class="max-w-md mx-auto space-y-2">
+              <div class="w-12 h-12 mx-auto rounded-full bg-red-100 dark:bg-red-950/60 text-red-600 dark:text-red-400 flex items-center justify-center font-bold text-xl">🩺</div>
+              <h4 class="font-bold text-slate-800 dark:text-white text-sm">Modul Visualisasi Tab 5</h4>
+              <p class="text-xs text-slate-500 dark:text-slate-400">Grafik korelasi silang Lag 0–7 hari, perbandingan kerentanan ISPA balita vs lansia, dan indikator proksi kapasitas tempat tidur rumah sakit (*hospital bed strain*).</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===============================================================
+           TAB 6: REKOMENDASI KEBIJAKAN (Prototype Skeleton)
+           =============================================================== -->
+      <section id="tab-6" class="tab-panel hidden space-y-6">
+        <div class="prana-card p-6">
+          <div class="flex items-center justify-between pb-3 mb-4 border-b border-slate-100 dark:border-slate-800">
+            <div>
+              <h2 class="text-base font-bold text-slate-900 dark:text-white">Rekomendasi Kebijakan, Simulator Lonjakan RS & Ekspansi Jaringan AQMS</h2>
+              <p class="text-xs text-slate-500 dark:text-slate-400">Simulasi interaktif kapasitas faskes berbasis koefisien Distributed Lag Model serta prioritas lokasi sensor baru.</p>
+            </div>
+            <span class="text-xs bg-cyan-50 dark:bg-cyan-950/60 text-cyan-700 dark:text-cyan-300 px-2.5 py-1 rounded font-semibold border border-cyan-200 dark:border-cyan-800">Pipeline Tab 6</span>
+          </div>
+
+          <div class="border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-xl p-8 text-center bg-[#F0EDE5]/50 dark:bg-slate-900/30">
+            <div class="max-w-md mx-auto space-y-2">
+              <div class="w-12 h-12 mx-auto rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center font-bold text-xl">💡</div>
+              <h4 class="font-bold text-slate-800 dark:text-white text-sm">Modul Visualisasi Tab 6</h4>
+              <p class="text-xs text-slate-500 dark:text-slate-400">Mencakup: Tangga Peringatan Dini Kesehatan, Simulator Lonjakan Kapasitas Rumah Sakit (Distributed Lag Model), dan Papan Peringkat Prioritas Ekspansi Stasiun (Haversine & Bobot Multi-Faktor).</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- ===================================================================
+       POPUP MODAL: METODOLOGI (Menutupi 80% Halaman)
+       =================================================================== -->
+  <div id="methodology-backdrop" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden z-40 transition-opacity duration-200"></div>
+
+  <div id="methodology-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 md:p-8 hidden">
+    <div class="w-[94vw] md:w-[80vw] h-[80vh] bg-[#F9F6EE] dark:bg-[#0f2430] text-slate-800 dark:text-slate-100 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 flex flex-col overflow-hidden animate-modal-in transition-colors duration-200">
+      
+      <!-- Modal Header -->
+      <div class="px-6 py-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between flex-shrink-0 bg-[#F0EDE5]/50 dark:bg-[#0a1b24]/50">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center font-bold text-lg border border-emerald-200 dark:border-emerald-800">
+            📑
+          </div>
+          <div>
+            <div class="flex items-center gap-2">
+              <h2 class="text-lg font-bold text-slate-900 dark:text-white">Metodologi & Integritas Data</h2>
+              <span class="text-[10px] font-bold text-cyan-700 dark:text-cyan-300 uppercase tracking-wider bg-cyan-50 dark:bg-cyan-950/60 px-2 py-0.5 rounded border border-cyan-200 dark:border-cyan-800">10 Poin Penilaian</span>
+            </div>
+            <p class="text-xs text-slate-500 dark:text-slate-400">Transparansi kontrol kualitas data mentah, protokol agregasi temporal, dan acuan regulasi resmi DA Gelar Rasa 2026.</p>
+          </div>
+        </div>
+        
+        <button class="close-methodology text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 p-2 rounded-xl hover:bg-[#E8E5DD] dark:hover:bg-slate-800 transition">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+
+      <!-- Modal Body (Scrollable Multi-Section Grid) -->
+      <div class="flex-1 overflow-y-auto p-6 md:p-8 space-y-6">
+        
+        <!-- Grid 2 Kolom untuk Analisis Metodologi -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          
+          <!-- Box 1: Audit QC Flag -->
+          <div class="p-5 rounded-xl border border-slate-200 dark:border-slate-800 bg-[#F0EDE5]/60 dark:bg-[#0a1b24] space-y-3">
+            <div class="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-2">
+              <h3 class="font-bold text-sm text-slate-900 dark:text-white flex items-center gap-2">
+                <span>1. Audit Kontrol Kualitas Data (qc_flag)</span>
+              </h3>
+              <span class="text-[10px] bg-slate-200 dark:bg-slate-800 px-2 py-0.5 rounded font-mono text-slate-700 dark:text-slate-300">Total: 660.000 Jam</span>
+            </div>
+
+            <div class="space-y-2 text-xs">
+              <div class="flex justify-between items-center p-2 rounded bg-[#F9F6EE] dark:bg-[#0f2430] border border-slate-200 dark:border-slate-800">
+                <span class="flex items-center gap-2 font-medium"><span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span> VALID (Dipakai Analisis Utama)</span>
+                <span class="font-mono font-bold text-emerald-600 dark:text-emerald-400">88.4% (583.440 baris)</span>
+              </div>
+              <div class="flex justify-between items-center p-2 rounded bg-[#F9F6EE] dark:bg-[#0f2430] border border-slate-200 dark:border-slate-800">
+                <span class="flex items-center gap-2 font-medium"><span class="w-2.5 h-2.5 rounded-full bg-amber-500"></span> SUSPECT (Sedia Toggle Switch)</span>
+                <span class="font-mono font-bold text-amber-600 dark:text-amber-400">5.2% (34.320 baris)</span>
+              </div>
+              <div class="flex justify-between items-center p-2 rounded bg-[#F9F6EE] dark:bg-[#0f2430] border border-slate-200 dark:border-slate-800">
+                <span class="flex items-center gap-2 font-medium"><span class="w-2.5 h-2.5 rounded-full bg-blue-500"></span> CALIBRATING (Dibuang)</span>
+                <span class="font-mono font-bold text-blue-600 dark:text-blue-400">2.1% (13.860 baris)</span>
+              </div>
+              <div class="flex justify-between items-center p-2 rounded bg-[#F9F6EE] dark:bg-[#0f2430] border border-slate-200 dark:border-slate-800">
+                <span class="flex items-center gap-2 font-medium"><span class="w-2.5 h-2.5 rounded-full bg-red-500"></span> MISSING (Dibuang)</span>
+                <span class="font-mono font-bold text-red-600 dark:text-red-400">4.3% (28.380 baris)</span>
+              </div>
+            </div>
+
+            <p class="text-[11px] text-slate-500 dark:text-slate-400 italic leading-relaxed">
+              * Justifikasi Ilmiah: Pembacaan sensor saat kalibrasi tidak merepresentasikan kondisi udara ambien nyata sehingga wajib dibuang agar tidak mendistorsi kalkulasi eksposur.
+            </p>
+          </div>
+
+          <!-- Box 2: Protokol Agregasi 75% Valid & Sinkronisasi WIB -->
+          <div class="p-5 rounded-xl border border-slate-200 dark:border-slate-800 bg-[#F0EDE5]/60 dark:bg-[#0a1b24] space-y-3">
+            <div class="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-2">
+              <h3 class="font-bold text-sm text-slate-900 dark:text-white">2. Protokol Agregasi Temporal 75% Valid</h3>
+              <span class="text-[10px] bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 px-2 py-0.5 rounded font-bold">Standard EPA / WHO</span>
+            </div>
+
+            <div class="space-y-2.5 text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+              <div class="p-3 bg-[#F9F6EE] dark:bg-[#0f2430] rounded border border-slate-200 dark:border-slate-800">
+                <div class="font-bold text-slate-900 dark:text-white mb-1">Ambang Batas Representasi Harian:</div>
+                <p class="text-[11px]">Setiap stasiun wajib memiliki <strong>minimal 75% jam valid per hari (minimal 18 dari 24 jam)</strong>. Hari dengan data valid &lt;18 jam otomatis ditandai sebagai <code>NaN</code> guna mencegah bias pengambilan sampel.</p>
+              </div>
+
+              <div class="p-3 bg-[#F9F6EE] dark:bg-[#0f2430] rounded border border-slate-200 dark:border-slate-800">
+                <div class="font-bold text-slate-900 dark:text-white mb-1">Penyelarasan Multi-Tahun Tanpa Bias Musiman:</div>
+                <p class="text-[11px]">Karena data 2026 hanya tersedia hingga 14 Oktober, evaluasi tren tahunan (2024 vs 2025 vs 2026) dipotong seragam pada jendela <strong>1 Januari s.d. 14 Oktober</strong>.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Box 3: Landasan Hukum Regulasi & Pemodelan -->
+        <div class="p-5 rounded-xl border border-slate-200 dark:border-slate-800 bg-[#F0EDE5]/60 dark:bg-[#0a1b24] space-y-4">
+          <h3 class="font-bold text-sm text-slate-900 dark:text-white border-b border-slate-200 dark:border-slate-800 pb-2">
+            3. Landasan Regulasi Kualitas Udara & Formulasi Statistik
+          </h3>
+
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
+            <div class="p-3.5 bg-[#F9F6EE] dark:bg-[#0f2430] rounded-lg border border-slate-200 dark:border-slate-800">
+              <div class="font-bold text-cyan-700 dark:text-cyan-400 mb-1">PP No. 22 Tahun 2021</div>
+              <div class="font-semibold text-slate-900 dark:text-white mb-1">Baku Mutu Udara Ambien Nasional</div>
+              <ul class="text-[11px] text-slate-500 dark:text-slate-400 space-y-1 list-disc list-inside">
+                <li>PM2.5: 24 Jam = 55 µg/m³</li>
+                <li>PM2.5: Tahunan = 15 µg/m³</li>
+                <li>PM10: 24 Jam = 75 µg/m³</li>
+              </ul>
+            </div>
+
+            <div class="p-3.5 bg-[#F9F6EE] dark:bg-[#0f2430] rounded-lg border border-slate-200 dark:border-slate-800">
+              <div class="font-bold text-cyan-700 dark:text-cyan-400 mb-1">Permen LHK No. 14 Tahun 2020</div>
+              <div class="font-semibold text-slate-900 dark:text-white mb-1">Indeks Standar Pencemar Udara (ISPU)</div>
+              <ul class="text-[11px] text-slate-500 dark:text-slate-400 space-y-1">
+                <li>🟢 Baik: 0 – 50</li>
+                <li>🔵 Sedang: 51 – 100</li>
+                <li>🟡 Tidak Sehat: 101 – 200</li>
+                <li>🔴 Sangat Tdk Sehat: 201 – 300</li>
+                <li>⚫ Berbahaya: &gt; 300</li>
+              </ul>
+            </div>
+
+            <div class="p-3.5 bg-[#F9F6EE] dark:bg-[#0f2430] rounded-lg border border-slate-200 dark:border-slate-800">
+              <div class="font-bold text-cyan-700 dark:text-cyan-400 mb-1">Distributed Lag Poisson</div>
+              <div class="font-semibold text-slate-900 dark:text-white mb-1">Surveilans Epidemiologi Lingkungan</div>
+              <p class="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">
+                Menghitung Relative Risk (RR) admisi rawat inap ISPA balita & lansia per kenaikan PM2.5 pada jeda Lag 0 hingga Lag 7 hari, dikontrol oleh suhu, kelembapan, hari dalam seminggu, dan fixed effect RS.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Box 4: Etika Analisis & Deklarasi Kejujuran Ilmiah -->
+        <div class="p-4 bg-emerald-50 dark:bg-emerald-950/40 rounded-xl border border-emerald-200 dark:border-emerald-800/60 flex items-start gap-3 text-xs text-slate-700 dark:text-slate-300">
+          <span class="text-xl">🛡️</span>
+          <div>
+            <div class="font-bold text-emerald-900 dark:text-emerald-300 mb-0.5">Deklarasi Integritas Data Tertutup:</div>
+            <p class="text-[11px] leading-relaxed">
+              Seluruh analisis, dashboard interaktif, dan pemodelan statistik 100% bersumber eksklusif dari <strong>33 berkas data sintetis resmi kompetisi DA Gelar Rasa 2026</strong> tanpa menyuntikkan dataset eksternal pihak ketiga, menjamin kepatuhan mutlak terhadap buku panduan resmi perlombaan.
+            </p>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Modal Footer -->
+      <div class="px-6 py-3.5 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between flex-shrink-0 bg-[#F0EDE5]/50 dark:bg-[#0a1b24]/50">
+        <div class="text-xs text-slate-500 dark:text-slate-400">
+          DA Gelar Rasa 2026 • <em>"From Roots to Clarity, Revealing Meaningful Insight Through Data"</em>
+        </div>
+        <button class="close-methodology px-4 py-1.5 rounded-lg bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-xs font-semibold text-slate-800 dark:text-slate-100 transition">
+          Tutup
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Custom JavaScript Interaction -->
+  <script src="app.js"></script>
+</body>
+</html>
