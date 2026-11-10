@@ -213,7 +213,6 @@
               <!-- Row 1: Tanggal Manual -->
               <div class="flex items-center gap-1.5 min-w-0">
                 <span class="filter-label text-[10px] text-slate-500 dark:text-slate-400 font-semibold flex items-center gap-1 flex-shrink-0 w-12">
-                  <svg class="w-2.5 h-2.5 text-cyan-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
                   Tanggal
                 </span>
                 <div class="inline-flex items-center gap-1 bg-[#F9F6EE] dark:bg-[#0f2430] px-1.5 py-0.5 rounded border border-slate-300 dark:border-slate-700/80 min-w-0 flex-1 justify-between">
@@ -342,26 +341,227 @@
       </div>
       
       <!-- ===============================================================
-           TAB 1: IKHTISAR NASIONAL (Prototype Skeleton)
+           TAB 1: IKHTISAR NASIONAL (Executive Cockpit • Layout Page 1)
            =============================================================== -->
       <section id="tab-1" class="tab-panel space-y-6">
-        <div class="prana-card p-6">
-          <div class="flex items-center justify-between pb-3 mb-4 border-b border-slate-100 dark:border-slate-800">
-            <div>
-              <h2 class="text-base font-bold text-slate-900 dark:text-white">National Executive Cockpit • Gambaran Komprehensif 27 Stasiun & Faskes</h2>
-              <p class="text-xs text-slate-500 dark:text-slate-400">Potret cepat situasi kualitas udara nasional, kepatuhan baku mutu, dan status surveilans faskes dalam tempo kurang dari 10 detik.</p>
-            </div>
-            <span class="text-xs bg-cyan-50 dark:bg-cyan-950/60 text-cyan-700 dark:text-cyan-300 px-2.5 py-1 rounded font-semibold border border-cyan-200 dark:border-cyan-800">Pipeline Tab 1</span>
-          </div>
 
-          <div class="border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-xl p-8 text-center bg-[#F0EDE5]/50 dark:bg-slate-900/30">
-            <div class="max-w-md mx-auto space-y-2">
-              <div class="w-12 h-12 mx-auto rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center font-bold text-xl">🏛️</div>
-              <h4 class="font-bold text-slate-800 dark:text-white text-sm">Modul Visualisasi Tab 1</h4>
-              <p class="text-xs text-slate-500 dark:text-slate-400">Mencakup: 4 Kartu KPI Utama, Distribusi Kategori ISPU Dominan Stasiun (Donut Chart), Peringkat Top 10 & Bottom 10 Rata-rata PM2.5, serta Peta Interaktif Sebaran 27 Stasiun AQMS & Faskes Rujukan.</p>
+        <!-- ROW 1: EXECUTIVE COCKPIT CARD (Nama Dashboard, Kompetisi, Deskripsi, 4 KPI, & Donut Chart) -->
+        <div class="prana-card p-5 lg:p-6">
+          <div class="grid grid-cols-1 lg:grid-cols-12 gap-5">
+            
+            <!-- LEFT 8 COLS: Dashboard Identity, Description, & 4 KPI Cards -->
+            <div class="lg:col-span-8 flex flex-col justify-between gap-4">
+              
+              <!-- Sub-row 1: Nama Dashboard & Nama Kompetisi -->
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div class="p-3.5 rounded-xl border border-slate-200/90 dark:border-slate-800 bg-[#F0EDE5]/70 dark:bg-[#0a1b24]/60">
+                  <span class="text-[10px] font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400 block mb-0.5">Nama Dashboard</span>
+                  <h3 class="text-base sm:text-lg font-black text-slate-800 dark:text-white font-['Space_Grotesk',sans-serif] tracking-tight">
+                    PRANA • Air & Health Cockpit
+                  </h3>
+                </div>
+                <div class="p-3.5 rounded-xl border border-slate-200/90 dark:border-slate-800 bg-[#F0EDE5]/70 dark:bg-[#0a1b24]/60">
+                  <span class="text-[10px] font-bold uppercase tracking-wider text-cyan-600 dark:text-cyan-400 block mb-0.5">Nama Kompetisi</span>
+                  <h3 class="text-base sm:text-lg font-black text-slate-800 dark:text-white font-['Space_Grotesk',sans-serif] tracking-tight">
+                    DA Gelar Rasa 2026 • Preliminary
+                  </h3>
+                </div>
+              </div>
+
+              <!-- Sub-row 2: Deskripsi Dashboard -->
+              <div class="p-4 rounded-xl border border-slate-200/90 dark:border-slate-800 bg-[#F0EDE5]/50 dark:bg-[#0a1b24]/40 flex items-start gap-3">
+                <div class="w-8 h-8 rounded-lg bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 flex items-center justify-center flex-shrink-0 font-bold text-sm shadow-xs">
+                  🏛️
+                </div>
+                <div class="text-xs text-slate-600 dark:text-slate-300 leading-relaxed space-y-1">
+                  <div class="font-bold text-slate-900 dark:text-white">Deskripsi Dashboard • National Executive Cockpit</div>
+                  <p>
+                    Menyajikan potret komprehensif kualitas udara ambien dari <strong>27 stasiun AQMS telemetri</strong> dan surveilans morbiditas <strong>27 rumah sakit rujukan</strong> di Indonesia sepanjang periode <strong>2024–2026</strong>. Memetakan kepatuhan baku mutu nasional <span class="font-semibold text-emerald-700 dark:text-emerald-300">PP 22/2021 (15 µg/m³ tahunan & 55 µg/m³ 24-jam)</span> serta panduan kesehatan global <span class="font-semibold text-cyan-700 dark:text-cyan-300">WHO 2021 (5 µg/m³)</span>.
+                  </p>
+                </div>
+              </div>
+
+              <!-- Sub-row 3: 4 Kartu KPI Utama -->
+              <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                
+                <!-- KPI 1: Rata-Rata PM2.5 Tahunan Nasional -->
+                <div class="p-3 rounded-xl border border-slate-200/90 dark:border-slate-800 bg-[#F0EDE5]/80 dark:bg-[#0a1b24]/70 flex flex-col justify-between shadow-xs">
+                  <span class="text-[10px] font-semibold text-slate-500 dark:text-slate-400 leading-tight">Rata-Rata PM 2.5 Tahunan Nasional</span>
+                  <div class="my-1.5 flex items-baseline gap-1">
+                    <span id="kpi-avg-pm25" class="text-2xl font-black font-['Space_Grotesk',sans-serif] text-slate-800 dark:text-white">43.25</span>
+                    <span class="text-[10px] font-semibold text-slate-400">µg/m³</span>
+                  </div>
+                  <span class="text-[9px] text-amber-600 dark:text-amber-400 font-medium">⚠️ 2.9× Batas PP 22/2021</span>
+                </div>
+
+                <!-- KPI 2: Persentase Hari Melebihi Batas 24 Jam -->
+                <div class="p-3 rounded-xl border border-slate-200/90 dark:border-slate-800 bg-[#F0EDE5]/80 dark:bg-[#0a1b24]/70 flex flex-col justify-between shadow-xs">
+                  <span class="text-[10px] font-semibold text-slate-500 dark:text-slate-400 leading-tight">Persentase Hari Melebihi Batas 24 Jam</span>
+                  <div class="my-1.5 flex items-baseline gap-1">
+                    <span id="kpi-pct-exceed" class="text-2xl font-black font-['Space_Grotesk',sans-serif] text-amber-600 dark:text-amber-400">17.7</span>
+                    <span class="text-[10px] font-semibold text-slate-400">%</span>
+                  </div>
+                  <span class="text-[9px] text-slate-500 dark:text-slate-400">Hari > 55 µg/m³ PP 22</span>
+                </div>
+
+                <!-- KPI 3: Stasiun Paling Kritis -->
+                <div class="p-3 rounded-xl border border-slate-200/90 dark:border-slate-800 bg-[#F0EDE5]/80 dark:bg-[#0a1b24]/70 flex flex-col justify-between shadow-xs">
+                  <span class="text-[10px] font-semibold text-slate-500 dark:text-slate-400 leading-tight">Stasiun Paling Kritis</span>
+                  <div class="my-1">
+                    <span id="kpi-critical-station" class="text-sm font-black font-['Space_Grotesk',sans-serif] text-rose-600 dark:text-rose-400 truncate block" title="AQMS-BJB-01 • Kota Banjarbaru">
+                      AQMS-BJB-01
+                    </span>
+                    <span id="kpi-critical-val" class="text-xs font-bold text-slate-700 dark:text-slate-200">
+                      102.14 µg/m³
+                    </span>
+                  </div>
+                  <span id="kpi-critical-city" class="text-[9px] text-slate-500 dark:text-slate-400 truncate block">Kota Banjarbaru</span>
+                </div>
+
+                <!-- KPI 4: Indeks Beban Hospital -->
+                <div class="p-3 rounded-xl border border-slate-200/90 dark:border-slate-800 bg-[#F0EDE5]/80 dark:bg-[#0a1b24]/70 flex flex-col justify-between shadow-xs">
+                  <span class="text-[10px] font-semibold text-slate-500 dark:text-slate-400 leading-tight">Indeks Beban Hospital</span>
+                  <div class="my-1.5 flex items-baseline gap-1">
+                    <span id="kpi-hospital-burden" class="text-2xl font-black font-['Space_Grotesk',sans-serif] text-cyan-600 dark:text-cyan-400">6.43</span>
+                    <span class="text-[10px] font-semibold text-slate-400">%</span>
+                  </div>
+                  <span class="text-[9px] text-slate-500 dark:text-slate-400">Resp. / 6.280 Kasur</span>
+                </div>
+
+              </div>
+            </div>
+
+            <!-- RIGHT 4 COLS: Donut Chart (Distribusi ISPU Dominan Stasiun) -->
+            <div class="lg:col-span-4 p-4 rounded-xl border border-slate-200/90 dark:border-slate-800 bg-[#F0EDE5]/60 dark:bg-[#0a1b24]/50 flex flex-col justify-between">
+              <div class="flex items-center justify-between border-b border-slate-200/80 dark:border-slate-800 pb-2 mb-2">
+                <div>
+                  <h4 class="text-xs font-bold text-slate-800 dark:text-white">Kategori ISPU Dominan Stasiun</h4>
+                  <p class="text-[10px] text-slate-500 dark:text-slate-400">Permen LHK 14/2020 (Rata-rata 24 Jam)</p>
+                </div>
+                <span class="text-[10px] px-2 py-0.5 rounded-full font-bold bg-emerald-500/15 text-emerald-700 dark:text-emerald-300">
+                  27 Stasiun
+                </span>
+              </div>
+
+              <!-- Donut Chart Canvas Container -->
+              <div class="relative w-full h-[180px] flex items-center justify-center">
+                <canvas id="ispu-donut-chart"></canvas>
+              </div>
+
+              <!-- Mini stats badge row -->
+              <div class="grid grid-cols-3 gap-1.5 pt-2 border-t border-slate-200/80 dark:border-slate-800 text-center">
+                <div class="p-1.5 rounded-lg bg-[#F9F6EE] dark:bg-[#0f2430] border border-slate-200/60 dark:border-slate-800/80">
+                  <div class="text-[9px] text-emerald-600 dark:text-emerald-400 font-bold">Baik (0–15)</div>
+                  <div class="text-xs font-black text-slate-800 dark:text-white">4 <span class="text-[9px] font-normal text-slate-400">(15%)</span></div>
+                </div>
+                <div class="p-1.5 rounded-lg bg-[#F9F6EE] dark:bg-[#0f2430] border border-slate-200/60 dark:border-slate-800/80">
+                  <div class="text-[9px] text-sky-600 dark:text-sky-400 font-bold">Sedang (16–55)</div>
+                  <div class="text-xs font-black text-slate-800 dark:text-white">21 <span class="text-[9px] font-normal text-slate-400">(78%)</span></div>
+                </div>
+                <div class="p-1.5 rounded-lg bg-[#F9F6EE] dark:bg-[#0f2430] border border-slate-200/60 dark:border-slate-800/80">
+                  <div class="text-[9px] text-amber-600 dark:text-amber-400 font-bold">Tdk Sehat (>55)</div>
+                  <div class="text-xs font-black text-slate-800 dark:text-white">2 <span class="text-[9px] font-normal text-slate-400">(7%)</span></div>
+                </div>
+              </div>
+
             </div>
           </div>
         </div>
+
+        <!-- ROW 2: DUA HORIZONTAL BAR CHARTS (Top 10 Worst & Bottom 10 Cleanest) -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
+          
+          <!-- LEFT: Top 10 Rata-Rata PM per Stasiun -->
+          <div class="prana-card p-5 flex flex-col justify-between">
+            <div class="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800 mb-3">
+              <div>
+                <div class="flex items-center gap-2">
+                  <span class="w-2.5 h-2.5 rounded-full bg-rose-500 shadow-xs"></span>
+                  <h4 class="text-xs sm:text-sm font-bold text-slate-800 dark:text-white">Top 10 Rata-Rata PM per Stasiun</h4>
+                </div>
+                <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">Konsentrasi PM2.5 rata-rata tertinggi (prioritas intervensi reduksi emisi)</p>
+              </div>
+              <span class="text-[10px] font-bold px-2 py-0.5 rounded bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20">
+                Tertinggi
+              </span>
+            </div>
+            
+            <div class="relative w-full h-[320px]">
+              <canvas id="top10-bar-chart"></canvas>
+            </div>
+            
+            <div class="pt-2 text-[10px] text-slate-500 dark:text-slate-400 flex items-center justify-between border-t border-slate-100 dark:border-slate-800 mt-2">
+              <span>Garis batas baku mutu PP 22/2021: <strong>15 µg/m³</strong></span>
+              <span class="text-rose-600 dark:text-rose-400 font-semibold">Semua 10 stasiun melebihi baku mutu</span>
+            </div>
+          </div>
+
+          <!-- RIGHT: Bottom 10 Rata-Rata PM per Stasiun -->
+          <div class="prana-card p-5 flex flex-col justify-between">
+            <div class="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800 mb-3">
+              <div>
+                <div class="flex items-center gap-2">
+                  <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-xs"></span>
+                  <h4 class="text-xs sm:text-sm font-bold text-slate-800 dark:text-white">Bottom 10 Rata-Rata PM per Stasiun</h4>
+                </div>
+                <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">Konsentrasi PM2.5 terendah (wilayah latar belakang bersih & pesisir)</p>
+              </div>
+              <span class="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                Terbersih
+              </span>
+            </div>
+
+            <div class="relative w-full h-[320px]">
+              <canvas id="bottom10-bar-chart"></canvas>
+            </div>
+
+            <div class="pt-2 text-[10px] text-slate-500 dark:text-slate-400 flex items-center justify-between border-t border-slate-100 dark:border-slate-800 mt-2">
+              <span>Wilayah terbaik: <strong>Kab. Aceh Besar & Kab. Poso</strong></span>
+              <span class="text-emerald-600 dark:text-emerald-400 font-semibold">Memenuhi batas tahunan 15 µg/m³</span>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- ROW 3: MAP INTERAKTIF PER STASIUN (Full Width Leaflet Map) -->
+        <div class="prana-card p-5 flex flex-col">
+          <div class="flex flex-wrap items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800 mb-3 gap-2">
+            <div>
+              <div class="flex items-center gap-2">
+                <svg class="w-4 h-4 text-cyan-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
+                </svg>
+                <h4 class="text-xs sm:text-sm font-bold text-slate-800 dark:text-white">Map Interaktif Per Stasiun</h4>
+              </div>
+              <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                Sebaran 27 stasiun pemantau AQMS telemetri di seluruh Indonesia. Klik lingkaran stasiun untuk membuka kartu popup analitik.
+              </p>
+            </div>
+
+            <!-- Legend Status ISPU -->
+            <div class="flex items-center gap-2 text-[10px] font-semibold flex-wrap">
+              <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/25">
+                <span class="w-2 h-2 rounded-full bg-emerald-500"></span> Baik (0–15)
+              </span>
+              <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-sky-500/15 text-sky-700 dark:text-sky-300 border border-sky-500/25">
+                <span class="w-2 h-2 rounded-full bg-sky-500"></span> Sedang (16–55)
+              </span>
+              <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/25">
+                <span class="w-2 h-2 rounded-full bg-amber-500"></span> Tidak Sehat (>55)
+              </span>
+            </div>
+          </div>
+
+          <!-- Leaflet Map Container -->
+          <div id="national-map" class="w-full h-[480px] rounded-xl overflow-hidden border border-slate-200/90 dark:border-slate-800 shadow-inner z-10"></div>
+          
+          <div class="pt-2 text-[10px] text-slate-400 dark:text-slate-500 flex items-center justify-between border-t border-slate-100 dark:border-slate-800 mt-2">
+            <span>Tile Basemap: CARTO Positron (Light) / Dark Matter (Dark)</span>
+            <span>Radius lingkaran merefleksikan frekuensi hari melanggar baku mutu 24 jam</span>
+          </div>
+        </div>
+
       </section>
 
       <!-- ===============================================================
@@ -635,6 +835,8 @@
     </div>
   </div>
 
+  <!-- Processed Dataset Pipeline JSON -->
+  <script src="tab1_data.js"></script>
   <!-- Custom JavaScript Interaction -->
   <script src="app.js"></script>
 </body>

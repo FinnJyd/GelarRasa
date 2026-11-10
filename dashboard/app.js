@@ -301,34 +301,75 @@ function initMethodologyModal() {
   });
 }
 
-// Charts for Tab 1 (Wireframe Implementation)
+// =====================================================================
+// DATA RETRIEVAL & HYDRATION: TAB 1 (IKHTISAR NASIONAL)
+// =====================================================================
+function getTab1Data() {
+  if (typeof window !== 'undefined' && window.TAB1_DATA) {
+    return window.TAB1_DATA;
+  }
+  return null;
+}
+
+// Populate 4 KPI Executive Cockpit Cards
+function populateTab1KPIs(data) {
+  if (!data || !data.kpi) return;
+  const kpi = data.kpi;
+
+  const elAvg = document.getElementById('kpi-avg-pm25');
+  const elExceed = document.getElementById('kpi-pct-exceed');
+  const elCritStation = document.getElementById('kpi-critical-station');
+  const elCritVal = document.getElementById('kpi-critical-val');
+  const elCritCity = document.getElementById('kpi-critical-city');
+  const elHospital = document.getElementById('kpi-hospital-burden');
+
+  if (elAvg && kpi.avg_pm25_national !== undefined) {
+    elAvg.textContent = kpi.avg_pm25_national.toFixed(2);
+  }
+  if (elExceed && kpi.pct_days_exceed_24h !== undefined) {
+    elExceed.textContent = kpi.pct_days_exceed_24h.toFixed(1);
+  }
+  if (kpi.station_most_critical) {
+    if (elCritStation) elCritStation.textContent = kpi.station_most_critical.station_code || 'AQMS-BJB-01';
+    if (elCritVal) elCritVal.textContent = (kpi.station_most_critical.avg_pm25 ? kpi.station_most_critical.avg_pm25.toFixed(2) : '102.14') + ' µg/m³';
+    if (elCritCity) elCritCity.textContent = kpi.station_most_critical.kota || 'Kota Banjarbaru';
+  }
+  if (elHospital && kpi.hospital_burden_index !== undefined) {
+    elHospital.textContent = kpi.hospital_burden_index.toFixed(2);
+  }
+}
+
+// Charts for Tab 1 (Executive Cockpit Charts)
 function initTab1Charts() {
+  const data = getTab1Data();
   const isDark = document.documentElement.classList.contains('dark');
   const textColor = isDark ? '#94a3b8' : '#475569';
   const gridColor = isDark ? 'rgba(255, 255, 255, 0.08)' : '#f1f5f9';
 
-  // 1. Donut Chart
+  // 0. Update KPI Cards in DOM
+  if (data) populateTab1KPIs(data);
+
+  // 1. Donut Chart (Distribusi ISPU Dominan Stasiun)
   const donutCtx = document.getElementById('ispu-donut-chart');
   if (donutCtx) {
-    const ispuCounts = { 'Baik': 0, 'Sedang': 0, 'Tidak Sehat': 0, 'Sangat Tidak Sehat': 0, 'Berbahaya': 0 };
-    STATIONS_DATA.forEach(s => ispuCounts[s.ispu] = (ispuCounts[s.ispu] || 0) + 1);
+    const donutData = (data && data.ispu_donut) ? data.ispu_donut : [
+      { category: 'Baik', count: 4, percentage: 14.8, color: '#10b981' },
+      { category: 'Sedang', count: 21, percentage: 77.8, color: '#0284c7' },
+      { category: 'Tidak Sehat', count: 2, percentage: 7.4, color: '#f59e0b' }
+    ];
+
+    if (donutChartInstance) donutChartInstance.destroy();
 
     donutChartInstance = new Chart(donutCtx, {
       type: 'doughnut',
       data: {
-        labels: ['Baik (0-50)', 'Sedang (51-100)', 'Tidak Sehat (101-200)', 'Sangat Tdk Sehat (201-300)', 'Berbahaya (>300)'],
+        labels: donutData.map(d => `${d.category} (${d.count})`),
         datasets: [{
-          data: [ispuCounts['Baik'], ispuCounts['Sedang'], ispuCounts['Tidak Sehat'], ispuCounts['Sangat Tidak Sehat'], ispuCounts['Berbahaya']],
-          backgroundColor: [
-            ISPU_COLORS['Baik'],
-            ISPU_COLORS['Sedang'],
-            ISPU_COLORS['Tidak Sehat'],
-            ISPU_COLORS['Sangat Tidak Sehat'],
-            ISPU_COLORS['Berbahaya']
-          ],
+          data: donutData.map(d => d.count),
+          backgroundColor: donutData.map(d => d.color),
           borderWidth: 2,
           borderColor: isDark ? '#0f2430' : '#ffffff',
-          hoverOffset: 4
+          hoverOffset: 6
         }]
       },
       options: {
@@ -339,17 +380,16 @@ function initTab1Charts() {
             position: 'right',
             labels: {
               boxWidth: 12,
-              font: { size: 11, family: 'Inter' },
-              color: textColor
+              font: { size: 11, family: 'Inter', weight: '600' },
+              color: textColor,
+              padding: 12
             }
           },
           tooltip: {
             callbacks: {
               label: function(ctx) {
-                const total = 27;
-                const val = ctx.raw;
-                const pct = ((val / total) * 100).toFixed(1);
-                return ` ${ctx.label}: ${val} Stasiun (${pct}%)`;
+                const item = donutData[ctx.dataIndex];
+                return ` ${item.category}: ${item.count} Stasiun (${item.percentage}%)`;
               }
             }
           }
@@ -359,21 +399,24 @@ function initTab1Charts() {
     });
   }
 
-  // 2. Horizontal Bar Chart: Top 10
+  // 2. Horizontal Bar Chart: Top 10 Rata-Rata PM per Stasiun (Tertinggi)
   const top10Ctx = document.getElementById('top10-bar-chart');
   if (top10Ctx) {
-    const sorted = [...STATIONS_DATA].sort((a, b) => b.baseline - a.baseline);
-    const top10 = sorted.slice(0, 10);
+    const ranking = (data && data.pm25_ranking) ? data.pm25_ranking : [];
+    const top10 = ranking.slice(0, 10);
+
+    if (top10ChartInstance) top10ChartInstance.destroy();
 
     top10ChartInstance = new Chart(top10Ctx, {
       type: 'bar',
       data: {
-        labels: top10.map(s => `${s.code} (${s.city.replace('Kota Administrasi ', '').replace('Kabupaten ', '').replace('Kota ', '')})`),
+        labels: top10.map(s => `${s.station_code} (${s.kota.replace('Kota Administrasi ', '').replace('Kabupaten ', '').replace('Kota ', '')})`),
         datasets: [{
-          label: 'Baseline PM2.5 (µg/m³)',
-          data: top10.map(s => s.baseline),
-          backgroundColor: top10.map(s => s.baseline > 55 ? '#ef4444' : (s.baseline > 35 ? '#f59e0b' : '#0284c7')),
-          borderRadius: 6
+          label: 'Rata-Rata PM2.5 (µg/m³)',
+          data: top10.map(s => s.avg_pm25),
+          backgroundColor: top10.map(s => s.avg_pm25 > 55 ? '#ef4444' : (s.avg_pm25 > 35 ? '#f59e0b' : '#0284c7')),
+          borderRadius: 6,
+          borderSkipped: false
         }]
       },
       options: {
@@ -385,8 +428,8 @@ function initTab1Charts() {
           tooltip: {
             callbacks: {
               afterLabel: function(ctx) {
-                const item = top10[ctx.dataIndex];
-                return `ISPU: ${item.ispu} | ${item.type}`;
+                const s = top10[ctx.dataIndex];
+                return `ISPU Dominan: ${s.dominant_ispu_cat} | Hari > 55 µg/m³: ${s.pct_exceed_24h}%`;
               }
             }
           }
@@ -395,32 +438,35 @@ function initTab1Charts() {
           x: {
             grid: { color: gridColor },
             ticks: { color: textColor, font: { size: 10, family: 'Inter' } },
-            title: { display: true, text: 'Konsentrasi PM2.5 (µg/m³)', color: textColor, font: { size: 10 } }
+            title: { display: true, text: 'Konsentrasi PM2.5 Rata-Rata (µg/m³)', color: textColor, font: { size: 10, weight: '600' } }
           },
           y: {
             grid: { display: false },
-            ticks: { color: textColor, font: { size: 10, family: 'Inter' } }
+            ticks: { color: textColor, font: { size: 10, family: 'Inter', weight: '600' } }
           }
         }
       }
     });
   }
 
-  // 3. Horizontal Bar Chart: Bottom 10
+  // 3. Horizontal Bar Chart: Bottom 10 Rata-Rata PM per Stasiun (Terendah)
   const bottom10Ctx = document.getElementById('bottom10-bar-chart');
   if (bottom10Ctx) {
-    const sorted = [...STATIONS_DATA].sort((a, b) => b.baseline - a.baseline);
-    const bottom10 = sorted.slice(-10).reverse();
+    const ranking = (data && data.pm25_ranking) ? data.pm25_ranking : [];
+    const bottom10 = ranking.slice(-10).reverse();
+
+    if (bottom10ChartInstance) bottom10ChartInstance.destroy();
 
     bottom10ChartInstance = new Chart(bottom10Ctx, {
       type: 'bar',
       data: {
-        labels: bottom10.map(s => `${s.code} (${s.city.replace('Kabupaten ', '').replace('Kota ', '')})`),
+        labels: bottom10.map(s => `${s.station_code} (${s.kota.replace('Kabupaten ', '').replace('Kota ', '')})`),
         datasets: [{
-          label: 'Baseline PM2.5 (µg/m³)',
-          data: bottom10.map(s => s.baseline),
+          label: 'Rata-Rata PM2.5 (µg/m³)',
+          data: bottom10.map(s => s.avg_pm25),
           backgroundColor: '#10b981',
-          borderRadius: 6
+          borderRadius: 6,
+          borderSkipped: false
         }]
       },
       options: {
@@ -432,8 +478,8 @@ function initTab1Charts() {
           tooltip: {
             callbacks: {
               afterLabel: function(ctx) {
-                const item = bottom10[ctx.dataIndex];
-                return `Kategori: ${item.ispu} | Baku Mutu 15 µg/m³: ${item.baseline <= 15 ? 'MEMENUHI' : 'MELEBIHI'}`;
+                const s = bottom10[ctx.dataIndex];
+                return `Kategori: ${s.dominant_ispu_cat} | PP 22/2021 (15 µg/m³): ${s.avg_pm25 <= 15 ? 'MEMENUHI' : 'MELEBIHI'}`;
               }
             }
           }
@@ -442,11 +488,11 @@ function initTab1Charts() {
           x: {
             grid: { color: gridColor },
             ticks: { color: textColor, font: { size: 10, family: 'Inter' } },
-            title: { display: true, text: 'Konsentrasi PM2.5 (µg/m³)', color: textColor, font: { size: 10 } }
+            title: { display: true, text: 'Konsentrasi PM2.5 Rata-Rata (µg/m³)', color: textColor, font: { size: 10, weight: '600' } }
           },
           y: {
             grid: { display: false },
-            ticks: { color: textColor, font: { size: 10, family: 'Inter' } }
+            ticks: { color: textColor, font: { size: 10, family: 'Inter', weight: '600' } }
           }
         }
       }
@@ -464,20 +510,24 @@ function initNationalMap() {
     ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png' 
     : 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png';
 
-  mapInstance = L.map('national-map', {
-    center: [-2.5, 118.0],
-    zoom: 5,
-    minZoom: 4,
-    maxZoom: 12
-  });
+  if (!mapInstance) {
+    mapInstance = L.map('national-map', {
+      center: [-1.8, 117.8],
+      zoom: 5,
+      minZoom: 4,
+      maxZoom: 12
+    });
 
-  tileLayerInstance = L.tileLayer(targetUrl, {
-    attribution: '&copy; OpenStreetMap contributors &copy; CARTO | DA Gelar Rasa 2026',
-    subdomains: 'abcd',
-    maxZoom: 19
-  }).addTo(mapInstance);
+    tileLayerInstance = L.tileLayer(targetUrl, {
+      attribution: '&copy; OpenStreetMap contributors &copy; CARTO | DA Gelar Rasa 2026',
+      subdomains: 'abcd',
+      maxZoom: 19
+    }).addTo(mapInstance);
+  }
 
-  renderMapMarkers(STATIONS_DATA);
+  const data = getTab1Data();
+  const stations = (data && data.map_stations) ? data.map_stations : STATIONS_DATA;
+  renderMapMarkers(stations);
 }
 
 function renderMapMarkers(stations) {
@@ -486,10 +536,21 @@ function renderMapMarkers(stations) {
   mapMarkers = [];
 
   stations.forEach(s => {
-    const color = ISPU_COLORS[s.ispu] || '#0284c7';
+    const ispuCat = s.dominant_ispu_cat || s.ispu || 'Sedang';
+    const color = s.ispu_color || ISPU_COLORS[ispuCat] || '#0284c7';
+    const avgVal = s.avg_pm25 !== undefined ? s.avg_pm25 : s.baseline;
+    const exceedPct = s.pct_exceed_24h !== undefined ? `${s.pct_exceed_24h}%` : `${s.violations || 0} hari`;
+    const stationCode = s.station_code || s.code;
+    const stationCity = s.kota || s.city;
+    const stationProv = s.provinsi || s.province || '';
+    const stationKarakteristik = s.karakteristik || s.type || 'Urban Ambient';
+    const rankBadge = s.rank ? `#${s.rank}` : '';
+
+    // Circle marker with scaled radius based on concentration
+    const radius = Math.max(7, Math.min(18, (avgVal || 30) / 6));
 
     const marker = L.circleMarker([s.lat, s.lon], {
-      radius: Math.max(6, Math.min(18, s.violations / 8)),
+      radius: radius,
       fillColor: color,
       color: '#ffffff',
       weight: 2,
@@ -498,19 +559,23 @@ function renderMapMarkers(stations) {
     });
 
     const popupContent = `
-      <div class="p-1 font-sans text-slate-800 dark:text-slate-100" style="min-width: 220px;">
-        <div class="flex items-center justify-between pb-1 mb-2 border-b border-slate-200 dark:border-slate-700">
-          <span class="font-bold text-sm text-slate-900 dark:text-white">${s.code}</span>
-          <span class="text-xs px-2 py-0.5 rounded font-semibold text-white" style="background-color: ${color};">
-            ${s.ispu}
+      <div class="p-1 font-sans text-slate-800 dark:text-slate-100" style="min-width: 230px;">
+        <div class="flex items-center justify-between pb-1.5 mb-2 border-b border-slate-200 dark:border-slate-700">
+          <div class="flex items-center gap-1.5">
+            <span class="font-black text-sm text-slate-900 dark:text-white">${stationCode}</span>
+            ${rankBadge ? `<span class="text-[10px] px-1.5 py-0.2 rounded font-bold bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200">Rank ${rankBadge}</span>` : ''}
+          </div>
+          <span class="text-[10px] px-2 py-0.5 rounded-full font-bold text-white shadow-xs" style="background-color: ${color};">
+            ${ispuCat}
           </span>
         </div>
-        <p class="text-xs text-slate-600 dark:text-slate-300 mb-1"><strong>Lokasi:</strong> ${s.city}, ${s.province}</p>
-        <p class="text-xs text-slate-600 dark:text-slate-300 mb-1"><strong>Tipe:</strong> ${s.type}</p>
-        <p class="text-xs text-slate-600 dark:text-slate-300 mb-1"><strong>Baseline PM2.5:</strong> <span class="font-semibold text-slate-900 dark:text-white">${s.baseline} µg/m³</span></p>
-        <p class="text-xs text-slate-600 dark:text-slate-300 mb-1"><strong>Hari Pelanggaran:</strong> <span class="text-red-500 font-semibold">${s.violations} hari</span></p>
-        <div class="mt-2 pt-2 border-t border-slate-200 dark:border-slate-700 text-xs text-sky-600 dark:text-cyan-400 font-medium">
-          🏥 Rujukan: ${s.hospital}
+        <p class="text-xs text-slate-600 dark:text-slate-300 mb-1"><strong>Lokasi:</strong> ${stationCity}, ${stationProv}</p>
+        <p class="text-xs text-slate-600 dark:text-slate-300 mb-1"><strong>Karakteristik:</strong> ${stationKarakteristik}</p>
+        <p class="text-xs text-slate-600 dark:text-slate-300 mb-1"><strong>Rata-Rata PM2.5:</strong> <span class="font-extrabold text-slate-900 dark:text-white">${avgVal} µg/m³</span></p>
+        <p class="text-xs text-slate-600 dark:text-slate-300 mb-1"><strong>Hari Melanggar 24-Jam:</strong> <span class="text-rose-600 font-bold">${exceedPct}</span></p>
+        <div class="mt-2 pt-2 border-t border-slate-200 dark:border-slate-700 text-[11px] text-cyan-600 dark:text-cyan-400 font-medium flex items-center justify-between">
+          <span>PP 22/2021 (15 µg/m³):</span>
+          <span class="font-bold ${avgVal <= 15 ? 'text-emerald-600' : 'text-amber-600'}">${avgVal <= 15 ? 'MEMENUHI' : 'MELEBIHI'}</span>
         </div>
       </div>
     `;
@@ -563,10 +628,19 @@ function initFilters() {
     const selectedStation = stationSelect ? stationSelect.value : 'all';
     const selectedType = typeSelect ? typeSelect.value : 'all';
 
-    let filtered = STATIONS_DATA.filter(s => {
-      const matchRegion = selectedRegion === 'all' || s.region === selectedRegion || s.province.includes(selectedRegion);
-      const matchStation = selectedStation === 'all' || s.code === selectedStation;
-      const matchType = selectedType === 'all' || s.type.toLowerCase().includes(selectedType.toLowerCase());
+    const data = getTab1Data();
+    const sourceStations = (data && data.map_stations) ? data.map_stations : STATIONS_DATA;
+
+    let filtered = sourceStations.filter(s => {
+      const region = s.region_group || s.region || '';
+      const province = s.provinsi || s.province || '';
+      const code = s.station_code || s.code || '';
+      const type = (s.site_type || s.type || '').toLowerCase();
+
+      const matchRegion = selectedRegion === 'all' || region.toLowerCase().includes(selectedRegion.toLowerCase()) || province.toLowerCase().includes(selectedRegion.toLowerCase());
+      const matchStation = selectedStation === 'all' || code === selectedStation;
+      const matchType = selectedType === 'all' || type.includes(selectedType.toLowerCase());
+
       return matchRegion && matchStation && matchType;
     });
 
@@ -587,7 +661,9 @@ function initFilters() {
       if (stationSelect) stationSelect.value = 'all';
       if (typeSelect) typeSelect.value = 'all';
       if (suspectToggle) suspectToggle.checked = false;
-      renderMapMarkers(STATIONS_DATA);
+      const data = getTab1Data();
+      const sourceStations = (data && data.map_stations) ? data.map_stations : STATIONS_DATA;
+      renderMapMarkers(sourceStations);
     });
   }
 }
