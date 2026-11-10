@@ -56,6 +56,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initThemeEngine();
   initSidebarToggle();
   initNavigation();
+  initFilterPanel();
   initMethodologyModal();
   initFunFactTicker();
   initTab1Charts();
@@ -666,4 +667,58 @@ function initFilters() {
       renderMapMarkers(sourceStations);
     });
   }
+}
+
+
+// Keep the selection summary available while the filter controls are collapsed.
+function initFilterPanel() {
+  const panel = document.getElementById('dashboard-filters');
+  const summary = document.getElementById('filter-summary');
+  if (!panel || !summary) return;
+
+  panel.open = false;
+  const dateFormatter = new Intl.DateTimeFormat('id-ID', {
+    day: 'numeric', month: 'short', year: 'numeric'
+  });
+  const selectedText = (id, fallback) => {
+    const select = document.getElementById(id);
+    return select.value === 'all' ? fallback : select.selectedOptions[0].textContent;
+  };
+  const formatDate = (id) => {
+    const value = document.getElementById(id).value;
+    return value ? dateFormatter.format(new Date(value + 'T00:00:00')) : 'Pilih tanggal';
+  };
+  const updateSummary = () => {
+    const selections = [
+      `${formatDate('filter-date-start')} – ${formatDate('filter-date-end')}`,
+      selectedText('filter-region', 'Semua wilayah'),
+      selectedText('filter-station', 'Semua stasiun')
+    ];
+    const type = document.getElementById('filter-type');
+    if (type.value !== 'all') selections.push(type.selectedOptions[0].textContent);
+    selections.push(panel.querySelector('.pollutant-btn.active').dataset.pollutant);
+    if (document.getElementById('filter-suspect').checked) selections.push('Termasuk SUSPECT');
+    summary.textContent = selections.join(' · ');
+  };
+  const selectPollutant = (selected) => {
+    panel.querySelectorAll('.pollutant-btn').forEach(button => {
+      const active = button === selected;
+      button.classList.toggle('active', active);
+      button.setAttribute('aria-pressed', String(active));
+    });
+  };
+
+  panel.addEventListener('change', updateSummary);
+  panel.addEventListener('click', event => {
+    const pollutant = event.target.closest('.pollutant-btn');
+    if (pollutant) {
+      selectPollutant(pollutant);
+      updateSummary();
+    }
+    if (event.target.closest('#filter-reset')) {
+      selectPollutant(panel.querySelector('[data-pollutant="PM2.5"]'));
+      updateSummary();
+    }
+  });
+  updateSummary();
 }

@@ -399,55 +399,65 @@ html.dark .sidebar-nav-item.active {
   transform: scale(0.92);
 }
 
-/* =====================================================================
-   FILTER BAR — 4 Filter Boxes (Compact 60% Scale & Proportional)
-   ===================================================================== */
-.filter-bar {
-  border-top: 1px solid var(--prana-border-sub);
+/* Readable filter controls with an always-visible selection summary. */
+.dashboard-intro { padding: 4px 2px 12px; }
+.research-question { display: flex; align-items: flex-start; gap: 10px; margin-top: 12px; }
+.dashboard-filters { border: 1px solid var(--prana-border-sub); border-radius: 12px; background: var(--prana-surface); }
+.filter-heading { display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 16px 18px; cursor: pointer; list-style: none; }
+.filter-heading::-webkit-details-marker { display: none; }
+.filter-heading-copy { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
+.filter-heading-title { font-size: 14px; font-weight: 700; color: var(--prana-text-main); }
+.filter-summary { font-size: 12px; line-height: 1.6; color: var(--prana-text-sub); }
+.filter-disclosure { display: flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 600; color: var(--prana-text-main); flex-shrink: 0; }
+.filter-closed-label { display: none; }
+.dashboard-filters:not([open]) .filter-open-label { display: none; }
+.dashboard-filters:not([open]) .filter-closed-label { display: inline; }
+.dashboard-filters[open] .filter-disclosure svg { transform: rotate(180deg); }
+.filter-body { padding: 0 18px 16px; }
+.filter-grid { display: grid; grid-template-columns: minmax(290px, 1.15fr) repeat(2, minmax(0, 1fr)); gap: 16px 20px; padding-top: 16px; border-top: 1px solid var(--prana-border-sub); }
+.filter-field { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.filter-field > label, .filter-field > span { font-size: 12px; font-weight: 600; color: var(--prana-text-sub); }
+.filter-select, .filter-date-range, .pollutant-options { min-height: 42px; width: 100%; background: var(--prana-body-bg); color: var(--prana-text-main); border: 1px solid var(--prana-border-sub); border-radius: 7px; }
+.filter-select { padding: 8px 12px; font-size: 13px; cursor: pointer; }
+.filter-date-range { display: flex; align-items: center; gap: 8px; padding: 0 10px; }
+.filter-date-range input { width: 0; flex: 1; min-width: 0; background: transparent; color: var(--prana-text-main); font: inherit; font-size: 13px; padding: 9px 0; }
+html.dark .filter-date-range input { color-scheme: dark; }
+.pollutant-options { display: flex; gap: 3px; padding: 3px; }
+.pollutant-btn { flex: 1; min-width: 0; border-radius: 5px; font-size: 12px; font-weight: 600; color: var(--prana-text-sub); padding: 6px 2px; }
+.pollutant-btn:hover { background: var(--prana-border-sub); }
+.pollutant-btn.active { background: #0891b2; color: white; }
+.filter-footer { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--prana-border-sub); }
+.suspect-option { display: flex; align-items: center; gap: 9px; min-height: 36px; font-size: 12px; color: var(--prana-text-sub); cursor: pointer; }
+.suspect-option input { width: 16px; height: 16px; accent-color: #0891b2; }
+.suspect-option code { color: var(--prana-text-main); font-size: 11px; }
+#filter-reset { min-height: 38px; border: 1px solid var(--prana-border-sub); border-radius: 7px; padding: 7px 14px; font-size: 12px; color: var(--prana-text-sub); }
+#filter-reset:hover { border-color: #0891b2; color: var(--prana-text-main); }
+.filter-heading:focus-visible, .filter-select:focus-visible, .filter-date-range input:focus-visible, .pollutant-btn:focus-visible, #filter-reset:focus-visible, .suspect-option input:focus-visible { outline: 2px solid #06b6d4; outline-offset: 3px; }
+.project-context { margin-top: auto; border-top: 1px solid var(--prana-border-sub); }
+.project-context > summary { display: flex; justify-content: space-between; gap: 12px; padding: 14px 0; cursor: pointer; font-size: 12px; font-weight: 600; color: var(--prana-text-sub); list-style: none; }
+.project-context > summary::-webkit-details-marker { display: none; }
+.project-context[open] > summary span { transform: rotate(45deg); }
+.project-context-body { display: grid; gap: 12px; }
+@media (max-width: 1200px) {
+  .filter-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .team-highlight-title { font-size: 1.2rem; }
 }
-
-.filter-card {
-  transition: all 0.2s ease-in-out;
-}
-
-.filter-card:hover {
-  border-color: var(--prana-border-hover);
-}
-
-.filter-cell {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
-
-.filter-label {
-  display: inline-flex;
-  align-items: center;
-  gap: 3px;
-  font-size: 10px;
-  font-weight: 600;
-  color: var(--prana-text-muted);
-  white-space: nowrap;
-  flex-shrink: 0;
-}
-
-.filter-select {
-  background-color: var(--prana-surface);
-  border: 1px solid var(--prana-border-sub);
-  border-radius: 4px;
-  padding: 2px 4px;
-  font-size: 10px;
-  font-weight: 500;
-  color: var(--prana-text-main);
-  outline: none;
-  cursor: pointer;
-  min-width: 0;
-  height: 22px;
-}
-
-.filter-select:focus {
-  border-color: var(--prana-cyan);
-  box-shadow: 0 0 0 1px var(--prana-cyan);
+@media (max-width: 767px) {
+  .filter-grid { grid-template-columns: minmax(0, 1fr); }
+  .filter-heading { gap: 12px; padding: 14px; }
+  .filter-body { padding: 0 14px 14px; }
+  .filter-disclosure { font-size: 11px; }
+  .research-question { flex-direction: column; }
+  .team-highlight-title { font-size: 1rem; }
+  #app-sidebar:not(.sidebar-collapsed) { width: 64px; }
+  #app-sidebar:not(.sidebar-collapsed) .sidebar-text-element,
+  #app-sidebar:not(.sidebar-collapsed) .sidebar-brand-text,
+  #app-sidebar:not(.sidebar-collapsed) .sidebar-glrs-open { display: none; }
+  #app-sidebar:not(.sidebar-collapsed) .sidebar-header-box { padding: 8px; }
+  #app-sidebar:not(.sidebar-collapsed) .sidebar-brand-emblem { width: 42px; height: 42px; }
+  #app-sidebar:not(.sidebar-collapsed) .sidebar-nav-item { justify-content: center; padding-left: 0; padding-right: 0; }
+  main { padding: 16px !important; }
+  .filter-footer { flex-wrap: wrap; }
 }
 
 /* =====================================================================
