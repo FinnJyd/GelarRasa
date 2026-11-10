@@ -47,6 +47,7 @@ const ISPU_COLORS = {
 let mapInstance = null;
 let tileLayerInstance = null;
 let mapMarkers = [];
+let currentMapMode = 'daily'; // 'daily' (ISPU 24-Jam) | 'annual' (PP 22/2021 15 µg/m³)
 let donutChartInstance = null;
 let top10ChartInstance = null;
 let bottom10ChartInstance = null;
@@ -172,8 +173,9 @@ function initThemeEngine() {
 function updateMapTheme(theme) {
   if (!mapInstance) return;
 
-  const lightTiles = 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png';
-  const darkTiles = 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png';
+  // Esri World Gray Canvas (100% Free, No Watermark, No API Key Required)
+  const lightTiles = 'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}';
+  const darkTiles = 'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}';
   const targetUrl = theme === 'dark' ? darkTiles : lightTiles;
 
   if (tileLayerInstance) {
@@ -181,9 +183,8 @@ function updateMapTheme(theme) {
   }
 
   tileLayerInstance = L.tileLayer(targetUrl, {
-    attribution: '&copy; OpenStreetMap contributors &copy; CARTO | DA Gelar Rasa 2026',
-    subdomains: 'abcd',
-    maxZoom: 19
+    attribution: '&copy; Esri &mdash; Esri, DeLorme, NAVTEQ | DA Gelar Rasa 2026',
+    maxZoom: 16
   }).addTo(mapInstance);
 }
 
@@ -507,9 +508,9 @@ function initNationalMap() {
   if (!mapContainer) return;
 
   const isDark = document.documentElement.classList.contains('dark');
-  const targetUrl = isDark 
-    ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png' 
-    : 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png';
+  const lightTiles = 'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}';
+  const darkTiles = 'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}';
+  const targetUrl = isDark ? darkTiles : lightTiles;
 
   if (!mapInstance) {
     mapInstance = L.map('national-map', {
@@ -520,15 +521,151 @@ function initNationalMap() {
     });
 
     tileLayerInstance = L.tileLayer(targetUrl, {
-      attribution: '&copy; OpenStreetMap contributors &copy; CARTO | DA Gelar Rasa 2026',
-      subdomains: 'abcd',
-      maxZoom: 19
+      attribution: '&copy; Esri &mdash; Esri, DeLorme, NAVTEQ | DA Gelar Rasa 2026',
+      maxZoom: 16
     }).addTo(mapInstance);
   }
+
+  initMapModeSwitcher();
+  updateMapLegendStrip();
 
   const data = getTab1Data();
   const stations = (data && data.map_stations) ? data.map_stations : STATIONS_DATA;
   renderMapMarkers(stations);
+}
+
+// Map Mode Switcher: Acuan Harian (ISPU 24 Jam) vs Acuan Tahunan (PP 22/2021)
+function initMapModeSwitcher() {
+  const btnDaily = document.getElementById('btn-mode-daily');
+  const btnAnnual = document.getElementById('btn-mode-annual');
+  if (!btnDaily || !btnAnnual) return;
+
+  btnDaily.addEventListener('click', () => {
+    if (currentMapMode === 'daily') return;
+    setMapMode('daily');
+  });
+
+  btnAnnual.addEventListener('click', () => {
+    if (currentMapMode === 'annual') return;
+    setMapMode('annual');
+  });
+}
+
+function setMapMode(mode) {
+  currentMapMode = mode;
+  const btnDaily = document.getElementById('btn-mode-daily');
+  const btnAnnual = document.getElementById('btn-mode-annual');
+
+  if (mode === 'daily') {
+    if (btnDaily) {
+      btnDaily.className = 'px-2.5 py-1 rounded-md text-[11px] font-bold transition-all flex items-center gap-1.5 bg-white dark:bg-[#0f2430] text-sky-600 dark:text-sky-400 shadow-xs border border-slate-200/80 dark:border-slate-700';
+      const dot = btnDaily.querySelector('span');
+      if (dot) dot.className = 'w-1.5 h-1.5 rounded-full bg-sky-500';
+    }
+    if (btnAnnual) {
+      btnAnnual.className = 'px-2.5 py-1 rounded-md text-[11px] font-medium transition-all flex items-center gap-1.5 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white';
+      const dot = btnAnnual.querySelector('span');
+      if (dot) dot.className = 'w-1.5 h-1.5 rounded-full bg-slate-400';
+    }
+  } else {
+    if (btnDaily) {
+      btnDaily.className = 'px-2.5 py-1 rounded-md text-[11px] font-medium transition-all flex items-center gap-1.5 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white';
+      const dot = btnDaily.querySelector('span');
+      if (dot) dot.className = 'w-1.5 h-1.5 rounded-full bg-slate-400';
+    }
+    if (btnAnnual) {
+      btnAnnual.className = 'px-2.5 py-1 rounded-md text-[11px] font-bold transition-all flex items-center gap-1.5 bg-white dark:bg-[#0f2430] text-emerald-600 dark:text-emerald-400 shadow-xs border border-slate-200/80 dark:border-slate-700';
+      const dot = btnAnnual.querySelector('span');
+      if (dot) dot.className = 'w-1.5 h-1.5 rounded-full bg-emerald-500';
+    }
+  }
+
+  updateMapLegendStrip();
+  const data = getTab1Data();
+  const stations = (data && data.map_stations) ? data.map_stations : STATIONS_DATA;
+  renderMapMarkers(stations);
+}
+
+function updateMapLegendStrip() {
+  const strip = document.getElementById('map-legend-strip');
+  if (!strip) return;
+
+  if (currentMapMode === 'daily') {
+    strip.innerHTML = `
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-3 lg:gap-6 items-center">
+        <!-- Kolom 1: Kategori ISPU Dominan (Permen LHK 14/2020) -->
+        <div class="flex flex-col justify-center gap-1">
+          <div class="font-bold text-slate-700 dark:text-slate-200 flex items-center gap-1.5 text-[10.5px]">
+            <span class="w-2 h-2 rounded-full bg-sky-500"></span>
+            Kategori ISPU Dominan 24 Jam (Permen LHK 14/2020)
+          </div>
+          <div class="flex items-center gap-1.5 flex-wrap">
+            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-[#F9F6EE] dark:bg-[#0f2430] border border-slate-200/60 dark:border-slate-800 text-[10px]">
+              <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+              <strong class="text-emerald-600 dark:text-emerald-400">Baik (0–15)</strong>
+              <span class="text-slate-400 dark:text-slate-500">4 stn</span>
+            </span>
+            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-[#F9F6EE] dark:bg-[#0f2430] border border-slate-200/60 dark:border-slate-800 text-[10px]">
+              <span class="w-1.5 h-1.5 rounded-full bg-sky-500"></span>
+              <strong class="text-sky-600 dark:text-sky-400">Sedang (16–55)</strong>
+              <span class="text-slate-400 dark:text-slate-500">21 stn</span>
+            </span>
+            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-[#F9F6EE] dark:bg-[#0f2430] border border-slate-200/60 dark:border-slate-800 text-[10px]">
+              <span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+              <strong class="text-amber-600 dark:text-amber-400">Tdk Sehat (>55)</strong>
+              <span class="text-slate-400 dark:text-slate-500">2 stn</span>
+            </span>
+          </div>
+        </div>
+
+        <!-- Kolom 2: Skala Radius Lingkaran -->
+        <div class="flex flex-col justify-center gap-1 min-w-0">
+          <div class="font-bold text-slate-700 dark:text-slate-200 flex items-center gap-1.5 text-[10.5px]">
+            <span class="w-2 h-2 rounded-full bg-rose-500"></span>
+            Skala Radius Lingkaran (Frekuensi Pelanggaran 24 Jam)
+          </div>
+          <p class="text-[10px] text-slate-500 dark:text-slate-400 truncate">
+            <span class="font-semibold text-slate-700 dark:text-slate-300">Makin besar:</span> makin sering stasiun melanggar baku mutu 24 jam PP 22/2021 (>55 µg/m³).
+          </p>
+        </div>
+      </div>
+    `;
+  } else {
+    strip.innerHTML = `
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-3 lg:gap-6 items-center">
+        <!-- Kolom 1: Kepatuhan Baku Mutu Tahunan PP 22/2021 -->
+        <div class="flex flex-col justify-center gap-1">
+          <div class="font-bold text-slate-700 dark:text-slate-200 flex items-center gap-1.5 text-[10.5px]">
+            <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+            Kepatuhan Baku Mutu Tahunan PP 22/2021 (Batas: 15 µg/m³)
+          </div>
+          <div class="flex items-center gap-1.5 flex-wrap">
+            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-[#F9F6EE] dark:bg-[#0f2430] border border-slate-200/60 dark:border-slate-800 text-[10px]">
+              <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+              <strong class="text-emerald-600 dark:text-emerald-400">Memenuhi (≤15 µg/m³)</strong>
+              <span class="text-slate-400 dark:text-slate-500">2 stn (7%)</span>
+            </span>
+            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-[#F9F6EE] dark:bg-[#0f2430] border border-slate-200/60 dark:border-slate-800 text-[10px]">
+              <span class="w-1.5 h-1.5 rounded-full bg-rose-500"></span>
+              <strong class="text-rose-600 dark:text-rose-400">Melebihi (>15 µg/m³)</strong>
+              <span class="text-slate-400 dark:text-slate-500">25 stn (93%)</span>
+            </span>
+          </div>
+        </div>
+
+        <!-- Kolom 2: Skala Radius Lingkaran -->
+        <div class="flex flex-col justify-center gap-1 min-w-0">
+          <div class="font-bold text-slate-700 dark:text-slate-200 flex items-center gap-1.5 text-[10.5px]">
+            <span class="w-2 h-2 rounded-full bg-rose-500"></span>
+            Skala Radius Lingkaran (Konsentrasi PM2.5 Aktual)
+          </div>
+          <p class="text-[10px] text-slate-500 dark:text-slate-400 truncate">
+            <span class="font-semibold text-slate-700 dark:text-slate-300">Makin besar:</span> makin tinggi rata-rata konsentrasi PM2.5 stasiun di atas batas 15 µg/m³.
+          </p>
+        </div>
+      </div>
+    `;
+  }
 }
 
 function renderMapMarkers(stations) {
@@ -538,17 +675,105 @@ function renderMapMarkers(stations) {
 
   stations.forEach(s => {
     const ispuCat = s.dominant_ispu_cat || s.ispu || 'Sedang';
-    const color = s.ispu_color || ISPU_COLORS[ispuCat] || '#0284c7';
-    const avgVal = s.avg_pm25 !== undefined ? s.avg_pm25 : s.baseline;
-    const exceedPct = s.pct_exceed_24h !== undefined ? `${s.pct_exceed_24h}%` : `${s.violations || 0} hari`;
+    const avgVal = s.avg_pm25 !== undefined ? s.avg_pm25 : (s.baseline || 30);
+    const exceedPct = s.pct_exceed_24h !== undefined ? s.pct_exceed_24h : 0;
     const stationCode = s.station_code || s.code;
+    const stationName = s.station_name || s.name || stationCode;
     const stationCity = s.kota || s.city;
     const stationProv = s.provinsi || s.province || '';
     const stationKarakteristik = s.karakteristik || s.type || 'Urban Ambient';
     const rankBadge = s.rank ? `#${s.rank}` : '';
 
-    // Circle marker with scaled radius based on concentration
-    const radius = Math.max(7, Math.min(18, (avgVal || 30) / 6));
+    let color = '#0284c7';
+    let radius = 10;
+    let tooltipHtml = '';
+    let popupContent = '';
+
+    if (currentMapMode === 'daily') {
+      // MODE 1: ACUAN HARIAN (ISPU 24-JAM)
+      color = s.ispu_color || ISPU_COLORS[ispuCat] || '#0284c7';
+      // Radius berdasar frekuensi hari melanggar batas 24 jam (>55 ug/m3): min 7px, max 22px
+      radius = Math.max(7, Math.min(22, 7 + (exceedPct / 100) * 15));
+
+      tooltipHtml = `
+        <div class="px-1 py-0.5 text-left font-sans">
+          <div class="font-bold text-xs text-slate-900 dark:text-white leading-tight">${stationName}</div>
+          <div class="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">
+            ${stationCity} • ISPU Dominan: <span class="font-bold" style="color: ${color};">${ispuCat}</span>
+          </div>
+        </div>
+      `;
+
+      popupContent = `
+        <div class="p-1 font-sans text-slate-800 dark:text-slate-100" style="min-width: 240px;">
+          <div class="flex items-center justify-between pb-1.5 mb-2 border-b border-slate-200 dark:border-slate-700">
+            <div class="flex items-center gap-1.5">
+              <span class="font-black text-sm text-slate-900 dark:text-white">${stationCode}</span>
+              ${rankBadge ? `<span class="text-[10px] px-1.5 py-0.2 rounded font-bold bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200">Rank ${rankBadge}</span>` : ''}
+            </div>
+            <span class="text-[10px] px-2 py-0.5 rounded-full font-bold text-white shadow-xs" style="background-color: ${color};">
+              ISPU: ${ispuCat}
+            </span>
+          </div>
+          <p class="text-xs text-slate-600 dark:text-slate-300 mb-1"><strong>Lokasi:</strong> ${stationCity}, ${stationProv}</p>
+          <p class="text-xs text-slate-600 dark:text-slate-300 mb-1"><strong>Karakteristik:</strong> ${stationKarakteristik}</p>
+          <p class="text-xs text-slate-600 dark:text-slate-300 mb-1"><strong>Hari Melanggar 24-Jam:</strong> <span class="text-rose-600 font-bold">${exceedPct}% hari</span></p>
+          <p class="text-xs text-slate-600 dark:text-slate-300 mb-1"><strong>Rata-Rata PM2.5:</strong> <span class="font-extrabold text-slate-900 dark:text-white">${avgVal} µg/m³</span></p>
+          <div class="mt-2 pt-2 border-t border-slate-200 dark:border-slate-700 text-[11px] font-medium flex items-center justify-between">
+            <span class="text-slate-600 dark:text-slate-400">Baku Mutu 24 Jam (55 µg/m³):</span>
+            <span class="font-bold ${exceedPct === 0 ? 'text-emerald-600' : 'text-rose-600'}">
+              ${exceedPct === 0 ? '100% PATUH' : 'TERDAPAT PELANGGARAN'}
+            </span>
+          </div>
+        </div>
+      `;
+    } else {
+      // MODE 2: ACUAN TAHUNAN (PP 22/2021)
+      const isCompliant = avgVal <= 15.0;
+      color = isCompliant ? '#10b981' : '#ef4444';
+      // Radius berdasar besaran konsentrasi rata-rata tahunan (skala 9 s.d. 105 ug/m3)
+      const norm = Math.max(0, Math.min(1, (avgVal - 9) / (105 - 9)));
+      radius = Math.max(7, Math.min(22, 7 + norm * 15));
+
+      tooltipHtml = `
+        <div class="px-1 py-0.5 text-left font-sans">
+          <div class="font-bold text-xs text-slate-900 dark:text-white leading-tight">${stationName}</div>
+          <div class="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">
+            ${stationCity} • Rata-Rata: <strong>${avgVal} µg/m³</strong> (<span class="font-bold ${isCompliant ? 'text-emerald-600' : 'text-rose-600'}">${isCompliant ? 'Memenuhi' : 'Melebihi'}</span>)
+          </div>
+        </div>
+      `;
+
+      const diffVal = Math.abs(avgVal - 15.0).toFixed(1);
+      popupContent = `
+        <div class="p-1 font-sans text-slate-800 dark:text-slate-100" style="min-width: 240px;">
+          <div class="flex items-center justify-between pb-1.5 mb-2 border-b border-slate-200 dark:border-slate-700">
+            <div class="flex items-center gap-1.5">
+              <span class="font-black text-sm text-slate-900 dark:text-white">${stationCode}</span>
+              ${rankBadge ? `<span class="text-[10px] px-1.5 py-0.2 rounded font-bold bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200">Rank ${rankBadge}</span>` : ''}
+            </div>
+            <span class="text-[10px] px-2 py-0.5 rounded-full font-bold text-white shadow-xs" style="background-color: ${color};">
+              ${isCompliant ? 'MEMENUHI PP 22' : 'MELEBIHI PP 22'}
+            </span>
+          </div>
+          <p class="text-xs text-slate-600 dark:text-slate-300 mb-1"><strong>Lokasi:</strong> ${stationCity}, ${stationProv}</p>
+          <p class="text-xs text-slate-600 dark:text-slate-300 mb-1"><strong>Karakteristik:</strong> ${stationKarakteristik}</p>
+          <p class="text-xs text-slate-600 dark:text-slate-300 mb-1"><strong>Rata-Rata PM2.5:</strong> <span class="font-extrabold text-slate-900 dark:text-white">${avgVal} µg/m³</span></p>
+          <p class="text-xs text-slate-600 dark:text-slate-300 mb-1">
+            <strong>Deviasi Batas 15 µg/m³:</strong> 
+            <span class="${isCompliant ? 'text-emerald-600 font-semibold' : 'text-rose-600 font-bold'}">
+              ${isCompliant ? `-${diffVal} µg/m³ (di bawah ambang)` : `+${diffVal} µg/m³ (di atas ambang)`}
+            </span>
+          </p>
+          <div class="mt-2 pt-2 border-t border-slate-200 dark:border-slate-700 text-[11px] font-medium flex items-center justify-between">
+            <span class="text-slate-600 dark:text-slate-400">Baku Mutu Tahunan PP 22:</span>
+            <span class="font-bold ${isCompliant ? 'text-emerald-600' : 'text-rose-600'}">
+              ${isCompliant ? 'MEMENUHI (≤15 µg/m³)' : 'MELEBIHI (>15 µg/m³)'}
+            </span>
+          </div>
+        </div>
+      `;
+    }
 
     const marker = L.circleMarker([s.lat, s.lon], {
       radius: radius,
@@ -559,27 +784,12 @@ function renderMapMarkers(stations) {
       fillOpacity: 0.85
     });
 
-    const popupContent = `
-      <div class="p-1 font-sans text-slate-800 dark:text-slate-100" style="min-width: 230px;">
-        <div class="flex items-center justify-between pb-1.5 mb-2 border-b border-slate-200 dark:border-slate-700">
-          <div class="flex items-center gap-1.5">
-            <span class="font-black text-sm text-slate-900 dark:text-white">${stationCode}</span>
-            ${rankBadge ? `<span class="text-[10px] px-1.5 py-0.2 rounded font-bold bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200">Rank ${rankBadge}</span>` : ''}
-          </div>
-          <span class="text-[10px] px-2 py-0.5 rounded-full font-bold text-white shadow-xs" style="background-color: ${color};">
-            ${ispuCat}
-          </span>
-        </div>
-        <p class="text-xs text-slate-600 dark:text-slate-300 mb-1"><strong>Lokasi:</strong> ${stationCity}, ${stationProv}</p>
-        <p class="text-xs text-slate-600 dark:text-slate-300 mb-1"><strong>Karakteristik:</strong> ${stationKarakteristik}</p>
-        <p class="text-xs text-slate-600 dark:text-slate-300 mb-1"><strong>Rata-Rata PM2.5:</strong> <span class="font-extrabold text-slate-900 dark:text-white">${avgVal} µg/m³</span></p>
-        <p class="text-xs text-slate-600 dark:text-slate-300 mb-1"><strong>Hari Melanggar 24-Jam:</strong> <span class="text-rose-600 font-bold">${exceedPct}</span></p>
-        <div class="mt-2 pt-2 border-t border-slate-200 dark:border-slate-700 text-[11px] text-cyan-600 dark:text-cyan-400 font-medium flex items-center justify-between">
-          <span>PP 22/2021 (15 µg/m³):</span>
-          <span class="font-bold ${avgVal <= 15 ? 'text-emerald-600' : 'text-amber-600'}">${avgVal <= 15 ? 'MEMENUHI' : 'MELEBIHI'}</span>
-        </div>
-      </div>
-    `;
+    marker.bindTooltip(tooltipHtml, {
+      direction: 'top',
+      offset: [0, -radius - 2],
+      opacity: 0.96,
+      className: 'prana-map-tooltip'
+    });
 
     marker.bindPopup(popupContent);
     marker.addTo(mapInstance);

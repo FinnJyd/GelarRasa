@@ -373,6 +373,25 @@ html.dark .sidebar-nav-item.active {
   background-color: var(--prana-surface);
 }
 
+/* Leaflet Tooltip Custom Styling (Station Hover) */
+.leaflet-tooltip.prana-map-tooltip {
+  background-color: var(--prana-surface) !important;
+  color: var(--prana-text-main) !important;
+  border: 1px solid var(--prana-border) !important;
+  border-radius: 8px !important;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.16) !important;
+  padding: 4px 8px !important;
+  font-family: 'Inter', sans-serif !important;
+}
+
+.leaflet-tooltip-top.prana-map-tooltip::before {
+  border-top-color: var(--prana-surface) !important;
+}
+
+.leaflet-tooltip-bottom.prana-map-tooltip::before {
+  border-bottom-color: var(--prana-surface) !important;
+}
+
 /* =====================================================================
    POPUP MODAL 80% (METODOLOGI)
    ===================================================================== */
@@ -433,11 +452,7 @@ html.dark .filter-date-range input { color-scheme: dark; }
 #filter-reset { min-height: 38px; border: 1px solid var(--prana-border-sub); border-radius: 7px; padding: 7px 14px; font-size: 12px; color: var(--prana-text-sub); }
 #filter-reset:hover { border-color: #0891b2; color: var(--prana-text-main); }
 .filter-heading:focus-visible, .filter-select:focus-visible, .filter-date-range input:focus-visible, .pollutant-btn:focus-visible, #filter-reset:focus-visible, .suspect-option input:focus-visible { outline: 2px solid #06b6d4; outline-offset: 3px; }
-.project-context { margin-top: auto; border-top: 1px solid var(--prana-border-sub); }
-.project-context > summary { display: flex; justify-content: space-between; gap: 12px; padding: 14px 0; cursor: pointer; font-size: 12px; font-weight: 600; color: var(--prana-text-sub); list-style: none; }
-.project-context > summary::-webkit-details-marker { display: none; }
-.project-context[open] > summary span { transform: rotate(45deg); }
-.project-context-body { display: grid; gap: 12px; }
+
 @media (max-width: 1200px) {
   .filter-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .team-highlight-title { font-size: 1.2rem; }
