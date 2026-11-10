@@ -489,8 +489,11 @@ html.dark .funfact-strip {
 }
 
 .funfact-ticker-inner {
+  display: inline-flex;    /* keeps items in one unbroken line */
+  white-space: nowrap;
   animation: funfact-scroll 60s linear infinite;
   will-change: transform;
+  /* JS will override animation-duration via style.animationDuration */
 }
 
 .funfact-ticker-inner:hover {

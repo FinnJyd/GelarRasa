@@ -93,14 +93,15 @@ function initFunFactTicker() {
   // Inject double the content for seamless looping
   ticker.innerHTML = buildItems() + buildItems();
 
-  // Adjust animation speed based on total content width
-  // We trigger a reflow to get correct scrollWidth after inject
-  requestAnimationFrame(() => {
-    const totalWidth = ticker.scrollWidth / 2; // half because duplicated
-    const pxPerSecond = 1000; // px/s
-    const duration = Math.max(12, totalWidth / pxPerSecond); // min 5 detik
+  // Calculate duration based on content width for consistent px/s speed
+  // Use double-rAF to ensure layout is fully painted before reading scrollWidth
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    const halfWidth = ticker.scrollWidth / 2; // width of one copy
+    const pxPerSecond = 100; // comfortable reading speed
+    const duration = Math.max(15, halfWidth / pxPerSecond);
+    ticker.style.setProperty('--ticker-duration', duration + 's');
     ticker.style.animationDuration = duration + 's';
-  });
+  }));
 }
 
 // =====================================================================
@@ -223,12 +224,12 @@ function initNavigation() {
   const tabSub = document.getElementById('current-tab-sub');
 
   const tabQuestions = {
-    'tab-1': 'Bagaimana status kualitas udara nasional dan seberapa parah krisis polusi terhadap beban kesehatan masyarakat di 27 stasiun pemantau Indonesia selama 2024–2026?',
+    'tab-1': 'Bagaimana status kualitas udara nasional dan seberapa parah krisis polusi terhadap beban kesehatan masyarakat di 27 stasiun pemantau Indonesia?',
     'tab-2': 'Sejauh mana stasiun AQMS mematuhi ambang batas baku mutu PP 22/2021 dan standar WHO 2021, serta provinsi mana yang paling rentan gagal patuh?',
     'tab-3': 'Kapan jam dan periode puncak lonjakan polutan terjadi dalam siklus diurnal 24 jam, dan bagaimana anomali musiman karhutla mengubah drastis profil polusi?',
-    'tab-4': 'Faktor meteorologi, arah angin (mawar polusi), dan aktivitas antropogenik apa saja yang menjadi pemicu utama konsentrasi ekstrem polutan di berbagai zonasi?',
-    'tab-5': 'Berapa jeda waktu (lag 0–7 hari) paparan PM2.5 terhadap lonjakan kasus ISPA, dan kelompok demografi usia mana yang paling rentan menanggung beban admisi faskes?',
-    'tab-6': 'Intervensi kebijakan apa yang paling efektif dan terukur secara biaya-manfaat untuk menurunkan risiko kematian dini dan mengantisipasi lonjakan beban faskes masa depan?'
+    'tab-4': 'Faktor meteorologi, arah angin (mawar polusi), dan aktivitas antropogenik apa yang menjadi pemicu utama konsentrasi ekstrem polutan di berbagai zonasi?',
+    'tab-5': 'Berapa jeda waktu (lag 0–7 hari) paparan PM2.5 terhadap lonjakan ISPA, dan kelompok usia mana yang paling rentan menanggung beban admisi faskes?',
+    'tab-6': 'Intervensi kebijakan apa yang paling efektif secara biaya-manfaat untuk menurunkan risiko kematian dini dan beban faskes masa depan?'
   };
 
   navItems.forEach(item => {
