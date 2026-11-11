@@ -43,6 +43,27 @@ test('required identity, collapsed filters, synchronized selections, and reset',
   await expect(page.getByRole('heading', { name: 'Admisi pernapasan' })).toBeVisible();
 });
 
+test('reference content uses current panels and truthful filtered indicators', async ({ page }) => {
+  await expect(page.locator('.page-intro .research-label')).toHaveText('Pertanyaan Riset');
+  await expect(page.locator('.page-question')).toContainText('Bagaimana status kualitas udara nasional');
+  await expect(page.getByRole('heading', { name: 'Indikator Kunci & Distribusi Kualitas Udara Nasional', exact: true })).toBeVisible();
+  const exceedance = page.locator('.metric').filter({ has: page.getByRole('heading', { name: 'Persentase Hari Melebihi Batas 24 Jam', exact: true }) });
+  await expect(exceedance.locator('.metric-value strong')).toHaveText('17,7');
+  const critical = page.locator('.metric-station');
+  await expect(critical.locator('.metric-value strong')).toHaveText('AQMS-BJB-01');
+  const hospital = page.locator('.metric').filter({ has: page.getByRole('heading', { name: 'Indeks Beban Hospital (Faskes)', exact: true }) });
+  await expect(hospital.locator('.metric-value strong')).toHaveText('6,43');
+  await page.locator('#dashboard-filters summary').click();
+  await choose(page, 'Stasiun', 'AQMS-BJB-01');
+  await expect(exceedance.locator('.metric-value strong')).toHaveText('40,1');
+  await expect(exceedance).toContainText('rata-rata persentase stasiun terpilih');
+  await expect(hospital.locator('.metric-value strong')).toHaveText('6,43');
+  await page.getByRole('link', { name: 'Kepatuhan Regulasi', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'Audit Kepatuhan Regulasi Udara Nasional (PP 22/2021 & Permen LHK 27/2021)', exact: true })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Modul Visualisasi Tab 2', exact: true })).toBeVisible();
+  await expect(page.getByText('Belum tersedia', { exact: true })).toBeVisible();
+});
+
 test('all tabs navigate, charts and map clean up, and selections survive remount', async ({ page }) => {
   await page.locator('#dashboard-filters summary').click();
   await choose(page, 'Wilayah', 'Jakarta');

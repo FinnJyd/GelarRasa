@@ -26,6 +26,7 @@ test('combined filters produce the same population used by all overview summarie
   assert.equal(result.distribution.reduce((total, category) => total + category.count, 0), stations.length);
   assert.equal(result.mean, stations.reduce((total, station) => total + station.average, 0) / stations.length);
   assert.equal(result.highest?.average, Math.max(...stations.map(station => station.average)));
+  assert.equal(result.exceedanceMean, stations.reduce((total, station) => total + station.exceedance, 0) / stations.length);
 });
 
 test('empty selections do not fall back to the full dataset or zero-valued averages', () => {
@@ -34,6 +35,7 @@ test('empty selections do not fall back to the full dataset or zero-valued avera
   assert.deepEqual(stations, []);
   assert.equal(result.mean, null);
   assert.equal(result.validMean, null);
+  assert.equal(result.exceedanceMean, null);
   assert.equal(result.highest, null);
 });
 
@@ -53,4 +55,11 @@ test('invalid or missing exports fail validation rather than showing fallback ob
   assert.throws(() => parseDashboard(raw, []), /Katalog/);
   const duplicateCatalog: unknown[] = Array.isArray(catalog) ? [...catalog, catalog[0]] : [];
   assert.throws(() => parseDashboard(raw, duplicateCatalog), /Duplikat/);
+});
+
+test('reference indicators read the export and reject invalid exceedance values', () => {
+  assert.equal(data.nationalExceedance, 17.7);
+  assert.deepEqual(data.reference, { daily: 55, annual: 15, whoAnnual: 5 });
+  const invalid: unknown = JSON.parse(JSON.stringify(raw).replace('"pct_days_exceed_24h":17.7', '"pct_days_exceed_24h":101'));
+  assert.throws(() => parseDashboard(invalid, catalog), /pct_days_exceed_24h/);
 });

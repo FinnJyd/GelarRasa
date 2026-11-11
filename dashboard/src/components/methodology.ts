@@ -12,7 +12,7 @@ export function createMethodology(data: () => DashboardData | null): {
   dialog.setAttribute('aria-labelledby', 'methodology-title');
   const header = element('header', 'dialog-header');
   const heading = element('div');
-  const title = element('h2', '', 'Metodologi & sumber data');
+  const title = element('h2', '', 'Metodologi & Integritas Data');
   title.id = 'methodology-title';
   heading.append(element('p', 'eyebrow', 'TRANSPARANSI ANALISIS'), title);
   const close = button('', 'icon-button');
@@ -38,6 +38,7 @@ export function createMethodology(data: () => DashboardData | null): {
     section('Sumber dan cakupan', 'Dataset sintetis: telemetri AQMS, data kesehatan harian anonim, tabel master, dan metadata. Hasil menggambarkan lokasi yang dipantau, bukan estimasi paparan seluruh penduduk Indonesia.');
     if (current) section('Periode pengamatan', `${period(current.start, current.end)} (WIB), ${number(current.stations.length)} stasiun dalam ekspor. Wilayah dan tipe lokasi diambil dari dataset/raw/master/sites.csv. Waktu pembuatan ekspor bukan waktu pengamatan terakhir.`);
     section('Rata-rata dan cakupan data', 'Rata-rata pilihan adalah rata-rata sederhana dari konsentrasi rata-rata tiap stasiun dalam ekspor, dengan bobot sama per stasiun. Rata-rata data VALID juga memberi bobot sama per stasiun dan membandingkan baris VALID dengan baris yang terekam; ini bukan kelengkapan terhadap semua jam yang diharapkan.');
+    section('Hari di atas acuan 24 jam', 'Pada cakupan penuh, indikator menggunakan persentase seluruh hari-stasiun di atas ambang 24 jam yang tersimpan pada ekspor. Pada pilihan stasiun, indikator menghitung rata-rata sederhana persentase masing-masing stasiun karena jumlah hari valid per stasiun tidak tersedia pada ekspor. Penyebut kedua ringkasan berbeda; ini bukan audit kepatuhan tervalidasi.');
     section('Klasifikasi harian', 'Distribusi menghitung stasiun berdasarkan kategori harian yang paling sering muncul di ekspor. Ini bukan proporsi hari atau penduduk. Definisi kategori, batas konsentrasi, dan aturan seri perlu diverifikasi sebelum digunakan sebagai kesimpulan kepatuhan regulasi.');
     section('Batasan normalisasi dan agregasi', 'Tiga berkas AQMS memiliki header logger ppm. Metadata belum menjelaskan faktor konversinya; normalisasi pada pipeline lama belum tervalidasi. Agregasi harian lama mengambil rata-rata jam VALID tanpa menerapkan syarat minimum 18 jam. Karena itu, hasil ekspor bersifat sementara dan tidak membuktikan kepatuhan terhadap standar.');
     section('Indikator rumah sakit', 'Indikator ekspor membagi rata-rata harian admisi pernapasan balita dan lansia dengan total kapasitas tempat tidur yang dilaporkan. Nilai ini bukan tingkat keterisian tempat tidur atau dampak kausal polusi. Indikator tetap mencakup seluruh rumah sakit dan tidak mengikuti filter stasiun.');

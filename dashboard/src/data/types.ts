@@ -22,6 +22,8 @@ export interface DashboardData {
   start: string;
   end: string;
   generated: string;
+  nationalExceedance: number;
+  reference: { daily: number; annual: number; whoAnnual: number };
   stations: readonly Station[];
   hospital: {
     burden: number;

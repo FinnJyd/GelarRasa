@@ -14,12 +14,14 @@ export function filterStations(stations: readonly Station[], state: FilterState)
 export function summarize(stations: readonly Station[]): {
   mean: number | null;
   validMean: number | null;
+  exceedanceMean: number | null;
   highest: Station | null;
   distribution: { category: Category; count: number }[];
 } {
   return {
     mean: stations.length ? stations.reduce((sum, station) => sum + station.average, 0) / stations.length : null,
     validMean: stations.length ? stations.reduce((sum, station) => sum + station.validPercentage, 0) / stations.length : null,
+    exceedanceMean: stations.length ? stations.reduce((sum, station) => sum + station.exceedance, 0) / stations.length : null,
     highest: stations.reduce<Station | null>((highest, station) =>
       highest === null || station.average > highest.average ? station : highest, null),
     distribution: CATEGORIES.map(category => ({

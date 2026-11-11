@@ -105,7 +105,7 @@ export function createShell(features: readonly Feature[], onNavigate: (feature: 
   const badge = element('span', 'badge', 'Dataset sintetis');
   introLine.append(sectionTitle, badge);
   const question = element('p', 'page-question');
-  intro.append(breadcrumb, introLine, question);
+  intro.append(breadcrumb, introLine, element('p', 'research-label', 'Pertanyaan Riset'), question);
   const filterHost = element('div');
   const host = element('div', 'feature-host');
   const announcement = element('p', 'sr-only');

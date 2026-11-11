@@ -111,3 +111,10 @@ These instructions apply to all work in this repository.
 - Keep the sidebar chevron on the same row to the right of the logo in both expanded and collapsed states; use the 104px rail from the current design contract.
 - Maintain `dashboard/routes.json` as the single route registry. Each tab has its own canonical path; the overview is `/dashboard`. Keep browser history, direct access, generated static entries, and server routing aligned.
 - Preserve the `/dashboard/` asset base and test refreshes on every deep link. Do not reintroduce `dashboard/index.html` as the displayed entry URL.
+
+
+## Reference content
+
+- Use commit `c593c4da5e815fbd0bc85283f1bf07860271051f` for requested research questions, analytical headings, headline indicator subjects, and planned tab descriptions; apply them through the current components and design contract, not the legacy page or script.
+- Keep period means distinct from annual compliance, global hospital ratios distinct from station filters, and exported national day-station exceedance distinct from equal-weight selected-station percentages.
+- Preserve the documented data corrections when restoring content. Do not copy hardcoded ticker claims, named anonymous hospitals, QC totals, unimplemented models, or unsupported methodology guarantees as facts.

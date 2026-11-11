@@ -27,7 +27,7 @@ let active: Feature | null = null;
 const methodology = createMethodology(() => data);
 const overviewFeature: Feature = {
   id: 'overview', title: 'Ikhtisar Nasional', icon: 'overview',
-  question: 'Kualitas udara, sebaran stasiun, dan konteks kesehatan dalam satu pandangan.',
+  question: "Bagaimana status kualitas udara nasional dan seberapa parah krisis polusi terhadap beban kesehatan masyarakat di 27 stasiun pemantau Indonesia?",
   mount: host => {
     if (!data) return () => undefined;
     overview = mountOverview(host, data, filters?.state() ?? defaultFilters(), invoker => methodology.open(invoker));

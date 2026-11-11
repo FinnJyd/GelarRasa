@@ -95,6 +95,12 @@ export function parseDashboard(raw: unknown, rawCatalog: unknown): DashboardData
   if (!Number.isFinite(Date.parse(generated))) throw new Error('Waktu ekspor tidak valid.');
   return {
     start, end, generated, stations,
+    nationalExceedance: numeric(kpi['pct_days_exceed_24h'], 'pct_days_exceed_24h', 0, 100),
+    reference: {
+      daily: numeric(meta['pp22_threshold_24h_ugm3'], 'pp22_threshold_24h_ugm3', 0.01),
+      annual: numeric(meta['pp22_threshold_annual_ugm3'], 'pp22_threshold_annual_ugm3', 0.01),
+      whoAnnual: numeric(meta['who_guideline_annual_ugm3'], 'who_guideline_annual_ugm3', 0.01),
+    },
     hospital: {
       burden: numeric(kpi['hospital_burden_index'], 'hospital_burden_index'),
       dailyAdmissions: numeric(detail['avg_daily_resp_admissions'], 'avg_daily_resp_admissions'),

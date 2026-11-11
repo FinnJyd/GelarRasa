@@ -81,3 +81,13 @@ Record completed changes chronologically with dates in WIB. Each entry states th
 - Investigated the report that all UI changes were missing. The running server on port 5500 serves HTML, JavaScript, CSS, and deep links matching the updated local files; the browser URL/cache state remains unconfirmed.
 - Made the development command build before serving and disabled local HTTP caching, including modification-date conditional responses, to prevent stale bundles during development. Updated README and the design contract with the exact printed-port workflow.
 - Validation: strict TypeScript/build passes; temporary-server checks confirm HTML, JS, CSS, and a deep link return HTTP 200 with `no-store` even with future modification-date validators. The focused browser check for loading, searchable filtering, dependent selections, and reset passes; `git diff --check` passes. Existing development processes need restarting to load the updated server handler.
+
+
+## 11 November 2026 — Reference content in the current design
+
+- Restored the six research questions and Tabs 2–6 analytical titles, subtitles, module headings, and planned-visualization descriptions from `c593c4d`, through the existing feature modules and shared unavailable-state component.
+- Added a styled research-question container and a titled indicator container using the current surface, border, type, and responsive system. Preserved the title, logos, themes, motion, searchable filters, sidebar chevrons, routes, rankings, map, and station-table alternatives.
+- Restored the four headline indicator subjects: PM2.5 mean, days above the 24-hour reference, most critical station, and hospital burden. Read national exceedance and reference values from the existing validated export; expose the selected-station denominator explicitly and retain global hospital scope.
+- Restored composition/geospatial and methodology titles. Kept source limitations and documented exceptions to literal copying: unverified ticker claims, static QC/violation totals, non-anonymous hospital names, annual-compliance labels for period means, and unimplemented completeness/model guarantees.
+- Updated `design.md` with the content mapping, component ownership, and deliberate corrections; updated `AGENTS.md` to preserve those decisions. Raw files, measurement exports, and analytical computations are unchanged.
+- Validation: strict TypeScript/build, all eight data/model/route tests, and all 29 browser checks pass. Reviewed updated desktop light and mobile dark screenshots; six viewport sizes pass in both themes. Source comparison confirms research questions/module descriptions match the reference; `git diff --check` passes. Existing data limitations remain documented.

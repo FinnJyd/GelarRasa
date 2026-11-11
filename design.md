@@ -62,7 +62,7 @@ Desktop reading order:
 1. Exact application title and compact global actions.
 2. Active tab name, one short orientation sentence, and a synthetic-data badge.
 3. Collapsed filters with a readable summary of effective selections.
-4. Four station indicators beside category composition.
+4. A titled indicator container with the reference commit’s four headline metrics beside category composition.
 5. Animated high/low concentration rankings.
 6. A larger interactive station map beside a compact health context panel.
 7. Expandable station data and unobtrusive source information.
@@ -301,3 +301,33 @@ Navigation uses real links and browser history. Normal clicks switch sections wi
 The development server serves known tab routes directly and canonicalizes `/`, trailing slashes, and known `index.html` entries. Unknown paths receive 404 rather than silently displaying an unrelated analytical section. The HTML base is `/dashboard/` so assets, fonts, and data work on every path. The build generates physical entry files for the five non-root tabs, allowing static directory servers to open deep links; static hosting should prefer clean-URL routing. The dev server prints `/dashboard` as its entry URL and supports a strict test port.
 
 Verify text search, code/city search, keyboard selection/cancellation, no-match behavior, dependent selection reconciliation, popup viewport fit, chevron/branding geometry, every direct URL and refresh, browser history, and data loading after deep links. Preserve the title, animation system, synthetic/provisional scope, and all existing analytical behavior.
+
+
+## 18. Reference-content restoration — 11 November 2026
+
+The user selected commit `c593c4da5e815fbd0bc85283f1bf07860271051f` as the content reference while explicitly retaining the current design. Treat content and presentation as separate responsibilities: restore its research questions, analytical headings, indicator subjects, and planned-module descriptions through the existing strict TypeScript components. Do not restore its Tailwind page, monolithic script, old navigation, or hardcoded fallback records.
+
+### Presentation contract
+
+- Preserve warm-light/ocean-dark tokens, local fonts, spacing, responsive grids, animated Chart.js plots, map behavior, PRANA opening, and complete required title.
+- Place the active tab heading and original research question in a surface container, with a short `Pertanyaan Riset` label. Longer original questions may wrap naturally.
+- Put `Indikator Kunci & Distribusi Kualitas Udara Nasional` above the four-card/composition grid in a shared panel. Preserve the current card treatments and graphical composition. Original long analytical titles are an intentional exception to the earlier short-heading target.
+- Keep searchable/collapsed filters, chevrons beside the logo, canonical paths, browser history, accessible controls, and resource cleanup.
+- Retain current rankings, health detail, and station-table alternatives as supporting views; they do not replace the restored headline content.
+
+### Content mapping and deliberate corrections
+
+| Reference content | Current implementation |
+| --- | --- |
+| Six research questions | Restored in the corresponding feature and shared research-question container. |
+| National PM2.5 mean | Same subject and supplied value; labeled as a period mean instead of claiming a multi-year aggregate is annual compliance. |
+| Days above the 24-hour reference | Full scope reads the existing export’s national 17.7% indicator. A selected subset shows the equal-weight mean of its exported station percentages, explicitly labeled with that different denominator. |
+| Most critical station | Existing selected station with the highest mean; code, location, concentration, and exported exceedance percentage, without inventing an intervention priority. |
+| Hospital burden index | Existing exported 6.43% ratio, 404 daily admissions, and 6,280 beds. Remains global; the nearby health panel explains its scope and that it is not occupancy. |
+| Dominant ISPU and geospatial headings | Restored through existing composition/map panels. Keep modal-category and period-mean qualifications. |
+| Tabs 2–6 | Original analytical titles, subtitles, module headings, and planned visualization descriptions. Clearly marked unavailable and described as plans, without fake charts or model outputs. |
+| Methodology | Restore the integrity-oriented title, retaining the accurate current definitions, source trail, and limitations. Add the two exceedance-denominator definitions. |
+
+The old ticker’s unverified health effects, fire area, national population comparisons, invented hospital names, static QC totals, 4,660 violation days, unsupported 18-hour completeness guarantee, and fitted-model claims are not copied as measured results. The supplied raw master contains anonymous hospital labels, and the existing notebook does not implement several old claims. Keep this distinction explicit in the documentation rather than presenting an exact transcription as validated analysis.
+
+Regulatory numbers are read from metadata as reference values stored in the existing export, not an assertion that this presentation audited current law or demonstrated compliance. Do not add category concentration ranges or annual map classifications without validating their averaging periods and definitions. No measurement files, raw records, exports, or notebook calculations are changed by this content restoration.

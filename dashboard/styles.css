@@ -147,6 +147,12 @@ body[data-opening] .skip-link { visibility: hidden; }
 .suspect-option input { width: 16px; height: 16px; }
 .filter-note { margin-top: 12px; font-size: 12px; color: var(--secondary); }
 .overview { display: grid; gap: 20px; }
+.page-intro { padding: 22px 24px; background: var(--surface); border: 1px solid var(--border); border-radius: 14px; }
+.research-label { color: var(--accent); font-size: 11px; font-weight: 600; margin-top: 16px; text-transform: uppercase; letter-spacing: .06em; }
+.indicators-panel > .panel-body { padding-top: 20px; }
+.indicators-panel .metric, .indicators-panel .composition-panel { box-shadow: none; }
+.metric-station .metric-value strong { font-size: clamp(20px, 1.8vw, 28px); overflow-wrap: anywhere; letter-spacing: -.025em; }
+.unavailable-panel h4 { font-size: 16px; margin-top: 16px; }
 .scope-strip { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; font-size: 12px; color: var(--secondary); }
 .scope-count { color: var(--text); font-weight: 600; }
 .scope-count::before { content: ''; display: inline-block; width: 6px; height: 6px; margin-right: 8px; border-radius: 50%; background: var(--accent); vertical-align: middle; }
