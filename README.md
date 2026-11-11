@@ -79,3 +79,35 @@ Bagi anggota tim yang baru melakukan *clone* dari repositori ini, data mentah ti
 * [ ] **Tautan Dashboard:** Format penamaan `DA2026_Dashboard_NamaTim_NamaKetua` (Wajib menyertakan logo resmi Gelar Rasa).
 * [ ] **Laporan Analisis:** Format berkas `DA2026_Laporan_NamaTim_NamaKetua.pdf` (Disusun sesuai template resmi).
 * [ ] **Batas Pengumpulan:** 14 November 2026 pukul 23.59 WIB melalui tautan panitia: `bit.ly/PreliminarySubmissionDAGelarRasa2026`.
+
+
+## Pengembangan antarmuka PRANA
+
+Sumber antarmuka berada di `dashboard/src/` dengan TypeScript strict dan modul per fitur. Ikhtisar Nasional menggunakan Chart.js untuk doughnut komposisi dan grafik peringkat, serta Leaflet dengan Esri untuk peta. `dashboard/app.js` dan `dashboard/app.css` adalah hasil build, bukan berkas sumber untuk diedit langsung.
+
+```bash
+npm ci
+bun run build
+bun run dev
+```
+
+Buka URL `/dashboard` yang dicetak di terminal. `bun run dev` membangun aplikasi sebelum server dimulai. Server mencoba port 5500, lalu port berikutnya jika sudah dipakai; pastikan browser menggunakan port yang dicetak oleh proses terbaru. Respons pengembangan tidak disimpan di cache. Setelah mengubah TypeScript ketika server masih berjalan, jalankan build kembali dan segarkan halaman. Font, Chart.js, dan Leaflet dilayani dari build lokal; peta dasar tetap membutuhkan internet.
+
+```bash
+bun run typecheck
+bun run test
+bun run test:browser
+```
+
+Pengujian browser menggunakan port 5511. Pasang Chromium melalui `npx playwright install chromium` atau tentukan browser lokal dengan `PRANA_BROWSER_PATH=/path/to/chromium bun run test:browser`.
+
+Baca [design.md](design.md) dan [AGENTS.md](AGENTS.md) sebelum perubahan UI; catat hasil di [CHANGELOG.md](CHANGELOG.md). Desain mengutamakan visualisasi, animasi yang mendukung interaksi, pembukaan PRANA bertema kabut yang dapat dilewati, aksesibilitas, dan gerakan minimal untuk pengguna reduced motion.
+
+Filter wilayah, tipe lokasi, dan stasiun menyelaraskan ringkasan, doughnut, peringkat, tabel, dan peta. Tanggal, polutan lain, dan SUSPECT dinonaktifkan sampai ekspor mendukungnya. Indikator kesehatan tetap mencakup seluruh rumah sakit. Data berasal dari ekspor yang sudah ada; normalisasi unit dan klasifikasi masih perlu divalidasi secara analitis dan dijelaskan melalui kontrol `Data sementara` serta metodologi.
+
+
+### Navigasi dan pencarian pilihan
+
+Jalankan `bun run dev` untuk menggunakan routing lokal. Halaman utama adalah `/dashboard`; setiap tab mempunyai URL sendiri sesuai `dashboard/routes.json`, misalnya `/dashboard/pola-waktu`. URL dapat dibuka langsung, di-refresh, dan ditelusuri melalui Back/Forward. Build menghasilkan entry statis untuk setiap tab; pada hosting statis gunakan clean URLs atau directory-index routing. Seluruh aset menggunakan base `/dashboard/`.
+
+Wilayah, tipe lokasi, dan stasiun dapat dicari dengan mengetik pada pilihan. Gunakan panah dan Enter atau klik hasil untuk menerapkan; Escape membatalkan pencarian. Pencarian yang belum dipilih tidak mengubah hasil analisis. Chevron navigasi tetap berada di kanan logo saat sidebar diperkecil.

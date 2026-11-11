@@ -1,0 +1,245 @@
+[
+  {
+    "code": "AQMS-JKT-01",
+    "city": "Kota Administrasi Jakarta Pusat",
+    "province": "DKI Jakarta",
+    "region": "Jakarta",
+    "siteType": "Urban Background",
+    "latitude": -6.175392,
+    "longitude": 106.827153
+  },
+  {
+    "code": "AQMS-JKT-02",
+    "city": "Kota Administrasi Jakarta Utara",
+    "province": "DKI Jakarta",
+    "region": "Jakarta",
+    "siteType": "Industrial Perimeter",
+    "latitude": -6.11182,
+    "longitude": 106.96441
+  },
+  {
+    "code": "AQMS-JKT-03",
+    "city": "Kota Administrasi Jakarta Barat",
+    "province": "DKI Jakarta",
+    "region": "Jakarta",
+    "siteType": "Traffic / Roadside",
+    "latitude": -6.152814,
+    "longitude": 106.73289
+  },
+  {
+    "code": "AQMS-KTG-01",
+    "city": "Kota Palangka Raya",
+    "province": "Kalimantan Tengah",
+    "region": "Kalimantan Tengah",
+    "siteType": "Urban Background",
+    "latitude": -2.2136,
+    "longitude": 113.9108
+  },
+  {
+    "code": "AQMS-KTG-02",
+    "city": "Kabupaten Kotawaringin Timur",
+    "province": "Kalimantan Tengah",
+    "region": "Kalimantan Tengah",
+    "siteType": "Peatland Boundary",
+    "latitude": -2.5358,
+    "longitude": 112.9554
+  },
+  {
+    "code": "AQMS-BGR-01",
+    "city": "Kabupaten Bogor",
+    "province": "Jawa Barat",
+    "region": "Bogor",
+    "siteType": "Regional / Clean Background",
+    "latitude": -6.69784,
+    "longitude": 106.94212
+  },
+  {
+    "code": "AQMS-BGR-02",
+    "city": "Kota Bogor",
+    "province": "Jawa Barat",
+    "region": "Bogor",
+    "siteType": "Traffic / Roadside",
+    "latitude": -6.6022,
+    "longitude": 106.8089
+  },
+  {
+    "code": "AQMS-YKY-01",
+    "city": "Kabupaten Sleman",
+    "province": "D.I. Yogyakarta",
+    "region": "Yogyakarta",
+    "siteType": "Urban Background",
+    "latitude": -7.731,
+    "longitude": 110.354
+  },
+  {
+    "code": "AQMS-IDP-01",
+    "city": "Kabupaten Aceh Besar",
+    "province": "Aceh",
+    "region": "Aceh",
+    "siteType": "Regional / Clean Background",
+    "latitude": 5.404,
+    "longitude": 95.475
+  },
+  {
+    "code": "AQMS-KTB-01",
+    "city": "Kabupaten Agam",
+    "province": "Sumatera Barat",
+    "region": "Sumatera Barat",
+    "siteType": "Regional / Clean Background",
+    "latitude": -0.251,
+    "longitude": 100.382
+  },
+  {
+    "code": "AQMS-PKU-01",
+    "city": "Kota Pekanbaru",
+    "province": "Riau",
+    "region": "Riau",
+    "siteType": "Peatland Buffer / Urban",
+    "latitude": 0.46667,
+    "longitude": 101.4666
+  },
+  {
+    "code": "AQMS-JMB-01",
+    "city": "Kota Jambi",
+    "province": "Jambi",
+    "region": "Jambi",
+    "siteType": "Peatland Buffer / Urban",
+    "latitude": -1.63,
+    "longitude": 103.64
+  },
+  {
+    "code": "AQMS-BTM-01",
+    "city": "Kota Batam",
+    "province": "Kepulauan Riau",
+    "region": "Kepulauan Riau",
+    "siteType": "Industrial Perimeter / Maritime",
+    "latitude": 1.124,
+    "longitude": 104.126
+  },
+  {
+    "code": "AQMS-BGL-01",
+    "city": "Kota Bengkulu",
+    "province": "Bengkulu",
+    "region": "Bengkulu",
+    "siteType": "Urban Coastal Background",
+    "latitude": -3.865,
+    "longitude": 102.312
+  },
+  {
+    "code": "AQMS-SRG-01",
+    "city": "Kota Sorong",
+    "province": "Papua Barat Daya",
+    "region": "Papua Barat Daya",
+    "siteType": "Coastal / Regional Background",
+    "latitude": -0.883,
+    "longitude": 131.298
+  },
+  {
+    "code": "AQMS-MLG-01",
+    "city": "Kabupaten Malang",
+    "province": "Jawa Timur",
+    "region": "Jawa Timur",
+    "siteType": "Urban Background / Valley",
+    "latitude": -7.901,
+    "longitude": 112.598
+  },
+  {
+    "code": "AQMS-MRS-01",
+    "city": "Kabupaten Maros",
+    "province": "Sulawesi Selatan",
+    "region": "Sulawesi Selatan",
+    "siteType": "Industrial / Karst Perimeter",
+    "latitude": -4.997,
+    "longitude": 119.57
+  },
+  {
+    "code": "AQMS-PLU-01",
+    "city": "Kabupaten Poso",
+    "province": "Sulawesi Tengah",
+    "region": "Sulawesi Tengah",
+    "siteType": "Regional / Clean Background",
+    "latitude": -1.65,
+    "longitude": 120.183
+  },
+  {
+    "code": "AQMS-STG-01",
+    "city": "Kabupaten Sintang",
+    "province": "Kalimantan Barat",
+    "region": "Kalimantan Barat",
+    "siteType": "Peatland Boundary / Inland",
+    "latitude": 0.066,
+    "longitude": 111.477
+  },
+  {
+    "code": "AQMS-PKN-01",
+    "city": "Kabupaten Kotawaringin Barat",
+    "province": "Kalimantan Tengah",
+    "region": "Kalimantan Tengah",
+    "siteType": "Peatland Boundary / Airport",
+    "latitude": -2.704,
+    "longitude": 111.676
+  },
+  {
+    "code": "AQMS-PLB-01",
+    "city": "Kota Palembang",
+    "province": "Sumatera Selatan",
+    "region": "Sumatera Selatan",
+    "siteType": "Peatland Buffer / Urban Artery",
+    "latitude": -2.94,
+    "longitude": 104.7
+  },
+  {
+    "code": "AQMS-PSW-01",
+    "city": "Kabupaten Pesawaran",
+    "province": "Lampung",
+    "region": "Lampung",
+    "siteType": "Urban Background / Highway Corridor",
+    "latitude": -5.17,
+    "longitude": 105.178
+  },
+  {
+    "code": "AQMS-MER-01",
+    "city": "Kabupaten Merauke",
+    "province": "Papua Selatan",
+    "region": "Papua",
+    "siteType": "Coastal / Remote Savanna",
+    "latitude": -8.5211,
+    "longitude": 140.4072
+  },
+  {
+    "code": "AQMS-MDN-01",
+    "city": "Kota Medan",
+    "province": "Sumatera Utara",
+    "region": "Sumatera Utara",
+    "siteType": "Urban Background",
+    "latitude": 3.59,
+    "longitude": 98.85
+  },
+  {
+    "code": "AQMS-SM2-01",
+    "city": "Kota Samarinda",
+    "province": "Kalimantan Timur",
+    "region": "Kalimantan Timur",
+    "siteType": "Industrial & Deforestation Buffer",
+    "latitude": -0.4825,
+    "longitude": 117.1563
+  },
+  {
+    "code": "AQMS-BJB-01",
+    "city": "Kota Banjarbaru",
+    "province": "Kalimantan Selatan",
+    "region": "Kalimantan Selatan",
+    "siteType": "Airport & Peatland Buffer",
+    "latitude": -3.475,
+    "longitude": 114.856
+  },
+  {
+    "code": "AQMS-JMB-02",
+    "city": "Kabupaten Muaro Jambi",
+    "province": "Jambi",
+    "region": "Sumatera",
+    "siteType": "Peatland & Plantation Hinterland",
+    "latitude": -1.635,
+    "longitude": 103.646
+  }
+]

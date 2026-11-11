@@ -1,0 +1,8 @@
+{
+  "overview": "/dashboard",
+  "compliance": "/dashboard/kepatuhan-regulasi",
+  "temporal": "/dashboard/pola-waktu",
+  "drivers": "/dashboard/faktor-pemicu",
+  "health": "/dashboard/dampak-kesehatan",
+  "recommendations": "/dashboard/rekomendasi-kebijakan"
+}
