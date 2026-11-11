@@ -7,7 +7,7 @@ import { createShell } from './components/shell';
 import { compliance } from './features/compliance';
 import { temporal } from './features/temporal';
 import { drivers } from './features/drivers';
-import { health } from './features/health';
+import { mountHealth } from './features/health';
 import { recommendations } from './features/recommendations';
 import { mountOverview } from './features/overview/view';
 import { defaultFilters, filterStations } from './features/overview/model';
@@ -21,6 +21,7 @@ const lifetime = new AbortController();
 let data: DashboardData | null = null;
 let filters: ReturnType<typeof createFilters> | null = null;
 let overview: ReturnType<typeof mountOverview> | null = null;
+let healthView: ReturnType<typeof mountHealth> | null = null;
 let disposeFeature: (() => void) | null = null;
 let request: AbortController | null = null;
 let active: Feature | null = null;
@@ -34,7 +35,16 @@ const overviewFeature: Feature = {
     return () => { overview?.destroy(); overview = null; };
   },
 };
-const features = [overviewFeature, compliance, temporal, drivers, health, recommendations];
+const healthFeature: Feature = {
+  id: 'health', title: 'Dampak Kesehatan', icon: 'heart',
+  question: 'Berapa jeda waktu (lag 0–7 hari) paparan PM2.5 terhadap lonjakan ISPA, dan kelompok usia mana yang paling rentan menanggung beban admisi faskes?',
+  mount: host => {
+    if (!data) return () => undefined;
+    healthView = mountHealth(host, data.stations, filters?.state() ?? defaultFilters());
+    return () => { healthView?.destroy(); healthView = null; };
+  },
+};
+const features = [overviewFeature, compliance, temporal, drivers, healthFeature, recommendations];
 const shell = createShell(features, feature => router.go(feature.id), invoker => methodology.open(invoker));
 const router = createRouter(id => {
   const feature = features.find(item => item.id === id);
@@ -58,8 +68,9 @@ function navigate(feature: Feature): void {
   disposeFeature = null;
   active = feature;
   filters?.close();
+  if (filters) filters.root.open = false;
   shell.activate(feature);
-  if (feature.id === 'overview' && !data) {
+  if ((feature.id === 'overview' || feature.id === 'health') && !data) {
     if (request) renderLoading();
     else renderFailure();
     return;
@@ -99,7 +110,7 @@ async function load(): Promise<void> {
   request?.abort();
   const currentRequest = new AbortController();
   request = currentRequest;
-  if (active?.id === 'overview') renderLoading();
+  if (active?.id === 'overview' || active?.id === 'health') renderLoading();
   try {
     const loaded = await loadDashboard(currentRequest.signal);
     if (currentRequest.signal.aborted) return;
@@ -107,20 +118,21 @@ async function load(): Promise<void> {
     filters?.destroy();
     filters = createFilters(loaded, (state, announcement) => {
       overview?.update(state);
+      healthView?.update(state);
       const count = filterStations(loaded.stations, state).length;
-      shell.announce(`${announcement}${count} stasiun sesuai pilihan. Ringkasan, distribusi, peringkat, tabel, dan peta diperbarui.`);
+      shell.announce(`${announcement}${count} stasiun sesuai pilihan. Analisis pada tab aktif diperbarui.`);
     });
     shell.filterHost.replaceChildren(filters.root);
     request = null;
     await opening.finish();
     if (lifetime.signal.aborted) return;
-    if (active?.id === 'overview') navigate(overviewFeature);
+    if (active?.id === 'overview' || active?.id === 'health') navigate(active);
   } catch (error: unknown) {
     if (currentRequest.signal.aborted) return;
     request = null;
     console.error('Dashboard export could not be loaded:', error);
     await opening.finish();
-    if (!lifetime.signal.aborted && active?.id === 'overview') renderFailure();
+    if (!lifetime.signal.aborted && (active?.id === 'overview' || active?.id === 'health')) renderFailure();
   }
 }
 

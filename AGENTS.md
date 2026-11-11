@@ -52,7 +52,7 @@ These instructions apply to all work in this repository.
 - The root `dashboard/` directory contains frontend code and the presentation export `tab1_ikhtisar.json`; `dashboard/data/` contains the generated station catalog. These summaries are not a substitute for examining raw data.
 - Trace displayed values to source files and transformations. Document aggregation periods, denominators, units, quality filtering, and any limitations that affect interpretation.
 - If the required raw data is missing or a claim cannot be supported, report the gap and request the missing information rather than guessing.
-- Identify the competition dataset as synthetic and preserve anonymous hospital identities. Do not imply live observations, nationwide population representation, or causal health effects without supporting evidence.
+- Treat the committee-provided dataset as the accepted source for competition analysis. Do not repeatedly flag, add synthetic-data badges, or qualify recommendations merely because the dataset is synthetic; its origin is not a blocker to analysis. Preserve accurate source attribution and anonymous hospital identities. Continue checking units, missingness, relationships, and statistical validity; do not imply live observations, nationwide population representation, or causal health effects without supporting evidence.
 - Validate logger units, completeness rules, averaging periods, classification definitions, and source relationships before presenting derived metrics. Do not assume a universal conversion for columns named `ppm`.
 - Ensure displayed filters describe the effective data scope. Disable or clearly scope unsupported controls; changing a selection summary alone does not implement filtering.
 - Keep methodology text synchronized with actual pipeline behavior and generated outputs. Do not hardcode unverified quality counts, hospital names, or explanatory statistics.
@@ -106,7 +106,7 @@ These instructions apply to all work in this repository.
 - Bundle Chart.js locally and reuse chart instances for filter/theme updates. Destroy charts and owned observers/listeners on feature teardown; do not replace animated graphs with CSS-only imitations.
 - Keep the PRANA haze/logo opening skippable, brief, and tied to actual loading. Ensure the first chart entrance is visible after the opening and reduced-motion users receive an immediate final state.
 - Respect reduced-motion changes in JavaScript as well as CSS. Keep sidebar, drawer, and disclosure transitions smooth for normal motion.
-- Preserve concise on-screen indications of synthetic/provisional data and fixed health scope; shorten prose without hiding material analytical limitations.
+- Do not require on-screen synthetic-data notices for the committee-provided dataset. Preserve material quality limitations and the effective health-data scope; shorten prose without hiding information needed to interpret results.
 
 
 ## Selection controls and routes

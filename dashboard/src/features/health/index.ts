@@ -1,14 +1,34 @@
-import { mountUnavailable } from '../../shared/unavailable-feature';
-import type { Feature } from '../../data/types';
+import type { FilterState, Station } from '../../data/types';
+import { button, emptyState } from '../../shared/dom';
+import { loadHealth } from './load';
+import { mountHealthView } from './view';
 
-export const health: Feature = {
-  id: 'health', title: 'Dampak Kesehatan', icon: 'heart',
-  question: "Berapa jeda waktu (lag 0–7 hari) paparan PM2.5 terhadap lonjakan ISPA, dan kelompok usia mana yang paling rentan menanggung beban admisi faskes?",
-  mount: host => mountUnavailable(
-    host,
-    "Epidemiologi Lingkungan: Kerentanan Balita/Lansia & Tekanan RS",
-    "Korelasi silang jeda waktu (Lag 0–7 Hari), kurva dosis-respons, dan event-study lonjakan admisi saat krisis.",
-    "Grafik korelasi silang Lag 0–7 hari, perbandingan kerentanan ISPA balita vs lansia, dan indikator proksi kapasitas tempat tidur rumah sakit (*hospital bed strain*).",
-    "Modul Visualisasi Tab 5",
-  ),
-};
+export function mountHealth(host: HTMLElement, catalog: readonly Station[], initial: FilterState): {
+  update: (filters: FilterState) => void; destroy: () => void;
+} {
+  const controller = new AbortController();
+  let state = initial;
+  let view: ReturnType<typeof mountHealthView> | null = null;
+  const load = async (): Promise<void> => {
+    const status = emptyState('Memuat data kesehatan…', 'Menyiapkan kasus harian dan paparan berpasangan.');
+    status.setAttribute('role', 'status');
+    host.replaceChildren(status);
+    try {
+      const data = await loadHealth(controller.signal);
+      if (controller.signal.aborted) return;
+      if (catalog.some(station => !data.stations[station.code])) throw new Error('Relasi stasiun tidak tersedia.');
+      view = mountHealthView(host, data, catalog, state);
+    } catch (error: unknown) {
+      if (controller.signal.aborted) return;
+      console.error('Health export could not be loaded:', error);
+      const failure = emptyState('Data kesehatan belum dapat dimuat', 'Periksa berkas ekspor dan koneksi, lalu coba lagi.');
+      failure.setAttribute('role', 'alert');
+      const retry = button('Coba lagi', 'button button-primary');
+      retry.addEventListener('click', () => { void load(); }, { once: true, signal: controller.signal });
+      failure.append(retry);
+      host.replaceChildren(failure);
+    }
+  };
+  void load();
+  return { update: filters => { state = filters; view?.update(filters); }, destroy: () => { controller.abort(); view?.destroy(); host.replaceChildren(); } };
+}

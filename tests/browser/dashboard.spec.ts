@@ -75,7 +75,8 @@ test('all tabs navigate, charts and map clean up, and selections survive remount
   for (const name of ['Kepatuhan Regulasi', 'Pola Waktu', 'Faktor Pemicu', 'Dampak Kesehatan', 'Rekomendasi Kebijakan']) {
     await page.getByRole('link', { name, exact: true }).click();
     await expect(page.getByRole('heading', { level: 2 })).toHaveText(name);
-    await expect(page.getByText('Belum tersedia', { exact: true })).toBeVisible();
+    if (name === 'Dampak Kesehatan') await expect(page.locator('.health-dashboard')).toBeVisible();
+    else await expect(page.getByText('Belum tersedia', { exact: true })).toBeVisible();
     await expect(page.locator('.leaflet-container')).toHaveCount(0);
   }
   for (let index = 0; index < 4; index++) {

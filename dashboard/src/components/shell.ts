@@ -176,7 +176,7 @@ export function createShell(features: readonly Feature[], onNavigate: (feature: 
         if (id === feature?.id) item.setAttribute('aria-current', 'page');
         else item.removeAttribute('aria-current');
       }
-      filterHost.hidden = feature?.id !== 'overview';
+      filterHost.hidden = feature?.id !== 'overview' && feature?.id !== 'health';
     },
     destroy: () => { closeDrawer(false); controller.abort(); theme.destroy(); ticker.destroy(); root.remove(); },
   };

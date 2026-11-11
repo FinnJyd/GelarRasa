@@ -11,7 +11,7 @@ export const chartTheme = (): { text: string; grid: string; surface: string; acc
 };
 
 export function manageChart<T extends ChartType>(
-  chart: Chart<T, number[], string>,
+  chart: Chart<T, (number | null)[], string>,
   applyTheme: () => void,
 ): { refresh: () => void; destroy: () => void } {
   const motion = matchMedia('(prefers-reduced-motion: reduce)');
