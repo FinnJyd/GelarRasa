@@ -32,7 +32,7 @@ It is a protected user requirement based on the submission naming convention. Ke
 
 Do not put phase names, scoring commentary, submission instructions, `Preliminary Round`, `Executive Cockpit`, or explanations about participating in a competition into the product interface. The exact title and official logo are the required exceptions to this restrained product presentation. Internal source documentation may identify the originating documents.
 
-Use Bahasa Indonesia for controls and analytical labels. Prefer short, concrete headings: `Komposisi kualitas udara`, `Konsentrasi tertinggi`, `Sebaran stasiun pemantau`, and `Admisi pernapasan`. Avoid turning every heading into a long research question.
+Use Bahasa Indonesia for controls and analytical labels. Match the analytical headings and research questions of commit `c593c4d`. Preserve the current type and container styling. Do not add independent analytical sections absent from that reference.
 
 ## 3. Source material and implementation ownership
 
@@ -63,9 +63,10 @@ Desktop reading order:
 2. Active tab name, one short orientation sentence, and a synthetic-data badge.
 3. Collapsed filters with a readable summary of effective selections.
 4. A titled indicator container with the reference commit’s four headline metrics beside category composition.
-5. Animated high/low concentration rankings.
-6. A larger interactive station map beside a compact health context panel.
-7. Expandable station data and unobtrusive source information.
+5. A full-width map with daily and annual reference controls, encoding legends, and station popups.
+6. Expandable station data and unobtrusive source information.
+
+The added high/low ranking panels and standalone admissions panel are removed. Hospital content remains only in the reference’s hospital-burden KPI and methodology.
 
 Visuals should occupy most analytical panel area. Aim for roughly 70% or more plot/indicator area within the analytical grid, excluding the application shell and expanded filter controls. This is a design target, not a claim of an automatically measured accessibility or judging score.
 
@@ -100,39 +101,30 @@ A doughnut is the default for mutually exclusive category composition. The overv
 - The modal category can differ from the category of a station's mean concentration; the short caption and methodology explain this distinction.
 - When no observations match, show an empty state rather than inventing a segment or falling back to all stations.
 
-### Comparison: horizontal bar charts
+### Indicators
 
-Use horizontal Chart.js bars for ranked stations. Put readable location and station identifiers on the category axis. Show actual values at the ends of bars and full details in tooltips.
-
-- Highest and lowest groups share a zero baseline and the same maximum for the current selection.
-- Sort deterministically and display at most ten stations per group.
-- For small selections, avoid duplicating a station between the two groups. An exhausted second group may show an explicit short empty state.
-- Keep one consistent teal comparison color. Relatively low concentration does not establish safety or regulatory compliance.
-- Do not invent annual trends or hourly series from a single period-level mean.
-- Use a sensible plot height for the row count; ten rows should remain legible rather than squeezed into a tiny card.
-
-### Indicators and health context
-
-Show values as large numerals with adjacent units. The station indicators are selected mean PM2.5, selected station count, highest station concentration, and average proportion of recorded rows marked VALID.
-
-The health context uses the existing admissions-to-capacity ratio and the actual numerator/denominator facts. Use a compact visual arrangement of these values rather than a paragraph. Do not draw an occupancy gauge or pie that falsely implies the ratio measures beds occupied, attributable illness, or the probability of disease. Label the global hospital scope clearly because it does not follow station filters.
+The four reference subjects are PM2.5 mean, percentage of days exceeding the daily reference, most critical station, and hospital burden. Display large figures, units, reference context, and selected-scope qualifiers in the existing four-card grid. Do not add separate rankings or an admissions panel. The hospital KPI remains global and explains that the ratio is not occupancy.
 
 ### Accessible alternatives
 
-Each canvas has an accessible name describing its actual current data. Keep category counts visible, ranking values available in a screen-reader list, and an expandable station table containing the selected rows. Do not make pointer-only tooltips the only way to obtain a value.
+Each canvas has an accessible name describing its actual current data. Keep category counts visible and an expandable station table containing the selected rows. The table is an accessible alternative to geographic markers, not an additional headline analytical section. Do not make pointer-only tooltips the only way to obtain a value.
 
 ## 6. Geographic visualization
 
 Use the existing public Esri World Street Map raster endpoint with Leaflet, no key/token field, and the service's published attribution. Keep the basemap native in both themes. The basemap supplies geographic context only; no external Esri observations become analytical input.
 
-Provide two concise views:
+Enable mouse-wheel zoom while the pointer is over the map. Retain zoom buttons, touch gestures, and reduced-motion behavior.
 
-| View | Encoding |
-| --- | --- |
-| Kategori | Equal-sized markers colored by the exported modal category; dynamic counts in the legend. |
-| Konsentrasi | A consistent marker color and relative size increasing with period mean PM2.5; an explicit size explanation. |
+Use the two reference controls exactly:
 
-Do not call a multi-year mean annual compliance or introduce unverified regulatory classes when switching views. Preserve the selected station list across mode changes and filters. Resize handling fits the selected bounds. Popups show identifier, location, concentration, unit, and category.
+| View | Color | Marker radius |
+| --- | --- | --- |
+| Acuan Harian (ISPU 24-Jam) | Exported dominant daily ISPU category | 7–22px, increasing linearly with the exported percentage of days above the daily reference. |
+| Acuan Tahunan (PP 22/2021) | Green at or below the export’s annual reference, red above it | 7–22px on the reference commit’s fixed 9–105 µg/m³ scale, clamped at each end. |
+
+Daily legends describe dominant category and violation-frequency sizing. Annual legends use the reference heading and show `Memenuhi`/`Melebihi`, counts, and percentages calculated from the selected export rows. Do not copy its hardcoded counts: the present export has three means ≤15 µg/m³ and 24 above. Both modes retain the same station population, map instance, and geographic bounds. Annual mode compares period means with the annual reference; keep the visible qualification that this is not a calendar-year compliance audit.
+
+Restore station name/code, location, characteristics, concentration, daily category/exceedance details or annual-reference deviation/status in safe DOM popups and tooltips. Mode changes update both marker encodings and legends. Do not retain the replacement `Kategori` and `Konsentrasi` mode controls.
 
 If basemap tiles fail, retain station points and the table and show one concise failure message. Do not repeatedly announce each failed tile. Keep full provider attribution readable. Avoid turning a station map into a continuous exposure surface without a supported model.
 
@@ -174,9 +166,9 @@ The opening adds personality, but it must not conceal errors, loop forever, or p
 
 Use a 4px spacing base, 16–20px gaps between panels, 20–24px panel padding, and 14px panel corners. Keep roughly 28px desktop and 16px phone gutters. Avoid excessive nested containers.
 
-At roomy desktop widths, put four metric cards in a 2×2 block beside the composition card. Keep the rankings side by side and give the map more width than the health panel. When width becomes constrained, stack analytical panels instead of shrinking their labels. On phones, keep two KPI columns when readable; use one below 375px if necessary. Composition can stack below 375px.
+At roomy desktop widths, put four metric cards in a 2×2 block beside the composition card. Place the map at full content width directly after the indicator/distribution section. When width becomes constrained, stack analytical panels instead of shrinking their labels. On phones, keep two KPI columns when readable; use one below 375px if necessary. Composition can stack below 375px.
 
-Use a 256px desktop sidebar, 224px at constrained desktop widths, and a 104px collapsed rail. Below 768px, use the accessible drawer so plots retain the available width. A change in sidebar width must not recreate charts or lose the selected state.
+Use a 256px desktop sidebar, 224px at constrained desktop widths, and a 72px collapsed rail. Below 768px, use the accessible drawer so plots retain the available width. A change in sidebar width must not recreate charts or lose the selected state.
 
 The full exact application title wraps within its flex area. On narrow screens, global actions may move to another row. Never use `overflow: hidden` on the page to disguise a layout bug. Tables may scroll inside a labeled region; the page itself must not scroll horizontally.
 
@@ -211,7 +203,7 @@ Normal text should meet 4.5:1 contrast; large text and essential control/graphic
 
 ## 12. Effective filters and data scope
 
-Filters remain collapsed by default at every width, with actual selected values visible. Opening/closing only changes visibility. Keep supported region, site-type, and station selections authoritative across metrics, composition, rankings, table, and map.
+Filters remain collapsed by default at every width, with actual selected values visible. Opening/closing only changes visibility. Keep supported region, site-type, and station selections authoritative across metrics, composition, table, and map.
 
 The source master contains mixed `region_group` labels such as Jakarta, Bogor, and provinces. Preserve those labels instead of inventing island groups. Constrain available station/type options and announce when an incompatible selection is cleared. Reset restores the supported baseline without changing disclosure visibility.
 
@@ -246,7 +238,7 @@ Use semantic landmarks, logical headings, a skip link, named controls, accessibl
 Before calling the visual revision complete, verify:
 
 - Exact title and supplied official logo remain present; phase/scoring/submission commentary is absent from the interface.
-- The live HTML entry loads the TypeScript build and the overview uses real animated Chart.js doughnut/bar canvases.
+- The live HTML entry loads the TypeScript build and the overview uses a real animated Chart.js doughnut canvas.
 - Chart values, center totals, accessible descriptions, map counts, and table rows reflect the same station selection.
 - Initial chart animation is visible after the opening; updates and theme changes preserve the canvases; remounts clean up old charts/maps.
 - The PRANA haze/logo opening appears, dismisses within its limit, can be skipped, releases focus/inert state, handles delayed/error data, and respects reduced motion.
@@ -281,7 +273,7 @@ Use combobox/listbox semantics with associated labels, expanded state, and activ
 
 ### Sidebar control
 
-Use a chevron rather than a hamburger for sidebar expansion and collapse. The expanded chevron points left; the collapsed chevron points right. Keep it on the same row, to the right of the PRANA emblem in both states. The collapsed rail is now 104px to provide space for both controls. Do not wrap the toggle beneath the emblem. The mobile drawer uses the same chevron language and preserves its existing focus containment and Escape behavior.
+Use a chevron rather than a hamburger for sidebar expansion and collapse. The expanded chevron points left; the collapsed chevron points right. Show `Prana Textual.png` to the left of the chevron when expanded. The sidebar contains no `Prana Emblem.png`. When collapsed, hide the entire wordmark container and show only the centered chevron in the header. Retain the 72px rail; mobile drawers show the wordmark and close chevron. The opening emblem is unaffected. The mobile drawer uses the same chevron language and preserves its existing focus containment and Escape behavior.
 
 ### Canonical routes
 
@@ -313,7 +305,7 @@ The user selected commit `c593c4da5e815fbd0bc85283f1bf07860271051f` as the conte
 - Place the active tab heading and original research question in a surface container, with a short `Pertanyaan Riset` label. Longer original questions may wrap naturally.
 - Put `Indikator Kunci & Distribusi Kualitas Udara Nasional` above the four-card/composition grid in a shared panel. Preserve the current card treatments and graphical composition. Original long analytical titles are an intentional exception to the earlier short-heading target.
 - Keep searchable/collapsed filters, chevrons beside the logo, canonical paths, browser history, accessible controls, and resource cleanup.
-- Retain current rankings, health detail, and station-table alternatives as supporting views; they do not replace the restored headline content.
+- Corrected by Section 19: remove the additional rankings and health-detail panels. Retain the expandable station table only as a data alternative.
 
 ### Content mapping and deliberate corrections
 
@@ -323,11 +315,44 @@ The user selected commit `c593c4da5e815fbd0bc85283f1bf07860271051f` as the conte
 | National PM2.5 mean | Same subject and supplied value; labeled as a period mean instead of claiming a multi-year aggregate is annual compliance. |
 | Days above the 24-hour reference | Full scope reads the existing export’s national 17.7% indicator. A selected subset shows the equal-weight mean of its exported station percentages, explicitly labeled with that different denominator. |
 | Most critical station | Existing selected station with the highest mean; code, location, concentration, and exported exceedance percentage, without inventing an intervention priority. |
-| Hospital burden index | Existing exported 6.43% ratio, 404 daily admissions, and 6,280 beds. Remains global; the nearby health panel explains its scope and that it is not occupancy. |
+| Hospital burden index | Existing exported 6.43% ratio, 404 daily admissions, and 6,280 beds. Remains global; the KPI and methodology explain its global scope and that it is not occupancy. |
 | Dominant ISPU and geospatial headings | Restored through existing composition/map panels. Keep modal-category and period-mean qualifications. |
 | Tabs 2–6 | Original analytical titles, subtitles, module headings, and planned visualization descriptions. Clearly marked unavailable and described as plans, without fake charts or model outputs. |
 | Methodology | Restore the integrity-oriented title, retaining the accurate current definitions, source trail, and limitations. Add the two exceedance-denominator definitions. |
 
 The old ticker’s unverified health effects, fire area, national population comparisons, invented hospital names, static QC totals, 4,660 violation days, unsupported 18-hour completeness guarantee, and fitted-model claims are not copied as measured results. The supplied raw master contains anonymous hospital labels, and the existing notebook does not implement several old claims. Keep this distinction explicit in the documentation rather than presenting an exact transcription as validated analysis.
 
-Regulatory numbers are read from metadata as reference values stored in the existing export, not an assertion that this presentation audited current law or demonstrated compliance. Do not add category concentration ranges or annual map classifications without validating their averaging periods and definitions. No measurement files, raw records, exports, or notebook calculations are changed by this content restoration.
+Regulatory numbers are read from metadata as reference values stored in the existing export, not an assertion that this presentation audited current law or demonstrated compliance. For the restored annual map mode, compare existing period means to the export’s annual reference with an explicit visible period-versus-year qualification; do not present that comparison as a completed annual compliance audit. No measurement files, raw records, exports, or notebook calculations are changed by this content restoration.
+
+
+## 19. Reference fidelity and sidebar correction — 11 November 2026
+
+This section supersedes conflicting historical descriptions in Sections 16–18. The previous content restoration retained sections and map modes the user did not ask to retain. The current user direction is to preserve the visual system while matching the reference commit’s analytical section inventory and interactions.
+
+- Overview: indicator/distribution container followed directly by the full-width geospatial container. Remove the extra rankings and `Admisi pernapasan` section.
+- Map: restore daily/annual reference buttons, category/frequency daily encoding, threshold/concentration annual encoding, descriptive legends, and mode-specific popup details. Keep existing data, truthful dynamic counts, accessible alternatives, Esri attribution, filter synchronization, and lifecycle cleanup.
+- Sidebar: expanded header shows only the supplied textual PRANA logo and chevron; collapsed header shows only the chevron. No sidebar emblem. Preserve supplied official competition branding elsewhere and the PRANA opening assets.
+- Git: no commit or push without an explicit request for the current work. An earlier request does not authorize future editing tasks to be pushed automatically.
+
+Verify the actual absence of removed sections and sidebar emblem, both map modes’ labels/encodings/counts, filtering across modes, the restored expanded wordmark after a mobile breakpoint, and full-width/mobile map layout. Record results in CHANGELOG.md.
+
+
+## 20. Sidebar sizing — 11 November 2026
+
+Enlarge the expanded PRANA wordmark to 168 × 56px, with 146 × 49px at constrained desktop widths and 168 × 56px inside mobile drawers. Preserve the supplied image proportions with `object-fit: contain`. Keep a 56px minimum header row so the larger brand and toggle align.
+
+Collapsed desktop navigation icons and the chevron are 20px, centered in 44px square targets inside a 72px rail. The expanded chevron is 24px with a minimum 44 × 44px hit area. Keep the collapsed header chevron centered and the wordmark hidden; do not restore the sidebar emblem. Verify that the larger wordmark fits beside the toggle at the 224px and 256px sidebar widths.
+
+
+## 21. Map space and minimal global actions — 11 November 2026
+
+Group the map category/reference explanation and marker-size explanation in separate flex children. On desktop they share one row with equal flexible width and a 24px gap; below 768px they stack with a 16px gap. Do not remove the explanatory text or alter its analytical meaning. The map height is `clamp(480px, 62vh, 760px)` on desktop and 440px on mobile.
+
+Use 20px collapsed navigation/chevron icons and a centered 44px competition-logo container with a 28px-high logo in the rail. Preserve the expanded PRANA wordmark sizing and 44px sidebar-toggle target.
+
+The theme selector is an icon-only group: sun for light, moon for dark, desktop for system. Name each button accessibly, expose the selected preference, store it, and react to OS color-scheme changes only in system mode. Remove its media listener when the shell is destroyed. Desktop controls are 32px; phone touch targets are 44px. The methodology control keeps its `Metodologi` text with a smaller info icon, restrained border, and compact spacing. The existing dialog content and focus behavior remain intact.
+
+
+## 22. Compact collapsed rail — 11 November 2026
+
+The collapsed sidebar must be compact as a whole: 72px rail, 44 × 44px navigation targets, 20px SVGs, and a centered 44px competition-logo box with a 28px-high image. Center navigation, chevron, and logo on the same vertical axis. Avoid full-rail active backgrounds: the active background stays square. Preserve the full expanded sidebar, large textual PRANA logo, and mobile drawer layout.

@@ -1,21 +1,26 @@
 export type Theme = 'light' | 'dark';
+export type ThemePreference = Theme | 'system';
 
-function storedTheme(): string | null {
-  try { return localStorage.getItem('prana_theme'); }
-  catch { return null; }
+function storedTheme(): ThemePreference {
+  try {
+    const value = localStorage.getItem('prana_theme');
+    return value === 'light' || value === 'dark' ? value : 'system';
+  } catch { return 'system'; }
 }
 
-export function initializeTheme(): Theme {
-  const stored = storedTheme();
-  const theme = stored === 'dark' || (stored !== 'light' && matchMedia('(prefers-color-scheme: dark)').matches) ? 'dark' : 'light';
+function applyTheme(preference: ThemePreference): Theme {
+  const theme = preference === 'system'
+    ? matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
+    : preference;
+  document.documentElement.dataset['themePreference'] = preference;
   document.documentElement.dataset['theme'] = theme;
   return theme;
 }
 
-export function toggleTheme(): Theme {
-  const theme = document.documentElement.dataset['theme'] === 'dark' ? 'light' : 'dark';
-  document.documentElement.dataset['theme'] = theme;
-  try { localStorage.setItem('prana_theme', theme); }
+export function initializeTheme(): Theme { return applyTheme(storedTheme()); }
+
+export function setThemePreference(preference: ThemePreference): Theme {
+  try { localStorage.setItem('prana_theme', preference); }
   catch { /* The selected theme still applies when storage is unavailable. */ }
-  return theme;
+  return applyTheme(preference);
 }

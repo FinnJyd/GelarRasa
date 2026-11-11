@@ -9,6 +9,11 @@ async function choose(page: Page, label: string, query: string): Promise<void> {
   await page.getByRole('listbox', { name: `Pilihan ${label.toLocaleLowerCase('id-ID')}`, exact: true }).getByRole('option', { name: query }).first().click();
 }
 
+async function switchTheme(page: Page): Promise<void> {
+  const dark = await page.locator('html').getAttribute('data-theme') === 'dark';
+  await page.getByRole('button', { name: dark ? 'Tema terang' : 'Tema gelap', exact: true }).click();
+}
+
 const title = 'DA2026_Dashboard_NasiBakarCumiHitamPakKris_AlfinJayadi';
 
 test.beforeEach(async ({ page }) => {
@@ -96,7 +101,7 @@ test('methodology keyboard focus, Escape, and theme changes', async ({ page }) =
   await page.keyboard.press('Escape');
   await expect(dialog).not.toBeVisible();
   await expect(opener).toBeFocused();
-  await page.getByRole('button', { name: 'Ganti tema tampilan' }).click();
+  await switchTheme(page);
   await expect(page.locator('.leaflet-container')).toHaveCount(1);
 });
 
@@ -122,7 +127,7 @@ for (const width of [320, 375, 768, 1024, 1440, 1920]) {
       const titleBox = await page.getByRole('heading', { level: 1 }).boundingBox();
       expect(titleBox?.width).toBeGreaterThan(100);
       await expect(page.getByLabel('Wilayah', { exact: true })).toBeVisible();
-      await page.getByRole('button', { name: 'Ganti tema tampilan' }).click();
+      await switchTheme(page);
     }
   });
 }
@@ -149,7 +154,7 @@ test('review screenshots and reduced-motion reflow', async ({ page }) => {
     canvases.every(canvas => canvas.getAttribute('data-animation') === 'complete'),
   )).toBe(true);
   await page.screenshot({ path: '/tmp/prana-desktop-light.png', fullPage: true });
-  await page.getByRole('button', { name: 'Ganti tema tampilan' }).click();
+  await switchTheme(page);
   await expect.poll(() => page.locator('canvas[data-chart]').evaluateAll(canvases =>
     canvases.every(canvas => canvas.getAttribute('data-animation') === 'complete'),
   )).toBe(true);
@@ -174,7 +179,7 @@ test('Esri street tiles use the public endpoint with provider attribution', asyn
   }
   await expect(page.locator('.leaflet-control-attribution')).toContainText('Esri');
   await expect(page.locator('.leaflet-control-attribution')).toContainText('GIS User Community');
-  await page.getByRole('button', { name: 'Ganti tema tampilan' }).click();
+  await switchTheme(page);
   await expect(page.locator('.leaflet-container')).toHaveCount(1);
   await expect(page.locator('.leaflet-interactive')).toHaveCount(27);
 });
@@ -205,7 +210,7 @@ test('Chart.js composition animates visibly and canvases survive filtering and t
   await expect(page.locator('.doughnut-center strong')).toHaveText('3');
   await expect(composition).toHaveAttribute('aria-label', /Total 3 stasiun/);
   expect(await original.evaluate(node => node.isConnected)).toBe(true);
-  await page.getByRole('button', { name: 'Ganti tema tampilan' }).click();
+  await switchTheme(page);
   expect(await original.evaluate(node => node.isConnected)).toBe(true);
   await expect(page.locator('canvas[data-chart]')).toHaveCount(1);
 });
@@ -276,7 +281,7 @@ test('opening never traps slow loading and reduced motion disables all chart tra
     nodes.length === 1 && nodes.every(node => node.getAttribute('data-animation') === 'complete'),
   )).toBe(true);
   await expect(page.locator('.app-layout')).toHaveCSS('transition-duration', '0s');
-  await page.getByRole('button', { name: 'Ganti tema tampilan' }).click();
+  await switchTheme(page);
   await expect.poll(() => page.locator('canvas[data-chart]').evaluateAll(nodes =>
     nodes.every(node => node.getAttribute('data-animation') === 'complete'),
   )).toBe(true);
@@ -437,6 +442,28 @@ for (const [id, path] of Object.entries(ROUTES)) {
   });
 }
 
+
+test('icon theme choices persist preferences and follow system changes only in system mode', async ({ page }) => {
+  await page.emulateMedia({ colorScheme: 'light' });
+  const system = page.getByRole('button', { name: 'Ikuti tema sistem', exact: true });
+  await system.click();
+  await expect(system).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'light');
+  await page.emulateMedia({ colorScheme: 'dark' });
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
+  await page.getByRole('button', { name: 'Tema terang', exact: true }).click();
+  await page.emulateMedia({ colorScheme: 'light' });
+  await page.emulateMedia({ colorScheme: 'dark' });
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'light');
+  await page.reload();
+  await expect(page.getByRole('button', { name: 'Tema terang', exact: true })).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.locator('.theme-control')).toHaveText('');
+  await expect(page.getByRole('button', { name: 'Metodologi', exact: true })).toBeVisible();
+  await system.click();
+  await page.reload();
+  await expect(system).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
+});
 
 test('map explanations share a desktop row and stack above a larger mobile map', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 1000 });

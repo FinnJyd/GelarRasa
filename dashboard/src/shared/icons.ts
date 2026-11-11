@@ -12,6 +12,8 @@ const paths: Record<string, string> = {
   close: 'm6 6 12 12 M6 18 18 6',
   chevron: 'm9 5 7 7-7 7',
   sun: 'M12 2v2 M12 20v2 M2 12h2 M20 12h2 M5 5l2 2 M17 17l2 2 M5 19l2-2 M17 7l2-2 M16 12a4 4 0 1 1-8 0 4 4 0 0 1 8 0',
+  moon: 'M20.5 13A8.5 8.5 0 0 1 11 3.5 8.5 8.5 0 1 0 20.5 13z',
+  desktop: 'M3 4h18v13H3z M12 17v4 M8 21h8',
   info: 'M12 11v6 M12 7h.01 M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0',
 };
 

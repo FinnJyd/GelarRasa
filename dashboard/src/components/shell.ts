@@ -2,7 +2,7 @@ import type { Feature } from '../data/types';
 import { button, element, image } from '../shared/dom';
 import { icon } from '../shared/icons';
 import { ROUTES } from '../shared/routes';
-import { toggleTheme } from '../shared/theme';
+import { createThemeControl } from './theme-control';
 
 export const APPLICATION_TITLE = 'DA2026_Dashboard_NasiBakarCumiHitamPakKris_AlfinJayadi';
 
@@ -88,15 +88,11 @@ export function createShell(features: readonly Feature[], onNavigate: (feature: 
   const titleArea = element('div', 'topbar-title');
   titleArea.append(element('p', 'eyebrow', 'PRANA / AIR & HEALTH'), element('h1', 'application-title', APPLICATION_TITLE));
   const actions = element('div', 'topbar-actions');
-  const theme = button('', 'button theme-button');
-  theme.append(icon('sun'), element('span', '', 'Tema'));
-  theme.setAttribute('aria-label', 'Ganti tema tampilan');
-  theme.setAttribute('aria-pressed', String(document.documentElement.dataset['theme'] === 'dark'));
-  theme.addEventListener('click', () => theme.setAttribute('aria-pressed', String(toggleTheme() === 'dark')), listen);
-  const methodology = button('', 'button');
+  const theme = createThemeControl();
+  const methodology = button('', 'button methodology-button');
   methodology.append(icon('info'), element('span', '', 'Metodologi'));
   methodology.addEventListener('click', () => openMethodology(methodology), listen);
-  actions.append(theme, methodology);
+  actions.append(theme.root, methodology);
   topbar.append(mobileMenu, titleArea, actions);
   const intro = element('header', 'page-intro');
   const breadcrumb = element('p', 'eyebrow', 'DASHBOARD / IKHTISAR NASIONAL');
@@ -176,6 +172,6 @@ export function createShell(features: readonly Feature[], onNavigate: (feature: 
       }
       filterHost.hidden = feature?.id !== 'overview';
     },
-    destroy: () => { closeDrawer(false); controller.abort(); root.remove(); },
+    destroy: () => { closeDrawer(false); controller.abort(); theme.destroy(); root.remove(); },
   };
 }

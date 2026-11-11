@@ -91,3 +91,44 @@ Record completed changes chronologically with dates in WIB. Each entry states th
 - Restored composition/geospatial and methodology titles. Kept source limitations and documented exceptions to literal copying: unverified ticker claims, static QC/violation totals, non-anonymous hospital names, annual-compliance labels for period means, and unimplemented completeness/model guarantees.
 - Updated `design.md` with the content mapping, component ownership, and deliberate corrections; updated `AGENTS.md` to preserve those decisions. Raw files, measurement exports, and analytical computations are unchanged.
 - Validation: strict TypeScript/build, all eight data/model/route tests, and all 29 browser checks pass. Reviewed updated desktop light and mobile dark screenshots; six viewport sizes pass in both themes. Source comparison confirms research questions/module descriptions match the reference; `git diff --check` passes. Existing data limitations remain documented.
+
+
+## 11 November 2026 — Correct reference sections, map modes, and sidebar
+
+- Corrected the prior content restoration after user review: removed the added concentration rankings and standalone `Admisi pernapasan` panel. The reference indicator/distribution section now leads directly to the full-width map in the existing design.
+- Restored `Acuan Harian (ISPU 24-Jam)` and `Acuan Tahunan (PP 22/2021)`. Daily markers use modal-category colors and exported exceedance-frequency radii; annual markers use the export’s annual-reference comparison and the reference commit’s fixed concentration radius scale. Restored descriptive legends, tooltips, and mode-specific popup details; counts come from selected existing rows rather than hardcoded reference numbers.
+- Removed `Prana Emblem.png` from the sidebar. Expanded header shows the textual wordmark and chevron; collapsed header shows only a centered chevron. Opening assets and official competition logo remain.
+- Updated AGENTS.md and design.md to remove conflicting active directions and require an explicit current-work request before any commit/push. The preceding push was not authorized for that editing task; this correction remains local and does not rewrite remote history.
+- Raw datasets, measurement exports, and analytical pipelines are unchanged. Annual-reference comparison remains visibly qualified as a period-mean comparison rather than a validated calendar-year compliance audit.
+- Validation: strict TypeScript/build, all 10 unit/data/route checks, and the full 29-test browser suite pass. Additional popup-content and collapsed-desktop-to-mobile-wordmark checks pass; the popup check waits for Leaflet’s outgoing fade. Reviewed fresh desktop/mobile, annual-map, and chevron-only sidebar screenshots. `git diff --check` passes. No commit or push performed.
+
+
+## 11 November 2026 — Larger sidebar icons and wordmark
+
+- Increased collapsed navigation icons and chevron from 18px to 28px, with a 44px minimum sidebar-toggle target.
+- Enlarged the expanded PRANA wordmark from 110px (90px on constrained widths) to 168px (146px on constrained desktop widths), preserving proportions and centered header alignment. Mobile drawers use the larger wordmark.
+- Updated the sizing contract in design.md. Changes remain local; no commit or push.
+- Validation: strict TypeScript/build and nine focused browser checks pass, covering six viewport widths in both themes, sidebar transitions, desktop/mobile wordmark visibility, alignment, and reduced-motion reflow. Reviewed updated expanded/collapsed sidebar screenshots; `git diff --check` passes.
+
+
+## 11 November 2026 — Map layout and compact controls
+
+- Grouped map explanation text into two flex columns on desktop, stacking on phones. Enlarged the map to 480–760px on desktop and 440px on phones.
+- Reduced collapsed sidebar icons/chevron to 22px and scaled the collapsed competition logo down to balance the rail; retained the expanded PRANA wordmark and sidebar hit areas.
+- Replaced the labeled theme toggle with sun/moon/desktop icon choices for light/dark/system preferences, persistence, live OS-theme updates in system mode, accessible selection states, and listener cleanup. Made the methodology control compact while retaining its text and dialog.
+- Updated design.md with sizing and behavior contracts. No commit or push performed.
+- Validation: strict TypeScript/build, all 10 unit/data/route checks, and all 31 browser checks pass. Browser checks cover OS-theme changes, explicit overrides and reload persistence, legend geometry, map sizing, six widths in both themes, navigation, and filter behavior. Reviewed updated desktop/mobile screenshots; `git diff --check` passes.
+
+
+## 11 November 2026 — Correct collapsed rail proportions
+
+- Corrected the incomplete icon-sizing adjustment: reduced the whole collapsed rail from 104px to 72px and replaced wide active rows with centered 44px square targets.
+- Set collapsed navigation/chevron SVGs to 20px and centered the smaller 44px Gelar Rasa container (28px image) on the same axis. Expanded branding and mobile navigation remain intact.
+- Updated the design sizing contract and existing sidebar-width checks. No commit or push.
+- Validation: strict TypeScript/build and all eight focused browser checks pass, including six widths in both themes, sidebar transitions, centered controls, and desktop/mobile visibility. Reviewed the fresh collapsed-sidebar screenshot; `git diff --check` passes.
+
+
+## 11 November 2026 — Map wheel zoom
+
+- Enabled Leaflet scroll-wheel zoom while the pointer is over the map; existing zoom buttons and touch interactions remain available.
+- Updated design.md. Strict TypeScript/build passes; browser verification confirms wheel zoom in/out and unchanged page scroll while hovering the map. `git diff --check` passes. No commit or push.
