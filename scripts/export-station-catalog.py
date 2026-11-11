@@ -23,6 +23,7 @@ def export_catalog():
             'province': row['provinsi'],
             'region': row['region_group'],
             'siteType': row['site_type'],
+            'notes': row['notes'],
             'latitude': float(row['latitude_dd']),
             'longitude': float(row['longitude_dd']),
         })

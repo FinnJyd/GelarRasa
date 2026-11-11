@@ -3,6 +3,7 @@ import { button, element, image } from '../shared/dom';
 import { icon } from '../shared/icons';
 import { ROUTES } from '../shared/routes';
 import { createThemeControl } from './theme-control';
+import { createFactTicker } from './fact-ticker';
 
 export const APPLICATION_TITLE = 'DA2026_Dashboard_NasiBakarCumiHitamPakKris_AlfinJayadi';
 
@@ -72,8 +73,9 @@ export function createShell(features: readonly Feature[], onNavigate: (feature: 
       if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
       event.preventDefault();
       closeDrawer();
+      window.scrollTo({ top: 0, left: 0 });
       onNavigate(feature);
-      main.focus();
+      main.focus({ preventScroll: true });
     }, listen);
     navButtons.set(feature.id, item);
     navigation.append(item);
@@ -84,9 +86,13 @@ export function createShell(features: readonly Feature[], onNavigate: (feature: 
   sidebarBottom.append(element('p', 'sidebar-context', 'Kualitas udara.\nKesehatan bersama.'), logo);
   sidebar.append(brandRow, navigationHeading, navigation, sidebarBottom);
   const workspace = element('div', 'workspace');
-  const topbar = element('header', 'topbar');
+  const appHeader = element('header', 'app-header');
+  const topbar = element('div', 'topbar');
+  const tickerHost = element('div', 'header-ticker-host');
+  const ticker = createFactTicker();
+  tickerHost.append(ticker.root);
   const titleArea = element('div', 'topbar-title');
-  titleArea.append(element('p', 'eyebrow', 'PRANA / AIR & HEALTH'), element('h1', 'application-title', APPLICATION_TITLE));
+  titleArea.append(element('p', 'eyebrow', 'PRANA: SISTEM PEMANTAUAN KUALITAS UDARA NASIONAL'), element('h1', 'application-title', APPLICATION_TITLE));
   const actions = element('div', 'topbar-actions');
   const theme = createThemeControl();
   const methodology = button('', 'button methodology-button');
@@ -98,8 +104,7 @@ export function createShell(features: readonly Feature[], onNavigate: (feature: 
   const breadcrumb = element('p', 'eyebrow', 'DASHBOARD / IKHTISAR NASIONAL');
   const introLine = element('div', 'intro-line');
   const sectionTitle = element('h2');
-  const badge = element('span', 'badge', 'Dataset sintetis');
-  introLine.append(sectionTitle, badge);
+  introLine.append(sectionTitle);
   const question = element('p', 'page-question');
   intro.append(breadcrumb, introLine, element('p', 'research-label', 'Pertanyaan Riset'), question);
   const filterHost = element('div');
@@ -108,7 +113,8 @@ export function createShell(features: readonly Feature[], onNavigate: (feature: 
   announcement.setAttribute('role', 'status');
   announcement.setAttribute('aria-live', 'polite');
   main.append(intro, filterHost, host, announcement);
-  workspace.append(topbar, main);
+  appHeader.append(topbar, tickerHost);
+  workspace.append(appHeader, main);
   root.append(sidebar, backdrop, workspace);
   document.getElementById('app')?.replaceChildren(root);
   collapse.addEventListener('click', () => {
@@ -172,6 +178,6 @@ export function createShell(features: readonly Feature[], onNavigate: (feature: 
       }
       filterHost.hidden = feature?.id !== 'overview';
     },
-    destroy: () => { closeDrawer(false); controller.abort(); theme.destroy(); root.remove(); },
+    destroy: () => { closeDrawer(false); controller.abort(); theme.destroy(); ticker.destroy(); root.remove(); },
   };
 }

@@ -2,6 +2,26 @@
 
 Record completed changes chronologically with dates in WIB. Each entry states the scope, reason, validation, and remaining limitations. Planned work belongs in the design audit or feature plan, not among completed changes.
 
+## 11 November 2026 — Dynamic multi-dimensional filtering, custom date range, badges, and metric card styling
+
+- Implemented daily multi-dimensional timeseries cube export in `notebooks/etl_tab1_ikhtisar.ipynb` and generated `tab1_ikhtisar.json` (1.64 MB, within booklet <2 MB limit) covering 1,018 dates × 27 stations × 6 criteria pollutants (`pm25`, `pm10`, `so2`, `co`, `o3`, `no2`) across both `VALID` and `VALID + SUSPECT` modes with $\ge 75\%$ daily completeness.
+- Converted logger units (`_ppm` to $\mu\text{g}/\text{m}^3$) for `BJB-01`, `MDN-01`, and `PSW-01` during normalization.
+- Activated all filter dimensions in `dashboard/src/components/filters.ts`: pollutant selector buttons, SUSPECT checkbox, period presets, and arbitrary custom start/end date pickers with bidirectional preset synchronization.
+- Updated filter summary header (`#filter-summary`) to display modular visual badges (`.filter-badge`) including active state highlights and explicit site type scope.
+- Aligned KPI metric card title (`.metric-label`) typography with panel header `h3` (`Kategori ISPU Dominan Stasiun`: 15px, font-weight 600, color `var(--text)`).
+- Replaced absolute positioning of `.metric-icon` with a flex container header (`.metric-header`) aligning title and icon on the exact same horizontal row (`align-items: center; justify-content: space-between`).
+- Enforced single-row display on metric card subtitle (`.metric-context`) with `white-space: nowrap; text-overflow: ellipsis;` across both expanded and collapsed sidebar layouts.
+- Removed redundant scope strip (`.scope-strip`) containing station counts, date period details, and inline methodology note button from the Overview tab.
+- Updated topbar eyebrow brand text from generic `PRANA / AIR & HEALTH` to an informative 6-word title `PRANA: SISTEM PEMANTAUAN KUALITAS UDARA NASIONAL`.
+- Removed the `Dataset sintetis` badge from the section header in `dashboard/src/components/shell.ts`.
+- Established clearer typography hierarchy between outer row containers and inner chart panels: container headers (`.panel-header h3`) enlarged to 20px (-0.025em letter spacing; 18px on mobile), while inner chart headers (`.composition-panel .panel-header h3`) and metric card titles remain at 15px.
+- Made the application topbar header sticky (`position: sticky; top: 0; z-index: 900`) so title, branding, theme switch, and methodology actions stay permanently accessible when scrolling.
+- Fixed sticky header overlap bug where navigating to a tab triggered browser default scroll-into-view on `main.focus()`, obscuring the page intro; resolved with `main.focus({ preventScroll: true })`, `window.scrollTo(0, 0)`, and `html { scroll-padding-top: 96px }`.
+- Fixed critical station code size (`.metric-station .metric-value strong`) to `38px` on desktop and `26px` on mobile.
+- Added client-side dynamic slice-and-aggregate engine in `dashboard/src/features/overview/model.ts` and hospital burden estimation over active date ranges.
+- Validation: Bun TypeScript check passed with 0 errors (`bun run typecheck`), build passed (`bun scripts/build.mjs`), and 15/15 unit tests passed (`bun test`).
+- Limitations: Tabs 2–6 remain placeholders pending their respective ETL pipelines. Analysis covers synthetic competition dataset.
+
 ## 10 November 2026 — Design contract and competition title correction
 
 - Added `design.md` after reading the preliminary handbook and case-study booklet, reviewing the current dashboard source and Tab 1 pipeline, inspecting raw master/metadata tables and representative measurements, and checking all AQMS file headers.
@@ -132,3 +152,79 @@ Record completed changes chronologically with dates in WIB. Each entry states th
 
 - Enabled Leaflet scroll-wheel zoom while the pointer is over the map; existing zoom buttons and touch interactions remain available.
 - Updated design.md. Strict TypeScript/build passes; browser verification confirms wheel zoom in/out and unchanged page scroll while hovering the map. `git diff --check` passes. No commit or push.
+
+
+## 11 November 2026 — Multi-dimensional daily cube and interactive filters
+
+- Updated `notebooks/etl_tab1_ikhtisar.ipynb` to process all 6 criteria pollutants (PM2.5, PM10, SO2, CO, O3, NO2) from 27 AQMS stations, normalize logger ppm values (x1,000 for BJB-01, MDN-01, PSW-01), apply the >=75% (18h) daily completeness rule, and include both VALID and VALID+SUSPECT records.
+- Exported a compact daily multi-dimensional cube (1,018 dates x 27 stations x 6 pollutants x 2 QC modes, 1.64 MB < 2 MB booklet limit) alongside default period pre-aggregations in `dataset/dashboard/tab1_ikhtisar.json` and `dashboard/tab1_ikhtisar.json`.
+- Extended TypeScript types in `dashboard/src/data/types.ts` and runtime validation in `dashboard/src/data/validate.ts` to parse the daily cube while preserving 100% backward compatibility.
+- Enabled all interactive filters in `dashboard/src/components/filters.ts`: pollutant choices (PM2.5, PM10, SO2, CO, O3, NO2), period presets (All, 2024, 2025, 2026, Custom), interactive start and end date pickers (`<input type="date">`), and SUSPECT toggle.
+- Added custom date range inputs in `dashboard/styles.css` with responsive layout and auto-synchronization between preset dropdown and date pickers.
+- Transformed the filter summary into individual visual badges (`.filter-badge`), explicitly including the site type dimension (`Semua tipe lokasi` or active site type) and highlighting actively customized filter dimensions (`.is-active`).
+- Connected client-side dynamic recalculation in `dashboard/src/features/overview/model.ts` and `dashboard/src/features/overview/view.ts` for metrics, modal ISPU categories, exceedance rates, and hospital burden in sub-millisecond response times.
+- Added unit test suite `tests/dynamic-filters.test.ts` verifying dynamic pollutant switching, period slicing, and SUSPECT coverage.
+- Validation: strict TypeScript `tsc --noEmit` passed; esbuild bundle rebuilt cleanly (351.8 KB); all 14 unit and model tests in `tests/*.test.ts` passed. No commit or push performed.
+
+## 11 November 2026 — Station popup card refinement
+
+- Reworked the map popup into an identity header, prominent period concentration, text-labeled category/reference status, semantic detail rows, and a visible annual-compliance qualification. Added theme-aware surfaces, compact spacing, viewport-constrained width, scrollable content, and a 44px close target.
+- Updated dashboard/src/components/station-map.ts, dashboard/styles.css, generated dashboard/app.js, and design.md. Preserve analytical values and existing mode-specific details; no dataset or pipeline changes in this task.
+- Kept open popups in view and removed automatic bounds refitting on map resize after browser checks exposed clipped popup headers. Station/filter updates still fit bounds.
+- Validation: strict TypeScript, esbuild, all 16 model/data/route tests, and git diff --check pass. Node/npm were unavailable in PATH, so checks/build ran using installed Bun 1.4.4. Focused Edge browser checks pass for daily/annual content, horizontal fit, and actual close-button clicks at 375px and 1440px in both themes; reviewed mobile screenshots.
+- Limitations: the existing broader map browser test stops before popup assertions because its expected annual counts (3/24) differ from the current local export results (4/23); left this unrelated analytical expectation unchanged. Basemap requests were blocked in focused browser checks. No commit or push.
+
+## 11 November 2026 — Compact station popup without scrolling
+
+- Simplified the previous popup at user request: reduced card width from 300px to 240px, padding from 20px to 14px, and concentration numerals from 34px to 26px. Removed Leaflet maxHeight and internal scrolling.
+- Kept station identity/location, period PM2.5 concentration, dominant daily category with daily exceedance share, or annual-reference status with deviation and a short period-comparison qualification. Removed characteristic rows and repeated regulatory explanations; broader context remains in the map legend and methodology.
+- Updated dashboard/src/components/station-map.ts, dashboard/styles.css, generated dashboard/app.js, and the active popup contract in design.md. Analytical data/calculations were unchanged.
+- Validation: strict TypeScript, esbuild, all 16 data/model/route tests, and git diff --check pass using installed Bun (Node/npm unavailable in PATH). Focused Edge checks pass at 320px, 375px, and 1440px in both themes for both map modes, viewport fit, absence of internal scrolling/clipping, and actual close-button interaction. Reviewed the compact mobile screenshot. Basemap requests were blocked during browser checks; the broader browser suite was not rerun (its existing export-count mismatch is recorded above). No commit or push.
+
+## 11 November 2026 — Explicit overview coverage
+
+- Added `Cakupan 27 stasiun pemantau · Dataset sintetis` below the Ikhtisar Nasional heading; other tabs do not show this line. Renamed the full-selection mean KPI to `Rata-rata [polutan] Seluruh Stasiun`, retaining `Pilihan` for filtered station subsets. These approved wording changes clarify the dataset coverage without changing the tab name or calculations.
+- Updated dashboard/src/components/shell.ts, dashboard/src/features/overview/view.ts, the coverage contract in design.md, and rebuilt dashboard/app.js. No measurement, pipeline, map, or unrelated UI changes in this task.
+- Validation: strict TypeScript/build pass with installed Bun using constrained Go compiler resources. Focused Edge checks at 375px and 1440px pass for the coverage line, full/subset KPI labels, and absence of page-wide horizontal overflow. `git diff --check` passes. The package test command cannot run under this Bun-only environment (`Cannot use test outside of the test runner`); running the same four test files with `bun test` passes all 16 tests. No Node/npm installation or script changes; no commit or push.
+
+## 11 November 2026 — Remove overview coverage sentence
+
+- Removed only the requested coverage sentence beneath the Ikhtisar Nasional heading and its unused visibility logic in dashboard/src/components/shell.ts; rebuilt dashboard/app.js. Kept the full/subset KPI wording and all other UI content unchanged.
+- Updated the active design.md contract to record this reversal; prior change-log entries are preserved.
+- Validation: strict TypeScript/build and focused git diff --check pass using installed Bun. Browser checks were not rerun for this text removal. No commit or push.
+
+## 11 November 2026 — Restore overview fact ticker
+
+- Rebuilt the former ticker as an overview-owned TypeScript component above the indicator section. Facts derive from the same filtered station rows: highest/lowest period concentration and dominant-category counts. Single-station selections omit the redundant lowest comparison; no-match selections show an explicit empty message.
+- Added a continuous approximately 40px/s strip with Jeda/Lanjut, hover/focus pause, theme tokens, and an assistive-technology-hidden visual duplicate. Live reduced-motion preferences switch to a fully readable static list. Teardown removes observers/listeners and the ticker DOM.
+- Did not restore unsupported static claims from c593c4d about fire area, health effects, population coverage, or compliance totals. Facts inherit the provisional analytical limitations of current overview calculations; data and pipelines were not changed.
+- Affected: dashboard/src/features/overview/ticker.ts and view.ts, dashboard/styles.css, generated dashboard/app.js, tests/browser/ticker.spec.ts, design.md, and CASE_STUDY_CONTEXT.md.
+- Validation: strict TypeScript/build and all 16 existing model/data/route tests pass using installed Bun. All three focused Edge browser checks pass their assertions for actual animation, explicit pause, selected-station content, removal/remount across routes, live reduced motion, and fit at 320/1440px in both themes. Basemap requests were blocked. No commit or push.
+- Verification limit: the Bun-driven Playwright runner hung while shutting down its local server after all three checks reported success and was interrupted; a clean suite exit was not obtained. A separate browser process captured desktop moving and mobile reduced-motion ticker screenshots successfully; both were visually reviewed.
+
+## 11 November 2026 — Attach ticker to the header
+
+- Moved the existing overview ticker into a public shell mount point immediately below the title/actions row. Both rows share one sticky header, matching the user-supplied placement reference. Replaced the floating rounded card with an edge-to-edge strip and contrasting arrow-ended Fakta label.
+- Preserved fact content, filter updates, pause controls, reduced-motion behavior, and overview-only ownership/teardown. No analytical or data changes.
+- Updated shell.ts, main.ts, overview/view.ts, dashboard/styles.css, generated dashboard/app.js, design.md, and focused ticker browser checks.
+- Validation: strict TypeScript/build pass. All three focused Edge checks report passing assertions, including flush header placement, sticky behavior, pause/filter/navigation behavior, and live reduced motion with 320/1440px layouts in both themes. Reviewed separate dark desktop/mobile header screenshots. The Bun-driven test runner again hung during local-server shutdown after tests passed and was interrupted; no clean suite exit obtained. Basemap requests were blocked. No commit or push.
+
+## 11 November 2026 — General health facts across all tabs and slimmer ticker
+
+- Replaced the overview/filter-dependent ticker with one shared shell-owned instance that persists with identical content across every tab, including direct links and unavailable measurement data. Removed the obsolete feature-owned ticker and its update/mount interface.
+- Added four sourced educational facts in dashboard/src/data/air-pollution-facts.ts, based on the WHO ambient-air-pollution fact sheet (24 October 2024, checked 11 November 2026). The worldwide 4.2 million premature-death estimate explicitly states outdoor air pollution and 2019; other facts cover cardiovascular/cancer risks, children, and urban/rural scope. A persistent WHO link provides attribution. This user-requested editorial context is separate from synthetic analytical outputs; no datasets or calculations changed.
+- Reduced normal strip height from approximately 45px to 29px with 11px text and 28px controls. Preserved animation/pause and live reduced motion; the latter exposes a focusable manual horizontal scroller, avoiding a tall static header.
+- Affected: shared fact-ticker.ts, shell.ts, main.ts, overview/view.ts, dashboard/styles.css, generated dashboard/app.js, ticker browser checks, design.md, and CASE_STUDY_CONTEXT.md. No unrelated fixes, commit, or push.
+- Validation: strict TypeScript/build, all 16 existing model/data/route tests, four focused Edge browser tests, and git diff --check pass. Browser checks cover all six tab URLs without measurement data, ticker identity/content/pause across navigation and committed filters, 29px geometry, animation, source link, and keyboard scrolling/live reduced motion at 320/1440px in both themes. The runner exits cleanly when a temporary ignored configuration uses a separately managed local server; tracked server configuration was unchanged. Reviewed dark desktop/mobile header screenshots. Basemap requests were blocked; the full unrelated browser suite was not rerun.
+
+## 11 November 2026 — Remove ticker source link and hover pause
+
+- Removed the visible WHO link from the ticker and its unused source-link styling; retained source provenance in the fact data/design documentation. Hover now leaves the animation running. Explicit Jeda/Lanjut, keyboard-focus pause, and reduced motion remain unchanged.
+- Updated fact-ticker.ts, dashboard/styles.css, generated dashboard/app.js, focused ticker browser checks, design.md, and the corresponding CASE_STUDY_CONTEXT.md description. Fact text and analytical data are unchanged.
+- Validation: strict TypeScript/build, all four focused Edge browser checks, and focused git diff --check pass. Checks confirm no ticker links, actual motion while hovered, explicit pause, unchanged content across filters/tabs, direct routes without measurements, and responsive/reduced-motion behavior. No commit or push.
+
+## 11 November 2026 — Resume ticker immediately from its button
+
+- Restricted automatic focus pause to the ticker text viewport instead of the entire strip, so pressing Lanjut resumes movement immediately while the button retains focus. Explicit pause and text-viewport focus behavior remain available.
+- Updated dashboard/styles.css, rebuilt dashboard/app.js, clarified design.md, and added a browser regression assertion for actual movement after resuming without blurring the button.
+- Validation: strict TypeScript/build and all four focused Edge browser checks pass, including resume while focused, hover playback, explicit pause, filters/navigation, direct routes, and reduced-motion/responsive checks. No analytical changes, commit, or push.

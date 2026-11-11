@@ -5,6 +5,7 @@
     "province": "DKI Jakarta",
     "region": "Jakarta",
     "siteType": "Urban Background",
+    "notes": "Pusat pemerintahan Gambir, baseline urban",
     "latitude": -6.175392,
     "longitude": 106.827153
   },
@@ -14,6 +15,7 @@
     "province": "DKI Jakarta",
     "region": "Jakarta",
     "siteType": "Industrial Perimeter",
+    "notes": "Kawasan industri berat & pelabuhan Marunda",
     "latitude": -6.11182,
     "longitude": 106.96441
   },
@@ -23,6 +25,7 @@
     "province": "DKI Jakarta",
     "region": "Jakarta",
     "siteType": "Traffic / Roadside",
+    "notes": "Jalur arteri Daan Mogot, roadside padat",
     "latitude": -6.152814,
     "longitude": 106.73289
   },
@@ -32,6 +35,7 @@
     "province": "Kalimantan Tengah",
     "region": "Kalimantan Tengah",
     "siteType": "Urban Background",
+    "notes": "Kawasan perkotaan & koridor hutan tropis / gambut Palangka Raya",
     "latitude": -2.2136,
     "longitude": 113.9108
   },
@@ -41,6 +45,7 @@
     "province": "Kalimantan Tengah",
     "region": "Kalimantan Tengah",
     "siteType": "Peatland Boundary",
+    "notes": "Sentra logistik kelapa sawit & perbatasan gambut Kotawaringin Timur",
     "latitude": -2.5358,
     "longitude": 112.9554
   },
@@ -50,6 +55,7 @@
     "province": "Jawa Barat",
     "region": "Bogor",
     "siteType": "Regional / Clean Background",
+    "notes": "Dataran tinggi Cisarua Puncak, clean baseline",
     "latitude": -6.69784,
     "longitude": 106.94212
   },
@@ -59,6 +65,7 @@
     "province": "Jawa Barat",
     "region": "Bogor",
     "siteType": "Traffic / Roadside",
+    "notes": "Lembah perkotaan Baranangsiang, koridor hujan",
     "latitude": -6.6022,
     "longitude": 106.8089
   },
@@ -68,6 +75,7 @@
     "province": "D.I. Yogyakarta",
     "region": "Yogyakarta",
     "siteType": "Urban Background",
+    "notes": "Stasiun Klimatologi DIY, aglomerasi urban Sleman",
     "latitude": -7.731,
     "longitude": 110.354
   },
@@ -77,6 +85,7 @@
     "province": "Aceh",
     "region": "Aceh",
     "siteType": "Regional / Clean Background",
+    "notes": "Lembah Seulawah Indrapuri, kontrol udara sangat murni",
     "latitude": 5.404,
     "longitude": 95.475
   },
@@ -86,6 +95,7 @@
     "province": "Sumatera Barat",
     "region": "Sumatera Barat",
     "siteType": "Regional / Clean Background",
+    "notes": "GAW Bukit Kototabang, kawasan latar bersih pegunungan Bukit Barisan",
     "latitude": -0.251,
     "longitude": 100.382
   },
@@ -95,6 +105,7 @@
     "province": "Riau",
     "region": "Riau",
     "siteType": "Peatland Buffer / Urban",
+    "notes": "Stasiun Meteorologi Sultan Syarif Kasim II Pekanbaru",
     "latitude": 0.46667,
     "longitude": 101.4666
   },
@@ -104,6 +115,7 @@
     "province": "Jambi",
     "region": "Jambi",
     "siteType": "Peatland Buffer / Urban",
+    "notes": "Stasiun Meteorologi Sultan Thaha Kota Jambi",
     "latitude": -1.63,
     "longitude": 103.64
   },
@@ -113,6 +125,7 @@
     "province": "Kepulauan Riau",
     "region": "Kepulauan Riau",
     "siteType": "Industrial Perimeter / Maritime",
+    "notes": "Stasiun Meteorologi Hang Nadim, kawasan maritim & industri Batam",
     "latitude": 1.124,
     "longitude": 104.126
   },
@@ -122,6 +135,7 @@
     "province": "Bengkulu",
     "region": "Bengkulu",
     "siteType": "Urban Coastal Background",
+    "notes": "Stasiun Meteorologi Fatmawati Soekarno Kota Bengkulu",
     "latitude": -3.865,
     "longitude": 102.312
   },
@@ -131,6 +145,7 @@
     "province": "Papua Barat Daya",
     "region": "Papua Barat Daya",
     "siteType": "Coastal / Regional Background",
+    "notes": "Stasiun Meteorologi Domine Eduard Osok Kota Sorong",
     "latitude": -0.883,
     "longitude": 131.298
   },
@@ -140,6 +155,7 @@
     "province": "Jawa Timur",
     "region": "Jawa Timur",
     "siteType": "Urban Background / Valley",
+    "notes": "Stasiun Klimatologi Karangploso Kabupaten Malang",
     "latitude": -7.901,
     "longitude": 112.598
   },
@@ -149,6 +165,7 @@
     "province": "Sulawesi Selatan",
     "region": "Sulawesi Selatan",
     "siteType": "Industrial / Karst Perimeter",
+    "notes": "Stasiun Klimatologi Maros, hinterland & industri semen karst",
     "latitude": -4.997,
     "longitude": 119.57
   },
@@ -158,6 +175,7 @@
     "province": "Sulawesi Tengah",
     "region": "Sulawesi Tengah",
     "siteType": "Regional / Clean Background",
+    "notes": "GAW Bariri Lore Lindu, hutan tropis primer Sulawesi Tengah",
     "latitude": -1.65,
     "longitude": 120.183
   },
@@ -167,6 +185,7 @@
     "province": "Kalimantan Barat",
     "region": "Kalimantan Barat",
     "siteType": "Peatland Boundary / Inland",
+    "notes": "Stasiun Meteorologi Tebelian Kabupaten Sintang",
     "latitude": 0.066,
     "longitude": 111.477
   },
@@ -176,6 +195,7 @@
     "province": "Kalimantan Tengah",
     "region": "Kalimantan Tengah",
     "siteType": "Peatland Boundary / Airport",
+    "notes": "Stasiun Meteorologi Iskandar Pangkalan Bun",
     "latitude": -2.704,
     "longitude": 111.676
   },
@@ -185,6 +205,7 @@
     "province": "Sumatera Selatan",
     "region": "Sumatera Selatan",
     "siteType": "Peatland Buffer / Urban Artery",
+    "notes": "Stasiun Klimatologi Sumatera Selatan di Talang Betutu Palembang",
     "latitude": -2.94,
     "longitude": 104.7
   },
@@ -194,6 +215,7 @@
     "province": "Lampung",
     "region": "Lampung",
     "siteType": "Urban Background / Highway Corridor",
+    "notes": "Stasiun Klimatologi Lampung di Masgar Tegineneng Pesawaran",
     "latitude": -5.17,
     "longitude": 105.178
   },
@@ -203,6 +225,7 @@
     "province": "Papua Selatan",
     "region": "Papua",
     "siteType": "Coastal / Remote Savanna",
+    "notes": "Stasiun Meteorologi Mopah Merauke",
     "latitude": -8.5211,
     "longitude": 140.4072
   },
@@ -212,6 +235,7 @@
     "province": "Sumatera Utara",
     "region": "Sumatera Utara",
     "siteType": "Urban Background",
+    "notes": "Stasiun Klimatologi Sumatera Utara Medan",
     "latitude": 3.59,
     "longitude": 98.85
   },
@@ -221,6 +245,7 @@
     "province": "Kalimantan Timur",
     "region": "Kalimantan Timur",
     "siteType": "Industrial & Deforestation Buffer",
+    "notes": "Stasiun Meteorologi Samarinda APT Pranoto",
     "latitude": -0.4825,
     "longitude": 117.1563
   },
@@ -230,6 +255,7 @@
     "province": "Kalimantan Selatan",
     "region": "Kalimantan Selatan",
     "siteType": "Airport & Peatland Buffer",
+    "notes": "Stasiun Klimatologi Kalimantan Selatan Banjarbaru",
     "latitude": -3.475,
     "longitude": 114.856
   },
@@ -239,6 +265,7 @@
     "province": "Jambi",
     "region": "Sumatera",
     "siteType": "Peatland & Plantation Hinterland",
+    "notes": "Stasiun Klimatologi Jambi di Muaro Jambi",
     "latitude": -1.635,
     "longitude": 103.646
   }

@@ -66,7 +66,7 @@ export function createStationMap(host: HTMLElement, reference: DashboardData['re
   const fit = (): void => {
     if (bounds) map.fitBounds(bounds, { padding: [24, 24], maxZoom: 9, animate: false });
   };
-  const observer = new ResizeObserver(() => { map.invalidateSize({ pan: false }); fit(); });
+  const observer = new ResizeObserver(() => { map.invalidateSize({ pan: false }); });
   observer.observe(viewport);
 
   const render = (): void => {
@@ -78,32 +78,31 @@ export function createStationMap(host: HTMLElement, reference: DashboardData['re
       const popup = element('div', 'station-popup');
       const style = referenceMarker(station, mode, reference.annual);
       const deviation = station.average - reference.annual;
-      popup.append(
-        element('strong', '', station.code), element('p', '', station.name),
-        element('p', '', `Lokasi: ${station.city}, ${station.province}`),
-        element('p', '', `Karakteristik: ${station.siteType}`),
-        element('p', '', `Rata-Rata PM2.5: ${number(station.average)} µg/m³`),
-      );
-      if (mode === 'daily') {
-        popup.append(
-          element('p', '', `ISPU Dominan: ${station.category}`),
-          element('p', '', `Hari Melanggar 24-Jam: ${number(station.exceedance)}% hari`),
-          element('p', '', `Baku Mutu 24 Jam (${number(reference.daily)} µg/m³): ${station.exceedance === 0 ? 'TIDAK ADA HARI MELEBIHI PADA EKSPOR' : 'TERDAPAT PELANGGARAN PADA EKSPOR'}`),
-        );
-      } else {
-        popup.append(
-          element('p', '', `Deviasi Batas ${number(reference.annual)} µg/m³: ${deviation > 0 ? '+' : ''}${number(deviation)} µg/m³`),
-          element('p', '', `Acuan Tahunan PP 22/2021: ${deviation <= 0 ? 'MEMENUHI' : 'MELEBIHI'} ambang pada rata-rata periode`),
-        );
-      }
-      popup.append(element('small', '', 'Rata-rata periode · perbandingan acuan, bukan audit kepatuhan tahunan'));
+      const identity = element('header', 'station-popup-header');
+      identity.append(element('span', 'station-popup-code', station.code), element('h3', 'station-popup-name', station.name));
+      const concentration = element('div', 'station-popup-concentration');
+      const value = element('div', 'station-popup-value');
+      value.append(element('strong', '', number(station.average)), element('span', '', 'µg/m³'));
+      concentration.append(element('span', 'station-popup-label', 'PM2.5 · rata-rata periode'), value);
+      const status = element('div', 'station-popup-status');
+      const dot = element('span', 'station-popup-dot');
+      dot.style.backgroundColor = style.color;
+      dot.setAttribute('aria-hidden', 'true');
+      status.append(dot, element('span', '', mode === 'daily'
+        ? `ISPU Dominan: ${station.category}`
+        : `${deviation <= 0 ? 'Di bawah' : 'Di atas'} acuan tahunan`));
+      const detail = element('p', 'station-popup-detail', mode === 'daily'
+        ? `${number(station.exceedance)}% hari > ${number(reference.daily)} µg/m³`
+        : `${deviation > 0 ? '+' : ''}${number(deviation)} µg/m³ dari acuan ${number(reference.annual)} µg/m³`);
+      popup.append(identity, element('p', 'station-popup-location', `${station.city}, ${station.province}`), concentration, status, detail);
+      if (mode === 'annual') popup.append(element('small', 'station-popup-note', 'Rata-rata periode terpilih dibandingkan dengan acuan tahunan.'));
       const tooltip = element('div');
       tooltip.append(element('strong', '', station.name), element('p', '', mode === 'daily'
         ? `${station.city} · ISPU Dominan: ${station.category}`
         : `${station.city} · ${number(station.average)} µg/m³ · ${deviation <= 0 ? 'Memenuhi' : 'Melebihi'} acuan`));
       L.circleMarker(position, {
         radius: style.radius, color: '#fff', weight: 2, fillColor: style.color, fillOpacity: 0.9,
-      }).bindPopup(popup).bindTooltip(tooltip).addTo(markers);
+      }).bindPopup(popup, { className: 'station-map-popup', keepInView: true, minWidth: 200, maxWidth: 240, autoPanPadding: [16, 16] }).bindTooltip(tooltip).addTo(markers);
     }
     bounds = coordinates.length ? L.latLngBounds(coordinates) : null;
     if (bounds) fit();

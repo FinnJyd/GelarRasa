@@ -15,6 +15,9 @@ These instructions apply to all work in this repository.
 
 ## Communication and comments
 
+- Limit changes strictly to what the user requests. Do not make unrelated fixes, refactors, formatting changes, or other file changes without explicit user approval.
+- If something outside the requested scope looks unusual or potentially incorrect, tell the user and ask whether it is intentional or a mistake before changing it.
+
 - Keep comments concise and on one line by default. Use multiple lines only when necessary to explain a non-obvious decision or behavior.
 - Explain why a decision exists rather than restating what the code does.
 - Investigate blockers and continue independent work. If a blocker requires a decision or missing information, explain it and ask for the user's input with a recommended option.

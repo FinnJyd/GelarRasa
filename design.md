@@ -45,7 +45,7 @@ Reviewed references:
 | `dataset/raw/master/` and `dataset/raw/metadata/` | Authoritative station dimensions, observation metadata, and instrument/export units. |
 | `dataset/raw/aqms/` and `dataset/raw/health/` | Measurement and outcome records for analytical reasoning. |
 | [Tab 1 pipeline](notebooks/etl_tab1_ikhtisar.ipynb) | Current calculations and known analytical assumptions. |
-| [Display export](dashboard/tab1_ikhtisar.json) | Existing per-station summaries and fixed-scope health indicators used by this UI. |
+| [Display export](dashboard/tab1_ikhtisar.json) | Station summaries and daily health data used to calculate indicators for the selected stations and period. |
 
 `dashboard/src/` contains strict TypeScript. `components/` owns shell, filters, opening, methodology, and map. `features/overview/` owns overview selection and presentation. `shared/` owns chart components and lifecycle, palette, panels, icons, formatting, and the station table. `data/` owns interfaces, runtime validation, and loading.
 
@@ -66,6 +66,8 @@ Desktop reading order:
 5. A full-width map with daily and annual reference controls, encoding legends, and station popups.
 6. Expandable station data and unobtrusive source information.
 
+Do not add the coverage sentence below the Ikhtisar Nasional heading; the user removed it on 11 November 2026 after reviewing the implementation. Keep the tab title unchanged. The mean-concentration KPI uses `Rata-rata [polutan] Seluruh Stasiun` for all stations and `Rata-rata [polutan] Pilihan` for a subset.
+
 The added high/low ranking panels and standalone admissions panel are removed. Hospital content remains only in the reference’s hospital-burden KPI and methodology.
 
 Visuals should occupy most analytical panel area. Aim for roughly 70% or more plot/indicator area within the analytical grid, excluding the application shell and expanded filter controls. This is a design target, not a claim of an automatically measured accessibility or judging score.
@@ -78,12 +80,12 @@ Visuals should occupy most analytical panel area. Aim for roughly 70% or more pl
 | KPI context | One short line; identifiers may wrap. |
 | Composition | Doughnut, total, category legend with count and percentage; one brief definition. |
 | Rankings | Chart labels, values, axes, and a short scale/count caption. |
-| Health | Large ratio, two denominator facts, fixed-scope label, brief interpretation caveat. |
+| Health | Large ratio, admissions/capacity context, selected facility scope, brief interpretation caveat. |
 | Map | Visual control, concise encoding label, dynamic legend, compact provider/failure status. |
 | Data quality | A visible short `Data sementara` control near the scope; detailed limitations in methodology. |
 | Methodology | Detailed explanations are allowed here because the reader explicitly requests them. |
 
-Do not hide a qualification needed to understand the result. The synthetic scope, provisional status, concentration units, and fixed health scope remain visible. Shorten prose by improving visual encodings, not by removing important limitations.
+Do not hide a qualification needed to understand the result. The synthetic scope, provisional status, concentration units, and selected health scope remain visible. Shorten prose by improving visual encodings, not by removing important limitations.
 
 ## 5. Chart selection and behavior
 
@@ -103,7 +105,7 @@ A doughnut is the default for mutually exclusive category composition. The overv
 
 ### Indicators
 
-The four reference subjects are PM2.5 mean, percentage of days exceeding the daily reference, most critical station, and hospital burden. Display large figures, units, reference context, and selected-scope qualifiers in the existing four-card grid. Do not add separate rankings or an admissions panel. The hospital KPI remains global and explains that the ratio is not occupancy.
+The four reference subjects are PM2.5 mean, percentage of days exceeding the daily reference, most critical station, and hospital burden. Display large figures, units, reference context, and selected-scope qualifiers in the existing four-card grid. Do not add separate rankings or an admissions panel. The hospital KPI follows the selected stations and period and explains that the ratio is not occupancy.
 
 ### Accessible alternatives
 
@@ -207,7 +209,9 @@ Filters remain collapsed by default at every width, with actual selected values 
 
 The source master contains mixed `region_group` labels such as Jakarta, Bogor, and provinces. Preserve those labels instead of inventing island groups. Constrain available station/type options and announce when an incompatible selection is cleared. Reset restores the supported baseline without changing disclosure visibility.
 
-Date, alternative pollutant, and SUSPECT processing are not supported by the current display export; keep those controls disabled with a brief explanation until calculations exist. A moving chart or changing label is not evidence of working filtering. The health indicator remains visibly global and unchanged by station selection.
+Date, alternative pollutant, and SUSPECT processing are not supported by the current display export; keep those controls disabled with a brief explanation until calculations exist. A moving chart or changing label is not evidence of working filtering.
+
+The health indicator is dynamic: region, site type, and station filters determine the associated facilities; the selected dates determine the admissions period. Calculate mean daily under-5 plus over-60 respiratory admissions for those facilities divided by their summed bed capacity, multiplied by 100. Show the selected facility scope and admissions/capacity context; all stations means all reference facilities. Pollutant choice and AQMS SUSPECT inclusion do not filter hospital admissions. This ratio is not bed occupancy and does not establish a causal health effect.
 
 No matches must produce a genuine empty state. Do not silently show all stations, zero-valued averages, or fabricated observations. A failed export must leave navigation and retry behavior usable.
 
@@ -315,12 +319,20 @@ The user selected commit `c593c4da5e815fbd0bc85283f1bf07860271051f` as the conte
 | National PM2.5 mean | Same subject and supplied value; labeled as a period mean instead of claiming a multi-year aggregate is annual compliance. |
 | Days above the 24-hour reference | Full scope reads the existing export’s national 17.7% indicator. A selected subset shows the equal-weight mean of its exported station percentages, explicitly labeled with that different denominator. |
 | Most critical station | Existing selected station with the highest mean; code, location, concentration, and exported exceedance percentage, without inventing an intervention priority. |
-| Hospital burden index | Existing exported 6.43% ratio, 404 daily admissions, and 6,280 beds. Remains global; the KPI and methodology explain its global scope and that it is not occupancy. |
+| Hospital burden index | Recalculate from the daily health export for facilities associated with the selected stations and selected dates. Display the corresponding admissions and bed-capacity denominator; do not hardcode the initial full-scope figures. This ratio is not occupancy. |
 | Dominant ISPU and geospatial headings | Restored through existing composition/map panels. Keep modal-category and period-mean qualifications. |
 | Tabs 2–6 | Original analytical titles, subtitles, module headings, and planned visualization descriptions. Clearly marked unavailable and described as plans, without fake charts or model outputs. |
 | Methodology | Restore the integrity-oriented title, retaining the accurate current definitions, source trail, and limitations. Add the two exceedance-denominator definitions. |
 
 The old ticker’s unverified health effects, fire area, national population comparisons, invented hospital names, static QC totals, 4,660 violation days, unsupported 18-hour completeness guarantee, and fitted-model claims are not copied as measured results. The supplied raw master contains anonymous hospital labels, and the existing notebook does not implement several old claims. Keep this distinction explicit in the documentation rather than presenting an exact transcription as validated analysis.
+
+The user-requested ticker is a full-width `Fakta` strip directly attached below the topbar, inside the same sticky header. Use a contrasting arrow-ended label and no floating-card radius or content gutters, matching the supplied reference placement. The normal-motion strip is approximately 29px high (previously 45px), including a compact 28px pause target. Keep text at 11px and controls at least 24px high. This user-requested compact strip is an exception to the general 44px control target.
+
+The ticker shows identical general air-pollution health facts on every tab and does not depend on filters, selected stations, measurement loading, or unavailable analytical modules. Its public-health reference is the [WHO ambient air pollution fact sheet](https://www.who.int/news-room/fact-sheets/detail/ambient-(outdoor)-air-quality-and-health), published 24 October 2024 and checked 11 November 2026. The user removed the visible WHO link; preserve the source reference in the fact data and this design document. The 4.2 million premature-death estimate explicitly identifies worldwide outdoor air pollution and the year 2019. Other messages describe serious cardiovascular/respiratory risks, child health, and urban/rural scope without inventing local impacts or individual risk percentages.
+
+At the user's request, this editorial health context uses an external reference; it is separate from the synthetic competition dataset and is not an analytical input or a result derived from the supplied stations. All analytical indicators/charts/maps continue to use project data. This decision supersedes the earlier filter-dependent, overview-only ticker; unsupported legacy claims remain excluded.
+
+Normal motion uses a continuous approximately 40px/s loop, continues on hover, pauses when the text viewport receives focus, and provides a persistent Jeda/Lanjut control. Focus on the toggle itself must not pause playback: pressing Lanjut resumes immediately while the button retains focus. Duplicate visual content is hidden from assistive technology. Reduced motion removes animation and the redundant pause control, exposing the full original list in a focusable horizontal scroller to keep the header slim; JavaScript responds to live preference changes. The shared shell owns one ticker instance across navigation and removes its resize observer and preference/button listeners on application teardown.
 
 Regulatory numbers are read from metadata as reference values stored in the existing export, not an assertion that this presentation audited current law or demonstrated compliance. For the restored annual map mode, compare existing period means to the export’s annual reference with an explicit visible period-versus-year qualification; do not present that comparison as a completed annual compliance audit. No measurement files, raw records, exports, or notebook calculations are changed by this content restoration.
 
@@ -356,3 +368,18 @@ The theme selector is an icon-only group: sun for light, moon for dark, desktop 
 ## 22. Compact collapsed rail — 11 November 2026
 
 The collapsed sidebar must be compact as a whole: 72px rail, 44 × 44px navigation targets, 20px SVGs, and a centered 44px competition-logo box with a 28px-high image. Center navigation, chevron, and logo on the same vertical axis. Avoid full-rail active backgrounds: the active background stays square. Preserve the full expanded sidebar, large textual PRANA logo, and mobile drawer layout.
+
+
+### Station popup card — 11 November 2026
+
+Map popups use a compact 240px card with 14px padding and no internal scrolling. Show only station identity/location, period concentration, labeled category/reference status, and one mode-specific figure (daily exceedance share or annual-reference deviation). Annual mode retains a brief period-comparison qualification. Remove characteristic rows and repeated regulation/status explanations; keep detailed context in the surrounding map legend and methodology. Pair severity dots with text and retain a 44px close target. Analytical values and map encodings are unchanged. This compact design supersedes the earlier scrollable card at the user's request on 11 November 2026.
+
+Open popups stay in view. Resizing invalidates Leaflet geometry without refitting station bounds; fit bounds when the selected station population or reference mode is rendered, preserving the popup position during layout changes.
+
+### Dynamic hospital indicator — 11 November 2026
+
+User-confirmed decision: the hospital KPI follows station-selection filters (region, site type, station) and the selected date range. This supersedes the earlier fixed/global health-scope decision. Pollutant and AQMS quality selections do not alter hospital records. Updated only the health-scope contract and descriptions; inspected overview/view.ts and overview/model.ts to confirm the current filter arguments and ratio calculation. This documentation update is not browser verification or validation of station-to-hospital mappings. No application, data, or pipeline changes were made.
+
+### Tab 2 and Tab 3 analytical scope — 11 November 2026
+
+User-approved planning change: Tab 2 owns regulatory comparisons, exceedance frequency, station rankings, and changes in compliance between comparable annual periods. Tab 3 owns historical concentration trends, monthly/seasonal patterns, peak hours, and extreme pollution episodes. A partial-year comparison is not a full calendar-year compliance evaluation. The station-by-month heatmap remains listed under Tab 2 pending a separate placement decision. CASE_STUDY_CONTEXT.md and its planned export descriptions reflect this boundary; these remain plans, not implemented features.

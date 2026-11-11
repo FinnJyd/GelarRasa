@@ -30,7 +30,7 @@ export function createOpening(): {
     document.body.removeAttribute('data-opening');
     screen.remove();
     resolveReady();
-    if (shouldRestoreFocus) document.getElementById('dashboard-content')?.focus();
+    if (shouldRestoreFocus) document.getElementById('dashboard-content')?.focus({ preventScroll: true });
   };
   const reveal = (): void => {
     if (leaving || disposed) return;

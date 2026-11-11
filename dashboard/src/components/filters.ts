@@ -56,25 +56,103 @@ export function createFilters(data: DashboardData, onChange: (state: FilterState
   const site = searchableSelect('filter-type', 'Tipe lokasi', value => { state.siteType = value; publish(); });
   const station = searchableSelect('filter-station', 'Stasiun', value => { state.station = value; publish(); });
   const dates = element('div', 'filter-field');
-  const dateLabel = element('label', '', 'Rentang tanggal');
-  dateLabel.htmlFor = 'filter-date-range';
-  const dateInput = element('input');
-  dateInput.id = 'filter-date-range';
-  dateInput.value = period(data.start, data.end);
-  dateInput.disabled = true;
-  dates.append(dateLabel, dateInput);
+  const dateLabel = element('label', '', 'Rentang tanggal (Bebas)');
+  dateLabel.htmlFor = 'filter-date-start';
+  const rangeBox = element('div', 'date-range-inputs');
+  const startInput = element('input');
+  startInput.type = 'date';
+  startInput.id = 'filter-date-start';
+  startInput.min = data.start;
+  startInput.max = data.end;
+  startInput.value = state.startDate ?? data.start;
+  startInput.setAttribute('aria-label', 'Tanggal mulai');
+
+  const sep = element('span', 'date-separator', 's.d.');
+
+  const endInput = element('input');
+  endInput.type = 'date';
+  endInput.id = 'filter-date-end';
+  endInput.min = data.start;
+  endInput.max = data.end;
+  endInput.value = state.endDate ?? data.end;
+  endInput.setAttribute('aria-label', 'Tanggal selesai');
+
+  rangeBox.append(startInput, sep, endInput);
+  dates.append(dateLabel, rangeBox);
+
+  const syncDatesFromInputs = (): void => {
+    let s = startInput.value || data.start;
+    let e = endInput.value || data.end;
+    if (s < data.start) s = data.start;
+    if (s > data.end) s = data.end;
+    if (e < data.start) e = data.start;
+    if (e > data.end) e = data.end;
+    if (s > e) {
+      const tmp = s;
+      s = e;
+      e = tmp;
+    }
+    startInput.value = s;
+    endInput.value = e;
+    state.startDate = s;
+    state.endDate = e;
+    state.periodPreset = 'custom';
+    preset.select.value = 'custom';
+    publish();
+  };
+
+  startInput.addEventListener('change', syncDatesFromInputs, { signal: controller.signal });
+  endInput.addEventListener('change', syncDatesFromInputs, { signal: controller.signal });
+
   const preset = selectField('Periode', 'filter-date-preset');
-  options(preset.select, [['all', 'Seluruh periode ekspor']], 'all');
-  preset.select.disabled = true;
+  const presetChoices: [string, string][] = [
+    ['all', 'Seluruh periode (2024–2026)'],
+    ['2024', 'Tahun 2024 Penuh'],
+    ['2025', 'Tahun 2025 Penuh'],
+    ['2026', 'Tahun 2026 (Jan–Okt)'],
+    ['custom', 'Rentang Kustom (Bebas)'],
+  ];
+  options(preset.select, presetChoices, state.periodPreset ?? 'all');
+  preset.select.disabled = false;
+  preset.select.addEventListener('change', () => {
+    state.periodPreset = preset.select.value;
+    if (state.periodPreset === '2024') {
+      state.startDate = '2024-01-01';
+      state.endDate = '2024-12-31';
+    } else if (state.periodPreset === '2025') {
+      state.startDate = '2025-01-01';
+      state.endDate = '2025-12-31';
+    } else if (state.periodPreset === '2026') {
+      state.startDate = '2026-01-01';
+      state.endDate = '2026-10-14';
+    } else if (state.periodPreset === 'all') {
+      state.startDate = data.start;
+      state.endDate = data.end;
+    }
+    startInput.value = state.startDate ?? data.start;
+    endInput.value = state.endDate ?? data.end;
+    publish();
+  }, { signal: controller.signal });
+
   const pollutant = element('div', 'filter-field');
   const pollutantLabel = element('span', 'field-label', 'Polutan');
   const choices = element('div', 'pollutant-options');
   choices.setAttribute('role', 'group');
-  choices.setAttribute('aria-label', 'Polutan yang tersedia dalam ekspor');
+  choices.setAttribute('aria-label', 'Pilihan polutan kriteria');
+  const activePollutant = state.pollutant ?? 'PM2.5';
   for (const name of ['PM2.5', 'PM10', 'SO2', 'CO', 'O3', 'NO2']) {
-    const choice = button(name, name === 'PM2.5' ? 'pollutant active' : 'pollutant');
-    choice.disabled = true;
-    choice.setAttribute('aria-pressed', String(name === 'PM2.5'));
+    const choice = button(name, name === activePollutant ? 'pollutant active' : 'pollutant');
+    choice.disabled = false;
+    choice.setAttribute('aria-pressed', String(name === activePollutant));
+    choice.addEventListener('click', () => {
+      state.pollutant = name;
+      for (const btn of choices.querySelectorAll<HTMLButtonElement>('.pollutant')) {
+        const isActive = btn.textContent === name;
+        btn.classList.toggle('active', isActive);
+        btn.setAttribute('aria-pressed', String(isActive));
+      }
+      publish();
+    }, { signal: controller.signal });
     choices.append(choice);
   }
   pollutant.append(pollutantLabel, choices);
@@ -84,14 +162,19 @@ export function createFilters(data: DashboardData, onChange: (state: FilterState
   const suspectInput = element('input');
   suspectInput.type = 'checkbox';
   suspectInput.id = 'filter-suspect';
-  suspectInput.disabled = true;
+  suspectInput.checked = Boolean(state.includeSuspect);
+  suspectInput.disabled = false;
+  suspectInput.addEventListener('change', () => {
+    state.includeSuspect = suspectInput.checked;
+    publish();
+  }, { signal: controller.signal });
   suspect.append(suspectInput, element('span', '', 'Sertakan data SUSPECT'));
   const reset = button('Reset filter', 'button button-subtle');
   reset.id = 'filter-reset';
   footer.append(suspect, reset);
-  const explanation = element('p', 'filter-note', 'Tersedia: PM2.5 · seluruh periode · VALID. Dimensi lainnya belum tersedia.');
+  const explanation = element('p', 'filter-note', 'Aktif: Deret harian 2024–2026 · 6 Polutan kriteria · Mode QC VALID & SUSPECT.');
   explanation.id = 'filter-availability';
-  for (const control of [dateInput, preset.select, suspectInput]) control.setAttribute('aria-describedby', explanation.id);
+  for (const control of [startInput, endInput, preset.select, suspectInput]) control.setAttribute('aria-describedby', explanation.id);
   choices.setAttribute('aria-describedby', explanation.id);
   body.append(grid, footer, explanation);
   root.append(summary, body);
@@ -112,11 +195,37 @@ export function createFilters(data: DashboardData, onChange: (state: FilterState
     }
     station.setOptions([['all', 'Semua stasiun'], ...eligible.map(item => [item.code, `${item.code} · ${item.city}`] satisfies [string, string])], state.station);
     const chosen = data.stations.find(item => item.code === state.station);
-    const parts = [period(data.start, data.end), state.region === 'all' ? 'Semua wilayah' : state.region,
-      chosen?.code ?? 'Semua stasiun'];
-    if (state.siteType !== 'all') parts.push(state.siteType);
-    parts.push('PM2.5', 'VALID');
-    selected.textContent = parts.join(' · ');
+    const activeStart = state.startDate ?? data.start;
+    const activeEnd = state.endDate ?? data.end;
+    const items: { label: string; active: boolean }[] = [
+      {
+        label: period(activeStart, activeEnd),
+        active: activeStart !== data.start || activeEnd !== data.end,
+      },
+      {
+        label: state.region === 'all' ? 'Semua wilayah' : state.region,
+        active: state.region !== 'all',
+      },
+      {
+        label: chosen?.code ?? 'Semua stasiun',
+        active: state.station !== 'all',
+      },
+      {
+        label: state.siteType === 'all' ? 'Semua tipe lokasi' : state.siteType,
+        active: state.siteType !== 'all',
+      },
+      {
+        label: state.pollutant ?? 'PM2.5',
+        active: (state.pollutant ?? 'PM2.5') !== 'PM2.5',
+      },
+      {
+        label: state.includeSuspect ? 'VALID + SUSPECT' : 'VALID',
+        active: Boolean(state.includeSuspect),
+      },
+    ];
+    selected.replaceChildren(...items.map(({ label, active }) =>
+      element('span', active ? 'filter-badge is-active' : 'filter-badge', label)
+    ));
     return cleared;
   }
 
@@ -128,6 +237,15 @@ export function createFilters(data: DashboardData, onChange: (state: FilterState
   reset.addEventListener('click', () => {
     state = defaultFilters();
     region.setOptions([['all', 'Semua wilayah'], ...distinct(data.stations, 'region').map(value => [value, value] satisfies [string, string])], 'all');
+    preset.select.value = 'all';
+    startInput.value = data.start;
+    endInput.value = data.end;
+    suspectInput.checked = false;
+    for (const btn of choices.querySelectorAll<HTMLButtonElement>('.pollutant')) {
+      const isDefault = btn.textContent === 'PM2.5';
+      btn.classList.toggle('active', isDefault);
+      btn.setAttribute('aria-pressed', String(isDefault));
+    }
     publish();
   }, { signal: controller.signal });
   const close = (): void => { region.close(); site.close(); station.close(); };

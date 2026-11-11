@@ -77,6 +77,7 @@ export function parseDashboard(raw: unknown, rawCatalog: unknown): DashboardData
       province: text(dimension['province'], 'province'),
       region: text(dimension['region'], 'region'),
       siteType: text(dimension['siteType'], 'siteType'),
+      notes: text(dimension['notes'], 'notes'),
       latitude: numeric(dimension['latitude'], 'latitude', -90, 90),
       longitude: numeric(dimension['longitude'], 'longitude', -180, 180),
       average: numeric(row['avg_pm25'], 'avg_pm25'),
@@ -93,6 +94,10 @@ export function parseDashboard(raw: unknown, rawCatalog: unknown): DashboardData
   if (start > end) throw new Error('Rentang tanggal ekspor tidak valid.');
   const generated = text(meta['generated_at'], 'generated_at');
   if (!Number.isFinite(Date.parse(generated))) throw new Error('Waktu ekspor tidak valid.');
+  let cube: DashboardData['cube'];
+  if (root['daily_cube'] && isRecord(root['daily_cube'])) {
+    cube = root['daily_cube'] as unknown as DashboardData['cube'];
+  }
   return {
     start, end, generated, stations,
     nationalExceedance: numeric(kpi['pct_days_exceed_24h'], 'pct_days_exceed_24h', 0, 100),
@@ -108,5 +113,6 @@ export function parseDashboard(raw: unknown, rawCatalog: unknown): DashboardData
       hospitals: integer(detail['total_hospitals'], 'total_hospitals', 1),
       days: integer(detail['days_observed'], 'days_observed', 1),
     },
+    ...(cube ? { cube } : {}),
   };
 }
