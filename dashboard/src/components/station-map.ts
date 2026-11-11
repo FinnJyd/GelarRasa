@@ -1,5 +1,4 @@
 import * as L from 'leaflet';
-import 'leaflet/dist/leaflet.css';
 import { CATEGORIES } from '../data/types';
 import type { DashboardData, Station } from '../data/types';
 import { button, element } from '../shared/dom';

@@ -36,3 +36,6 @@ Thumbs.db
 # Browser verification artifacts
 test-results/
 playwright-report/
+
+# Vite build output (the synchronized dashboard static export remains tracked)
+dist/

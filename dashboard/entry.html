@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <base href="/dashboard/">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="PRANA — jelajahi kualitas udara dan kesehatan melalui visualisasi stasiun pemantau.">
+  <meta name="color-scheme" content="light dark">
+  <title>DA2026_Dashboard_NasiBakarCumiHitamPakKris_AlfinJayadi</title>
+  <link rel="icon" href="../assets/Prana Emblem.png">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body data-opening>
+  <div id="opening-screen" class="opening-screen" role="status" aria-label="PRANA sedang memuat kualitas udara">
+    <div class="haze haze-far" aria-hidden="true"></div>
+    <div class="haze haze-near" aria-hidden="true"></div>
+    <div class="opening-orbit" aria-hidden="true"></div>
+    <div class="opening-brand">
+      <img src="../assets/Prana Emblem.png" alt="" class="opening-emblem" width="94" height="94">
+      <img src="../assets/Prana Textual.png" alt="PRANA" class="opening-wordmark" width="226" height="90">
+      <p>Membaca udara. Memahami dampaknya.</p>
+      <div class="opening-breath" aria-hidden="true"><span></span></div>
+      <span class="opening-caption">Menyiapkan ikhtisar kualitas udara</span>
+    </div>
+    <button id="skip-opening" type="button" class="opening-skip">Lihat dashboard <span aria-hidden="true">↗</span></button>
+  </div>
+  <a class="skip-link" href="#dashboard-content">Lewati navigasi</a>
+  <div id="app"><p class="startup-message">Memuat ikhtisar udara…</p></div>
+  <noscript><style>.opening-screen { display: none; }</style>Aktifkan JavaScript untuk menggunakan PRANA.</noscript>
+  <script type="module" src="/dashboard/src/main.ts"></script>
+</body>
+</html>

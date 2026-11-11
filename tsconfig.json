@@ -21,13 +21,15 @@
     "skipLibCheck": false,
     "noEmit": true,
     "types": [
-      "node"
+      "node",
+      "vite/client"
     ],
     "resolveJsonModule": true
   },
   "include": [
     "dashboard/src/**/*.ts",
     "tests/**/*.ts",
-    "playwright.config.ts"
+    "playwright.config.ts",
+    "vite.config.ts"
   ]
 }

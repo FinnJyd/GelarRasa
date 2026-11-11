@@ -1,4 +1,5 @@
 import type { Chart, ChartType } from 'chart.js';
+import type { UpdatePayload } from 'vite';
 
 export const chartTheme = (): { text: string; grid: string; surface: string; accent: string } => {
   const styles = getComputedStyle(document.documentElement);
@@ -31,11 +32,16 @@ export function manageChart<T extends ChartType>(
   const observer = new MutationObserver(refresh);
   observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
   motion.addEventListener('change', refresh, { signal: controller.signal });
+  const refreshStyles = (update: UpdatePayload): void => {
+    if (update.updates.some(item => item.type === 'css-update')) refresh();
+  };
+  import.meta.hot?.on('vite:afterUpdate', refreshStyles);
   applyTheme();
   return {
     refresh,
     destroy: () => {
       controller.abort();
+      import.meta.hot?.off('vite:afterUpdate', refreshStyles);
       observer.disconnect();
       chart.stop();
       chart.destroy();

@@ -11,7 +11,9 @@ export default defineConfig({
     launchOptions: process.env['PRANA_BROWSER_PATH'] ? { executablePath: process.env['PRANA_BROWSER_PATH'] } : {},
   },
   webServer: {
-    command: 'python3 scripts/dev.py --port 5511 --strict-port',
+    command: process.env['PRANA_TEST_MODE'] === 'production'
+      ? 'npm run preview -- --port 5511 --strictPort'
+      : 'npm run dev -- --port 5511 --strictPort',
     url: 'http://127.0.0.1:5511/dashboard',
     stderr: 'ignore',
     reuseExistingServer: false,
