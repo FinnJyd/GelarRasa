@@ -76,10 +76,10 @@ body[data-opening] .skip-link { visibility: hidden; }
 .startup-message { padding: 40px; }
 .app-layout { display: grid; grid-template-columns: 256px minmax(0, 1fr); min-height: 100dvh; transition: grid-template-columns 360ms var(--ease); }
 .sidebar { display: flex; flex-direction: column; gap: 12px; position: sticky; top: 0; height: 100dvh; overflow: hidden auto; background: var(--surface); border-right: 1px solid var(--border); padding: 22px 16px 18px; transition: padding 360ms var(--ease); }
-.sidebar-brand-row { display: flex; align-items: center; justify-content: space-between; gap: 4px; min-height: 45px; margin-bottom: 24px; }
+.sidebar-brand-row { display: flex; align-items: center; justify-content: space-between; gap: 4px; min-height: 56px; margin-bottom: 24px; }
 .sidebar-brand { display: flex; align-items: center; gap: 8px; min-width: 0; }
-.brand-emblem { width: 38px; height: 38px; object-fit: contain; flex-shrink: 0; }
-.brand-wordmark { width: 110px; height: 43px; object-fit: contain; max-width: 110px; opacity: 1; transition: max-width 300ms var(--ease), opacity 180ms, transform 300ms; }
+.brand-wordmark { width: 168px; height: 56px; object-fit: contain; max-width: 168px; opacity: 1; transition: max-width 300ms var(--ease), opacity 180ms, transform 300ms; }
+.sidebar .sidebar-collapse { min-width: 44px; min-height: 44px; }
 .icon-button { display: inline-flex; align-items: center; justify-content: center; min-width: 38px; min-height: 40px; padding: 8px; border: 1px solid transparent; background: transparent; flex-shrink: 0; transition: background 180ms, color 180ms; }
 .icon-button:hover { background: var(--accent-soft); }
 .nav-caption { font-size: 10px; letter-spacing: .14em; font-weight: 600; color: var(--muted); padding: 0 14px; }
@@ -238,19 +238,22 @@ tbody tr:last-child > * { border-bottom: 0; }
 .method-section h3 { margin-bottom: 8px; }
 .method-section p { color: var(--secondary); line-height: 1.8; }
 .dialog-footer { padding: 16px 24px; display: flex; justify-content: space-between; align-items: center; gap: 16px; border-top: 1px solid var(--border); font-size: 12px; }
-.rail-navigation { grid-template-columns: 104px minmax(0, 1fr); }
+.rail-navigation { grid-template-columns: 72px minmax(0, 1fr); }
 .rail-navigation .sidebar { padding-left: 12px; padding-right: 12px; }
 .rail-navigation .brand-wordmark, .rail-navigation .nav-label { max-width: 0; opacity: 0; transform: translateX(-6px); visibility: hidden; }
-.rail-navigation .sidebar-brand { gap: 0; }
-.rail-navigation .sidebar-brand-row { flex-wrap: nowrap; justify-content: space-between; gap: 4px; }
-.rail-navigation .brand-emblem { width: 32px; height: 32px; }
-.rail-navigation .sidebar-collapse { min-width: 32px; padding: 6px; }
-.sidebar-collapse svg { transform: rotate(180deg); transition: transform 280ms var(--ease); }
-.rail-navigation .sidebar-collapse svg { transform: rotate(0); }
+.rail-navigation .sidebar-brand { display: none; }
+.rail-navigation .sidebar-brand-row { flex-wrap: nowrap; justify-content: center; gap: 0; }
+.rail-navigation .sidebar-collapse { min-width: 44px; padding: 8px; }
+.sidebar-collapse svg { width: 24px; height: 24px; transform: rotate(180deg); transition: transform 280ms var(--ease); }
+.rail-navigation .sidebar-collapse svg { width: 20px; height: 20px; transform: rotate(0); }
 .rail-navigation .nav-item { justify-content: center; gap: 0; padding-left: 8px; padding-right: 8px; }
+@media (min-width: 768px) {
+  .rail-navigation .nav-item { width: 44px; height: 44px; min-height: 44px; padding: 0; margin-inline: auto; }
+  .rail-navigation .nav-item svg { width: 20px; height: 20px; }
+}
 .rail-navigation .sidebar-context, .rail-navigation .nav-caption, .rail-navigation .competition-logo { display: none; }
-.rail-navigation .competition-brand { padding: 8px; }
-.rail-navigation .competition-logo-compact { display: block; width: 100%; height: 40px; object-fit: contain; }
+.rail-navigation .competition-brand { width: 44px; padding: 6px; margin-inline: auto; }
+.rail-navigation .competition-logo-compact { display: block; width: 100%; height: 28px; object-fit: contain; }
 .overview-hero .panel, .rankings-grid .panel, .geography-grid .panel { animation: panel-enter 550ms var(--ease) both; }
 @keyframes panel-enter { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
 @keyframes metric-enter { from { opacity: .4; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
@@ -280,9 +283,9 @@ tbody tr:last-child > * { border-bottom: 0; }
 }
 @media (max-width: 1250px) {
   .app-layout { grid-template-columns: 224px minmax(0, 1fr); }
-  .rail-navigation { grid-template-columns: 104px minmax(0, 1fr); }
+  .rail-navigation { grid-template-columns: 72px minmax(0, 1fr); }
   .sidebar { padding-left: 12px; padding-right: 12px; }
-  .brand-wordmark { width: 90px; }
+  .brand-wordmark { width: 146px; height: 49px; }
   .topbar { padding: 16px 24px; gap: 16px; }
   .main-content { padding: 24px; }
   .overview-hero { grid-template-columns: minmax(0, 1fr); }
@@ -307,15 +310,18 @@ tbody tr:last-child > * { border-bottom: 0; }
   .rail-navigation .brand-wordmark, .rail-navigation .nav-label { max-width: 190px; visibility: visible; transform: none; opacity: 1; }
   .rail-navigation .sidebar-context, .rail-navigation .nav-caption, .rail-navigation .competition-logo { display: block; }
   .rail-navigation .competition-logo-compact { display: none; }
+  .rail-navigation .competition-brand { width: 100%; padding: 12px; }
   .rail-navigation .sidebar-brand-row { justify-content: space-between; flex-wrap: nowrap; }
-  .rail-navigation .brand-emblem { width: 38px; height: 38px; }
-  .drawer-open .sidebar-collapse svg { transform: rotate(180deg); }
+  .rail-navigation .sidebar-brand { display: flex; }
+  .brand-wordmark { width: 168px; height: 56px; }
+  .drawer-open .sidebar-collapse svg { width: 24px; height: 24px; transform: rotate(180deg); }
   .rail-navigation .nav-item { justify-content: flex-start; padding: 12px 14px; gap: 12px; }
   .mobile-menu { display: inline-flex; }
   .topbar { padding: 16px; gap: 12px; align-items: center; }
   .topbar-title { flex-basis: calc(100% - 60px); }
   .application-title { font-size: 16px; }
   .topbar-actions { flex-basis: 100%; justify-content: flex-end; }
+  .station-map { height: 300px; }
   .button, .icon-button { min-height: 44px; }
   .main-content { padding: 22px 16px 28px; }
   .intro-line { gap: 12px; }
@@ -341,7 +347,7 @@ tbody tr:last-child > * { border-bottom: 0; }
   .composition-panel .panel-footnote { text-align: left; }
   .doughnut-center strong { font-size: 34px; }
   .health-panel .panel-body { padding-top: 10px; }
-  .station-map { height: 300px; }
+
   .segmented-control button { min-height: 40px; }
   .dialog-header { padding: 20px 16px; }
   .dialog-content { padding: 20px 16px; }

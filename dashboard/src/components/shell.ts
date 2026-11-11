@@ -22,7 +22,7 @@ export function createShell(features: readonly Feature[], onNavigate: (feature: 
   const brand = element('div', 'sidebar-brand');
   brand.setAttribute('role', 'img');
   brand.setAttribute('aria-label', 'PRANA');
-  brand.append(image('../assets/Prana Emblem.png', '', 'brand-emblem'), image('../assets/Prana Textual.png', '', 'brand-wordmark'));
+  brand.append(image('../assets/Prana Textual.png', '', 'brand-wordmark'));
   const collapse = button('', 'icon-button sidebar-collapse');
   collapse.setAttribute('aria-label', 'Perkecil navigasi');
   collapse.setAttribute('aria-expanded', 'true');

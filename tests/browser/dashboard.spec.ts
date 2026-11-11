@@ -216,9 +216,9 @@ test('sidebar width transitions smoothly and dropdown icons are centered', async
   await page.getByRole('button', { name: 'Perkecil navigasi' }).click();
   await expect.poll(async () => {
     const width = await sidebar.evaluate(node => node.getBoundingClientRect().width);
-    return width > 104 && width < initial;
+    return width > 72 && width < initial;
   }, { intervals: [20, 20, 40, 80] }).toBe(true);
-  await expect.poll(() => sidebar.evaluate(node => node.getBoundingClientRect().width)).toBe(104);
+  await expect.poll(() => sidebar.evaluate(node => node.getBoundingClientRect().width)).toBe(72);
   await page.getByRole('button', { name: 'Perbesar navigasi' }).click();
   await expect.poll(() => sidebar.evaluate(node => node.getBoundingClientRect().width)).toBe(initial);
   await page.locator('#dashboard-filters summary').click();
@@ -332,19 +332,36 @@ test('searchable filters support typing, no matches, keyboard selection, and can
   await expect(page.getByText('27 dari 27 stasiun')).toBeVisible();
 });
 
-test('chevron stays to the right of the logo in both desktop states', async ({ page }) => {
-  const geometry = () => page.locator('.sidebar-brand-row').evaluate(node => {
-    const logo = node.querySelector('.brand-emblem')?.getBoundingClientRect();
+test('sidebar shows only the wordmark expanded and only a centered chevron collapsed', async ({ page }) => {
+  await expect(page.locator('#app-sidebar img[src*="Prana%20Emblem"], #app-sidebar .brand-emblem')).toHaveCount(0);
+  await expect(page.locator('.sidebar-brand .brand-wordmark')).toBeVisible();
+  const geometry = await page.locator('.sidebar-brand-row').evaluate(node => {
+    const logo = node.querySelector('.brand-wordmark')?.getBoundingClientRect();
     const toggle = node.querySelector('.sidebar-collapse')?.getBoundingClientRect();
     if (!logo || !toggle) throw new Error('Missing sidebar controls');
     return { right: toggle.left >= logo.right, centered: Math.abs(logo.y + logo.height / 2 - toggle.y - toggle.height / 2) < 1 };
   });
-  expect(await geometry()).toEqual({ right: true, centered: true });
+  expect(geometry).toEqual({ right: true, centered: true });
   await page.getByRole('button', { name: 'Perkecil navigasi' }).click();
-  await expect.poll(() => page.locator('#app-sidebar').evaluate(node => node.getBoundingClientRect().width)).toBe(104);
-  expect(await geometry()).toEqual({ right: true, centered: true });
+  await expect.poll(() => page.locator('#app-sidebar').evaluate(node => node.getBoundingClientRect().width)).toBe(72);
+  await expect(page.locator('.sidebar-brand')).not.toBeVisible();
+  const offset = await page.locator('.sidebar-brand-row').evaluate(node => {
+    const row = node.getBoundingClientRect();
+    const toggle = node.querySelector('.sidebar-collapse')?.getBoundingClientRect();
+    if (!toggle) throw new Error('Missing sidebar toggle');
+    return Math.abs(row.x + row.width / 2 - toggle.x - toggle.width / 2);
+  });
+  expect(offset).toBeLessThan(1);
   await expect(page.locator('.sidebar-collapse path')).toHaveAttribute('d', 'm9 5 7 7-7 7');
   await page.screenshot({ path: '/tmp/prana-sidebar-chevron.png' });
+  await page.setViewportSize({ width: 375, height: 812 });
+  await page.getByRole('button', { name: 'Buka navigasi', exact: true }).click();
+  await expect(page.locator('.sidebar-brand .brand-wordmark')).toBeVisible();
+  await page.keyboard.press('Escape');
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await expect(page.locator('.sidebar-brand')).not.toBeVisible();
+  await page.getByRole('button', { name: 'Perbesar navigasi' }).click();
+  await expect(page.locator('.sidebar-brand .brand-wordmark')).toBeVisible();
 });
 
 test('mobile search popup fits the viewport and closes with the filter panel', async ({ page }) => {

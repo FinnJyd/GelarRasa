@@ -9,7 +9,7 @@ These instructions apply to all work in this repository.
 - Preserve `DA2026_Dashboard_NasiBakarCumiHitamPakKris_AlfinJayadi` exactly as the visible application heading and HTML document title. Keep PRANA as secondary branding and tab names as separate section headings.
 - Keep the official Gelar Rasa logo visible, legible, and proportionate. Allow the required title to wrap on small screens; never shorten, replace, or clip it to simplify the layout.
 - Keep filters collapsed by default on every screen size, with selected values visible in the summary. Opening or closing must preserve selections.
-- Make the overview visual first: use Chart.js doughnuts for category composition, animated comparison charts, and an interactive map. Keep supporting interface copy short; put detailed definitions in methodology. Follow the motion and opening contracts in design.md rather than removing all animation.
+- Make the overview visual first: use a Chart.js doughnut for category composition and a full-width interactive map, matching the reference overview sections. Keep supporting interface copy short; put detailed definitions in methodology. Follow the motion and opening contracts in design.md rather than removing all animation.
 - Remove phase, scoring, and submission commentary from product copy. Preserve only the required exact title and supplied official logo. Center icon/text controls with explicit flex alignment and consistent SVG chevrons.
 - Treat design targets and audit findings as pending until implemented and verified. Do not describe documented aspirations as working features.
 
@@ -74,6 +74,7 @@ These instructions apply to all work in this repository.
 
 - Validate the affected behavior with appropriate type checks, builds, and focused tests. For UI changes, check accessibility, responsive layouts, and interactions when browser tooling is available.
 - Test meaningful behavior and edge cases rather than mirroring implementation details. Report verification limits honestly.
+- Do not commit or push unless the user explicitly asks for that action for the current work. Do not carry an earlier push request into a later editing task.
 - Keep each commit focused on one feature. Separate unrelated features and refactors into separate commits.
 - Stage only files belonging to the feature being committed. Preserve unrelated user changes and never include them incidentally.
 - Do not commit secrets, private configuration, or ignored raw datasets.
@@ -108,7 +109,7 @@ These instructions apply to all work in this repository.
 ## Selection controls and routes
 
 - Use the shared searchable-select component for supported selection filters. Search alone must not change analytical state; commit only a valid selected option and preserve the previous value on Escape or blur.
-- Keep the sidebar chevron on the same row to the right of the logo in both expanded and collapsed states; use the 104px rail from the current design contract.
+- Show only `Prana Textual.png` and the chevron in the expanded sidebar header. Remove `Prana Emblem.png` from the sidebar. When collapsed, hide the wordmark and center only the chevron in the header; preserve the mobile drawer wordmark.
 - Maintain `dashboard/routes.json` as the single route registry. Each tab has its own canonical path; the overview is `/dashboard`. Keep browser history, direct access, generated static entries, and server routing aligned.
 - Preserve the `/dashboard/` asset base and test refreshes on every deep link. Do not reintroduce `dashboard/index.html` as the displayed entry URL.
 
@@ -118,3 +119,5 @@ These instructions apply to all work in this repository.
 - Use commit `c593c4da5e815fbd0bc85283f1bf07860271051f` for requested research questions, analytical headings, headline indicator subjects, and planned tab descriptions; apply them through the current components and design contract, not the legacy page or script.
 - Keep period means distinct from annual compliance, global hospital ratios distinct from station filters, and exported national day-station exceedance distinct from equal-weight selected-station percentages.
 - Preserve the documented data corrections when restoring content. Do not copy hardcoded ticker claims, named anonymous hospitals, QC totals, unimplemented models, or unsupported methodology guarantees as facts.
+
+- Match the reference overview’s section inventory: indicators/distribution followed by the full-width map. Do not restore the added rankings or standalone admissions panel. Use `Acuan Harian (ISPU 24-Jam)` and `Acuan Tahunan (PP 22/2021)` with their respective color/radius encodings, dynamic selected-data legends, and popups.
