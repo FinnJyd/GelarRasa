@@ -1,38 +1,50 @@
 import * as L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { CATEGORIES } from '../data/types';
-import type { Station } from '../data/types';
+import type { DashboardData, Station } from '../data/types';
 import { button, element } from '../shared/dom';
 import { number } from '../shared/format';
 import { categoryColors } from '../shared/palette';
+import { referenceMarker } from './station-map-model';
+import type { MapMode } from './station-map-model';
 
-export function createStationMap(host: HTMLElement): {
+export function createStationMap(host: HTMLElement, reference: DashboardData['reference']): {
   update: (stations: readonly Station[]) => void;
   destroy: () => void;
 } {
   const controller = new AbortController();
   let selected: readonly Station[] = [];
-  let mode: 'category' | 'concentration' = 'category';
+  let mode: MapMode = 'daily';
   const toolbar = element('div', 'map-toolbar');
   const modes = element('div', 'segmented-control');
   modes.setAttribute('role', 'group');
   modes.setAttribute('aria-label', 'Tampilan peta');
-  const category = button('Kategori');
-  const concentration = button('Konsentrasi');
-  category.setAttribute('aria-pressed', 'true');
-  concentration.setAttribute('aria-pressed', 'false');
-  modes.append(category, concentration);
-  const encoding = element('span', 'map-encoding', 'Warna = kategori dominan');
-  toolbar.append(modes, encoding);
+  const daily = button('Acuan Harian (ISPU 24-Jam)');
+  const annual = button('Acuan Tahunan (PP 22/2021)');
+  daily.setAttribute('aria-pressed', 'true');
+  annual.setAttribute('aria-pressed', 'false');
+  modes.append(daily, annual);
+  const encoding = element('span', 'map-encoding', 'Pilihan Acuan:');
+  toolbar.append(encoding, modes);
+  const legendStrip = element('div', 'map-reference-legend');
+  const legendTitle = element('h4');
   const legend = element('div', 'map-legend');
+  const sizeTitle = element('h4');
+  const sizeDescription = element('p', 'panel-footnote');
+  const qualification = element('p', 'panel-footnote', 'Perbandingan memakai rata-rata periode pada ekspor, bukan audit kepatuhan tiap tahun.');
+  const categoryExplanation = element('div', 'map-legend-column');
+  const sizeExplanation = element('div', 'map-legend-column');
+  categoryExplanation.append(legendTitle, legend);
+  sizeExplanation.append(sizeTitle, sizeDescription);
+  legendStrip.append(categoryExplanation, sizeExplanation);
   const viewport = element('div', 'station-map');
   viewport.setAttribute('aria-label', 'Peta lokasi stasiun; data lengkap tersedia di tabel setelah peta');
   const tileStatus = element('p', 'map-status', 'Peta dasar: Esri · Titik menunjukkan lokasi pemantauan.');
   tileStatus.setAttribute('role', 'status');
-  host.append(toolbar, viewport, legend, tileStatus);
+  host.append(toolbar, legendStrip, viewport, qualification, tileStatus);
   const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
   const map = L.map(viewport, {
-    scrollWheelZoom: false, zoomAnimation: !reducedMotion,
+    scrollWheelZoom: true, zoomAnimation: !reducedMotion,
     fadeAnimation: !reducedMotion, markerZoomAnimation: !reducedMotion,
   }).setView([-2.5, 118], 4);
   const tiles = L.tileLayer(
@@ -60,57 +72,79 @@ export function createStationMap(host: HTMLElement): {
   const render = (): void => {
     markers.clearLayers();
     const coordinates: L.LatLngTuple[] = [];
-    const maximum = Math.max(0, ...selected.map(station => station.average));
     for (const station of selected) {
       const position: L.LatLngTuple = [station.latitude, station.longitude];
       coordinates.push(position);
       const popup = element('div', 'station-popup');
+      const style = referenceMarker(station, mode, reference.annual);
+      const deviation = station.average - reference.annual;
       popup.append(
-        element('strong', '', station.code), element('p', '', station.city),
-        element('p', '', `${number(station.average)} µg/m³ · ${station.category}`),
-        element('small', '', 'Rata-rata periode · klasifikasi sementara'),
+        element('strong', '', station.code), element('p', '', station.name),
+        element('p', '', `Lokasi: ${station.city}, ${station.province}`),
+        element('p', '', `Karakteristik: ${station.siteType}`),
+        element('p', '', `Rata-Rata PM2.5: ${number(station.average)} µg/m³`),
       );
-      const radius = mode === 'category' || maximum === 0
-        ? 8 : Math.max(5, 14 * Math.sqrt(station.average / maximum));
+      if (mode === 'daily') {
+        popup.append(
+          element('p', '', `ISPU Dominan: ${station.category}`),
+          element('p', '', `Hari Melanggar 24-Jam: ${number(station.exceedance)}% hari`),
+          element('p', '', `Baku Mutu 24 Jam (${number(reference.daily)} µg/m³): ${station.exceedance === 0 ? 'TIDAK ADA HARI MELEBIHI PADA EKSPOR' : 'TERDAPAT PELANGGARAN PADA EKSPOR'}`),
+        );
+      } else {
+        popup.append(
+          element('p', '', `Deviasi Batas ${number(reference.annual)} µg/m³: ${deviation > 0 ? '+' : ''}${number(deviation)} µg/m³`),
+          element('p', '', `Acuan Tahunan PP 22/2021: ${deviation <= 0 ? 'MEMENUHI' : 'MELEBIHI'} ambang pada rata-rata periode`),
+        );
+      }
+      popup.append(element('small', '', 'Rata-rata periode · perbandingan acuan, bukan audit kepatuhan tahunan'));
+      const tooltip = element('div');
+      tooltip.append(element('strong', '', station.name), element('p', '', mode === 'daily'
+        ? `${station.city} · ISPU Dominan: ${station.category}`
+        : `${station.city} · ${number(station.average)} µg/m³ · ${deviation <= 0 ? 'Memenuhi' : 'Melebihi'} acuan`));
       L.circleMarker(position, {
-        radius, color: '#fff', weight: 2,
-        fillColor: mode === 'category' ? categoryColors[station.category] : '#0284c7',
-        fillOpacity: 0.9,
-      }).bindPopup(popup).addTo(markers);
+        radius: style.radius, color: '#fff', weight: 2, fillColor: style.color, fillOpacity: 0.9,
+      }).bindPopup(popup).bindTooltip(tooltip).addTo(markers);
     }
     bounds = coordinates.length ? L.latLngBounds(coordinates) : null;
     if (bounds) fit();
     else map.setView([-2.5, 118], 4, { animate: false });
     legend.replaceChildren();
-    if (mode === 'category') {
+    if (mode === 'daily') {
+      legendTitle.textContent = 'Kategori ISPU Dominan 24 Jam (Permen LHK 14/2020)';
+      sizeTitle.textContent = 'Skala Radius Lingkaran (Frekuensi Pelanggaran 24 Jam)';
+      sizeDescription.textContent = `Makin besar: makin sering stasiun melanggar baku mutu 24 jam PP 22/2021 (>${number(reference.daily)} µg/m³).`;
       for (const name of CATEGORIES) {
         const count = selected.filter(station => station.category === name).length;
         if (!count) continue;
-        const item = element('span');
-        const dot = element('i', 'swatch');
-        dot.style.backgroundColor = categoryColors[name];
-        dot.setAttribute('aria-hidden', 'true');
-        item.append(dot, document.createTextNode(`${name} (${count})`));
-        legend.append(item);
+        appendLegend(name, count, categoryColors[name]);
       }
     } else {
-      legend.append(element('span', '', 'Titik lebih besar = konsentrasi lebih tinggi.'));
+      legendTitle.textContent = `Kepatuhan Baku Mutu Tahunan PP 22/2021 (Batas: ${number(reference.annual)} µg/m³)`;
+      sizeTitle.textContent = 'Skala Radius Lingkaran (Konsentrasi PM2.5 Aktual)';
+      sizeDescription.textContent = `Makin besar: makin tinggi rata-rata konsentrasi PM2.5 stasiun; acuan ${number(reference.annual)} µg/m³.`;
+      const below = selected.filter(station => station.average <= reference.annual).length;
+      appendLegend(`Memenuhi (≤${number(reference.annual)} µg/m³)`, below, categoryColors.Baik);
+      appendLegend(`Melebihi (>${number(reference.annual)} µg/m³)`, selected.length - below, categoryColors['Sangat Tidak Sehat']);
     }
   };
-  category.addEventListener('click', () => {
-    mode = 'category';
-    category.setAttribute('aria-pressed', 'true');
-    concentration.setAttribute('aria-pressed', 'false');
-    encoding.textContent = 'Warna = kategori dominan';
+
+  function appendLegend(label: string, count: number, color: string): void {
+    const item = element('span');
+    const dot = element('i', 'swatch');
+    dot.style.backgroundColor = color;
+    dot.setAttribute('aria-hidden', 'true');
+    item.append(dot, document.createTextNode(`${label} · ${count} stn (${selected.length ? number(count / selected.length * 100) : '0'}%)`));
+    legend.append(item);
+  }
+
+  function setMode(next: MapMode): void {
+    mode = next;
+    daily.setAttribute('aria-pressed', String(mode === 'daily'));
+    annual.setAttribute('aria-pressed', String(mode === 'annual'));
     render();
-  }, { signal: controller.signal });
-  concentration.addEventListener('click', () => {
-    mode = 'concentration';
-    category.setAttribute('aria-pressed', 'false');
-    concentration.setAttribute('aria-pressed', 'true');
-    encoding.textContent = 'Ukuran = konsentrasi relatif';
-    render();
-  }, { signal: controller.signal });
+  }
+  daily.addEventListener('click', () => setMode('daily'), { signal: controller.signal });
+  annual.addEventListener('click', () => setMode('annual'), { signal: controller.signal });
 
   return {
     update: stations => { selected = stations; render(); },

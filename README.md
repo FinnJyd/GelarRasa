@@ -83,7 +83,7 @@ Bagi anggota tim yang baru melakukan *clone* dari repositori ini, data mentah ti
 
 ## Pengembangan antarmuka PRANA
 
-Sumber antarmuka berada di `dashboard/src/` dengan TypeScript strict dan modul per fitur. Ikhtisar Nasional menggunakan Chart.js untuk doughnut komposisi dan grafik peringkat, serta Leaflet dengan Esri untuk peta. `dashboard/app.js` dan `dashboard/app.css` adalah hasil build, bukan berkas sumber untuk diedit langsung.
+Sumber antarmuka berada di `dashboard/src/` dengan TypeScript strict dan modul per fitur. Ikhtisar Nasional menggunakan Chart.js untuk doughnut komposisi, serta Leaflet dengan Esri untuk peta. `dashboard/app.js` dan `dashboard/app.css` adalah hasil build, bukan berkas sumber untuk diedit langsung.
 
 ```bash
 npm ci
@@ -103,11 +103,11 @@ Pengujian browser menggunakan port 5511. Pasang Chromium melalui `npx playwright
 
 Baca [design.md](design.md) dan [AGENTS.md](AGENTS.md) sebelum perubahan UI; catat hasil di [CHANGELOG.md](CHANGELOG.md). Desain mengutamakan visualisasi, animasi yang mendukung interaksi, pembukaan PRANA bertema kabut yang dapat dilewati, aksesibilitas, dan gerakan minimal untuk pengguna reduced motion.
 
-Filter wilayah, tipe lokasi, dan stasiun menyelaraskan ringkasan, doughnut, peringkat, tabel, dan peta. Tanggal, polutan lain, dan SUSPECT dinonaktifkan sampai ekspor mendukungnya. Indikator kesehatan tetap mencakup seluruh rumah sakit. Data berasal dari ekspor yang sudah ada; normalisasi unit dan klasifikasi masih perlu divalidasi secara analitis dan dijelaskan melalui kontrol `Data sementara` serta metodologi.
+Filter wilayah, tipe lokasi, dan stasiun menyelaraskan ringkasan, doughnut, tabel, dan peta. Tanggal, polutan lain, dan SUSPECT dinonaktifkan sampai ekspor mendukungnya. Indikator kesehatan tetap mencakup seluruh rumah sakit. Data berasal dari ekspor yang sudah ada; normalisasi unit dan klasifikasi masih perlu divalidasi secara analitis dan dijelaskan melalui kontrol `Data sementara` serta metodologi.
 
 
 ### Navigasi dan pencarian pilihan
 
 Jalankan `bun run dev` untuk menggunakan routing lokal. Halaman utama adalah `/dashboard`; setiap tab mempunyai URL sendiri sesuai `dashboard/routes.json`, misalnya `/dashboard/pola-waktu`. URL dapat dibuka langsung, di-refresh, dan ditelusuri melalui Back/Forward. Build menghasilkan entry statis untuk setiap tab; pada hosting statis gunakan clean URLs atau directory-index routing. Seluruh aset menggunakan base `/dashboard/`.
 
-Wilayah, tipe lokasi, dan stasiun dapat dicari dengan mengetik pada pilihan. Gunakan panah dan Enter atau klik hasil untuk menerapkan; Escape membatalkan pencarian. Pencarian yang belum dipilih tidak mengubah hasil analisis. Chevron navigasi tetap berada di kanan logo saat sidebar diperkecil.
+Wilayah, tipe lokasi, dan stasiun dapat dicari dengan mengetik pada pilihan. Gunakan panah dan Enter atau klik hasil untuk menerapkan; Escape membatalkan pencarian. Pencarian yang belum dipilih tidak mengubah hasil analisis. Sidebar terbuka menampilkan wordmark PRANA dan chevron; saat diperkecil header hanya menampilkan chevron. Peta memakai Acuan Harian (ISPU 24-Jam) dan Acuan Tahunan (PP 22/2021), dengan legenda dinamis dari stasiun terpilih.

@@ -26,12 +26,12 @@ test('required identity, collapsed filters, synchronized selections, and reset',
   await filters.locator('summary').click();
   await choose(page, 'Wilayah', 'Jakarta');
   await expect(page.getByText('3 dari 27 stasiun')).toBeVisible();
-  await expect(page.locator('.ranking-data li')).toHaveCount(3);
+  await expect(page.locator('.overview-table tbody tr')).toHaveCount(3);
   await expect(page.locator('.leaflet-interactive')).toHaveCount(3);
   await expect(page.locator('#filter-summary')).toContainText('Jakarta');
   await choose(page, 'Stasiun', 'AQMS-JKT-01');
   await expect(page.getByText('1 dari 27 stasiun')).toBeVisible();
-  await expect(page.locator('.ranking-data li')).toHaveCount(1);
+  await expect(page.locator('.overview-table tbody tr')).toHaveCount(1);
   await choose(page, 'Wilayah', 'Bogor');
   await expect(page.getByLabel('Stasiun', { exact: true })).toHaveValue('Semua stasiun');
   await expect(page.getByText('2 dari 27 stasiun')).toBeVisible();
@@ -40,7 +40,7 @@ test('required identity, collapsed filters, synchronized selections, and reset',
   await expect(filters).toHaveAttribute('open');
   await filters.locator('summary').click();
   await expect(filters).not.toHaveAttribute('open');
-  await expect(page.getByRole('heading', { name: 'Admisi pernapasan' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Indeks Beban Hospital (Faskes)', exact: true })).toBeVisible();
 });
 
 test('reference content uses current panels and truthful filtered indicators', async ({ page }) => {
@@ -207,7 +207,7 @@ test('Chart.js composition animates visibly and canvases survive filtering and t
   expect(await original.evaluate(node => node.isConnected)).toBe(true);
   await page.getByRole('button', { name: 'Ganti tema tampilan' }).click();
   expect(await original.evaluate(node => node.isConnected)).toBe(true);
-  await expect(page.locator('canvas[data-chart]')).toHaveCount(3);
+  await expect(page.locator('canvas[data-chart]')).toHaveCount(1);
 });
 
 test('sidebar width transitions smoothly and dropdown icons are centered', async ({ page }) => {
@@ -255,7 +255,7 @@ test('haze opening is branded, skippable, and releases delayed data access', asy
     await expect(page.getByRole('heading', { name: 'Memuat ringkasan stasiun…' })).toBeVisible();
   } finally { release(); }
   await expect(page.getByText('27 dari 27 stasiun')).toBeVisible();
-  await expect(page.locator('canvas[data-chart]')).toHaveCount(3);
+  await expect(page.locator('canvas[data-chart]')).toHaveCount(1);
 });
 
 test('opening never traps slow loading and reduced motion disables all chart transitions', async ({ page }) => {
@@ -273,7 +273,7 @@ test('opening never traps slow loading and reduced motion disables all chart tra
   await expect(page.locator('#opening-screen')).toHaveCount(0, { timeout: 500 });
   await expect(page.getByText('27 dari 27 stasiun')).toBeVisible();
   await expect.poll(() => page.locator('canvas[data-chart]').evaluateAll(nodes =>
-    nodes.length === 3 && nodes.every(node => node.getAttribute('data-animation') === 'complete'),
+    nodes.length === 1 && nodes.every(node => node.getAttribute('data-animation') === 'complete'),
   )).toBe(true);
   await expect(page.locator('.app-layout')).toHaveCSS('transition-duration', '0s');
   await page.getByRole('button', { name: 'Ganti tema tampilan' }).click();
@@ -283,15 +283,28 @@ test('opening never traps slow loading and reduced motion disables all chart tra
 });
 
 test('map views preserve station scope and product copy contains no phase commentary', async ({ page }) => {
-  await page.getByRole('button', { name: 'Konsentrasi', exact: true }).click();
-  await expect(page.getByRole('button', { name: 'Konsentrasi', exact: true })).toHaveAttribute('aria-pressed', 'true');
+  await page.getByRole('button', { name: 'Acuan Tahunan (PP 22/2021)', exact: true }).click();
+  await expect(page.getByRole('button', { name: 'Acuan Tahunan (PP 22/2021)', exact: true })).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.locator('.map-reference-legend')).toContainText('Memenuhi (≤15 µg/m³) · 3 stn');
+  await expect(page.locator('.map-reference-legend')).toContainText('Melebihi (>15 µg/m³) · 24 stn');
+  await page.screenshot({ path: '/tmp/prana-annual-map.png', fullPage: true });
+  await expect(page.locator('.health-panel, .rankings-grid')).toHaveCount(0);
+  await expect(page.getByRole('heading', { name: 'Admisi pernapasan', exact: true })).toHaveCount(0);
   const widths = await page.locator('.leaflet-interactive').evaluateAll(nodes => nodes.map(node => Math.round(node.getBoundingClientRect().width)));
   expect(new Set(widths).size).toBeGreaterThan(1);
   await page.locator('#dashboard-filters summary').click();
   await choose(page, 'Wilayah', 'Jakarta');
   await expect(page.locator('.leaflet-interactive')).toHaveCount(3);
-  await page.getByRole('button', { name: 'Kategori', exact: true }).click();
+  await page.getByRole('button', { name: 'Acuan Harian (ISPU 24-Jam)', exact: true }).click();
   await expect(page.locator('.leaflet-interactive')).toHaveCount(3);
+  await choose(page, 'Stasiun', 'JKT-01');
+  await page.locator('.leaflet-interactive').click();
+  await expect(page.locator('.station-popup')).toContainText('Hari Melanggar 24-Jam:');
+  await page.getByRole('button', { name: 'Acuan Tahunan (PP 22/2021)', exact: true }).click();
+  await page.locator('.leaflet-interactive').click();
+  await expect(page.locator('.station-popup')).toHaveCount(1);
+  await expect(page.locator('.station-popup')).toContainText('Deviasi Batas 15 µg/m³:');
+  await expect(page.locator('.leaflet-interactive')).toHaveCount(1);
   expect(await page.locator('body').innerText()).not.toMatch(/\b(preliminary|round|kompetisi|perlombaan|executive cockpit)\b/i);
   await page.getByRole('button', { name: 'Metodologi', exact: true }).click();
   expect(await page.getByRole('dialog').innerText()).not.toMatch(/\b(preliminary|round|kompetisi|perlombaan|executive cockpit)\b/i);
@@ -423,3 +436,23 @@ for (const [id, path] of Object.entries(ROUTES)) {
     await expect(page.getByText('27 dari 27 stasiun')).toBeVisible();
   });
 }
+
+
+test('map explanations share a desktop row and stack above a larger mobile map', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  const columns = page.locator('.map-legend-column');
+  const first = await columns.nth(0).boundingBox();
+  const second = await columns.nth(1).boundingBox();
+  expect(first).not.toBeNull();
+  expect(second).not.toBeNull();
+  if (!first || !second) throw new Error('Missing map explanation');
+  expect(Math.abs(first.y - second.y)).toBeLessThan(1);
+  expect(second.x).toBeGreaterThan(first.x + first.width);
+  expect((await page.locator('.station-map').boundingBox())?.height).toBeGreaterThanOrEqual(480);
+  await page.setViewportSize({ width: 375, height: 812 });
+  const mobileFirst = await columns.nth(0).boundingBox();
+  const mobileSecond = await columns.nth(1).boundingBox();
+  if (!mobileFirst || !mobileSecond) throw new Error('Missing mobile explanation');
+  expect(mobileSecond.y).toBeGreaterThanOrEqual(mobileFirst.y + mobileFirst.height);
+  expect((await page.locator('.station-map').boundingBox())?.height).toBe(440);
+});
