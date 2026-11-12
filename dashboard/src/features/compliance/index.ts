@@ -1,14 +1,30 @@
-import { mountUnavailable } from '../../shared/unavailable-feature';
-import type { Feature } from '../../data/types';
+import type { FilterState, Station } from '../../data/types';
+import { button, emptyState } from '../../shared/dom';
+import { loadCompliance } from './load';
+import { mountComplianceView } from './view';
 
-export const compliance: Feature = {
-  id: 'compliance', title: 'Kepatuhan Regulasi', icon: 'shield',
-  question: "Sejauh mana stasiun AQMS mematuhi ambang batas baku mutu PP 22/2021 dan standar WHO 2021, serta provinsi mana yang paling rentan gagal patuh?",
-  mount: host => mountUnavailable(
-    host,
-    "Audit Kepatuhan Regulasi Udara Nasional (PP 22/2021 & Permen LHK 27/2021)",
-    "Evaluasi batas tahunan 15 µg/m³, batas 24 jam 55 µg/m³, dan estimasi capaian Indeks Kualitas Udara (IKU) daerah.",
-    "Mencakup: Heatmap Stasiun × Bulan (2024–2026), 100% Stacked Bar Kategori ISPU, Audit Kepatuhan PP 22/2021, dan Rekapitulasi Kinerja IKU per Provinsi dari dataset processed.",
-    "Modul Visualisasi Tab 2",
-  ),
-};
+export function mountCompliance(host: HTMLElement, catalog: readonly Station[], initial: FilterState) {
+  const controller = new AbortController();
+  let state = initial;
+  let view: ReturnType<typeof mountComplianceView> | null = null;
+  const load = async (): Promise<void> => {
+    const status = emptyState('Memuat data kepatuhan…', 'Menyiapkan agregasi enam polutan dan estimasi IKU.');
+    status.setAttribute('role', 'status'); host.replaceChildren(status);
+    try {
+      const data = await loadCompliance(controller.signal);
+      if (controller.signal.aborted) return;
+      if (catalog.some(station => !data.stations[station.code])) throw new Error('Katalog dan ekspor kepatuhan tidak cocok.');
+      view = mountComplianceView(host, data, catalog, state);
+    } catch (error: unknown) {
+      if (controller.signal.aborted) return;
+      console.error('Compliance export could not be loaded:', error);
+      const failure = emptyState('Data kepatuhan belum dapat dimuat', 'Periksa ekspor data lalu coba lagi. Tidak ada nilai pengganti.');
+      failure.setAttribute('role', 'alert');
+      const retry = button('Coba lagi', 'button button-primary');
+      retry.addEventListener('click', () => { void load(); }, { once: true, signal: controller.signal });
+      failure.append(retry); host.replaceChildren(failure);
+    }
+  };
+  void load();
+  return { update: (filters: FilterState) => { state = filters; view?.update(filters); }, destroy: () => { controller.abort(); view?.destroy(); host.replaceChildren(); } };
+}

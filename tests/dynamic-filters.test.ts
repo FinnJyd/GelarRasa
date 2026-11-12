@@ -2,12 +2,23 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { test } from 'node:test';
 import { parseDashboard } from '../dashboard/src/data/validate';
-import { defaultFilters, filterStations, summarize, computeHospitalBurden } from '../dashboard/src/features/overview/model';
+import { defaultFilters, selectObservations, summarize, computeHospitalBurden } from '../dashboard/src/features/overview/model';
 
 const read = (path: string): unknown => JSON.parse(readFileSync(new URL(path, import.meta.url), 'utf8'));
 const raw = read('../dashboard/tab1_ikhtisar.json');
 const catalog = read('../dashboard/data/station_catalog.json');
 const data = parseDashboard(raw, catalog);
+
+test('approved particulate and gas assumptions expose measured logger concentrations', () => {
+  assert.ok(data.cube);
+  const particulate = selectObservations(data.stations, { ...defaultFilters(), station: 'AQMS-BJB-01', pollutant: 'PM2.5' }, data.cube);
+  assert.equal(particulate.length, 1);
+  assert.ok((particulate[0]?.average ?? 0) > 0);
+  const gas = selectObservations(data.stations, { ...defaultFilters(), station: 'AQMS-BJB-01', pollutant: 'CO' }, data.cube);
+  assert.equal(gas.length, 1);
+  assert.ok((gas[0]?.average ?? 0) > 0);
+  assert.deepEqual(data.cube.stations['AQMS-BJB-01']?.unavailable, []);
+});
 
 test('daily_cube is parsed and populated', () => {
   assert.ok(data.cube);
@@ -19,8 +30,8 @@ test('daily_cube is parsed and populated', () => {
 });
 
 test('filtering by pollutant updates station metrics to that pollutant', () => {
-  const pm25Stations = filterStations(data.stations, { ...defaultFilters(), pollutant: 'PM2.5' }, data.cube);
-  const pm10Stations = filterStations(data.stations, { ...defaultFilters(), pollutant: 'PM10' }, data.cube);
+  const pm25Stations = selectObservations(data.stations, { ...defaultFilters(), pollutant: 'PM2.5' }, data.cube);
+  const pm10Stations = selectObservations(data.stations, { ...defaultFilters(), pollutant: 'PM10' }, data.cube);
   
   assert.equal(pm25Stations.length, 27);
   assert.equal(pm10Stations.length, 27);
@@ -35,8 +46,8 @@ test('filtering by pollutant updates station metrics to that pollutant', () => {
 });
 
 test('filtering by period preset slices the date range dynamically', () => {
-  const full = filterStations(data.stations, { ...defaultFilters() }, data.cube);
-  const y2024 = filterStations(data.stations, {
+  const full = selectObservations(data.stations, { ...defaultFilters() }, data.cube);
+  const y2024 = selectObservations(data.stations, {
     ...defaultFilters(),
     periodPreset: '2024',
     startDate: '2024-01-01',
@@ -54,7 +65,7 @@ test('filtering by period preset slices the date range dynamically', () => {
 });
 
 test('filtering by arbitrary custom date range calculates exact slice statistics', () => {
-  const custom = filterStations(data.stations, {
+  const custom = selectObservations(data.stations, {
     ...defaultFilters(),
     periodPreset: 'custom',
     startDate: '2024-07-01',
@@ -70,8 +81,8 @@ test('filtering by arbitrary custom date range calculates exact slice statistics
 });
 
 test('including SUSPECT data updates station statistics and coverage', () => {
-  const validOnly = filterStations(data.stations, { ...defaultFilters(), includeSuspect: false }, data.cube);
-  const withSuspect = filterStations(data.stations, { ...defaultFilters(), includeSuspect: true }, data.cube);
+  const validOnly = selectObservations(data.stations, { ...defaultFilters(), includeSuspect: false }, data.cube);
+  const withSuspect = selectObservations(data.stations, { ...defaultFilters(), includeSuspect: true }, data.cube);
   assert.equal(validOnly.length, 27);
   assert.equal(withSuspect.length, 27);
   

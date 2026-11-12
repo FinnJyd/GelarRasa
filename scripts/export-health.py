@@ -7,6 +7,7 @@ import math
 import re
 from collections import defaultdict
 from pathlib import Path
+from unit_normalization import concentration_column, LOGGER_NORMALIZATION
 
 ROOT = Path(__file__).resolve().parents[1]
 RAW = ROOT / 'dataset/raw'
@@ -37,6 +38,7 @@ def finite(value):
 
 def export():
     sites = records(RAW / 'master/sites.csv')
+    sites_by_code = {site['station_code']: site for site in sites}
     hospitals = records(RAW / 'master/hospitals.csv')
     sensors = records(RAW / 'master/sensors.csv')
     sensor_station = {sensor['sensor_id']: next(site['station_code'] for site in sites
@@ -85,8 +87,8 @@ def export():
         duplicate_counts = defaultdict(int)
         for row in rows:
             duplicate_counts[row['timestamp_start']] += 1
-        # A logger label alone does not establish a particulate or gas conversion.
-        available = [p for p in POLLUTANTS if f'{p}_ug_m3' in rows[0]]
+        columns = {p: concentration_column(sites_by_code[station], p, rows[0]) for p in POLLUTANTS}
+        available = [p for p in POLLUTANTS if columns[p] is not None]
         hours = {'v': defaultdict(lambda: [0.0, 0]), 's': defaultdict(lambda: [0.0, 0])}
         for row in rows:
             if row['qc_flag'] not in ('VALID', 'SUSPECT') or duplicate_counts[row['timestamp_start']] > 1:
@@ -99,7 +101,9 @@ def export():
             if day is None:
                 continue
             for pollutant in available:
-                value = finite(row[f'{pollutant}_ug_m3'])
+                source_column, factor = columns[pollutant]
+                raw_value = finite(row[source_column])
+                value = None if raw_value is None else finite(raw_value * factor)
                 if value is None:
                     continue
                 for mode in (('v', 's') if row['qc_flag'] == 'VALID' else ('s',)):
@@ -122,7 +126,8 @@ def export():
     outcomes = {'version': 1, 'dates': DATES, 'stations': paired, 'resp_discrepancies': discrepancy}
     exposure = {'version': 1, 'dates': DATES, 'stations': exposures}
     manifest = {'version': 1, 'sources': provenance, 'outcomes': OUTCOMES, 'pollutants': POLLUTANTS,
-                'method': 'Recorded-date hourly means; >=18 distinct eligible hours; finite nonnegative ug/m3 only; duplicate timestamps excluded; v=VALID, s=VALID+SUSPECT; no imputation or ppm conversion.'}
+                'method': 'Recorded-date hourly means; >=18 distinct eligible hours; finite nonnegative values; duplicate timestamps excluded; v=VALID, s=VALID+SUSPECT; no imputation; approved BJB/MDN/PSW particulate mass-scale x1000 and gas ppmv * molar_mass/24.45 *1000 at assumed 25 C/1 atm.',
+                'unit_normalization': LOGGER_NORMALIZATION}
     for name, payload in [('health_outcomes.json', outcomes), ('health_exposure.json', exposure), ('health_provenance.json', manifest)]:
         content = json.dumps(payload, separators=(',', ':'), allow_nan=False) + '\n'
         target = ROOT / 'dataset/dashboard' / name

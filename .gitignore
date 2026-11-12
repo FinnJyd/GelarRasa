@@ -13,6 +13,7 @@ dataset/processed/*.csv
 !dataset/dashboard/*.json
 
 notebooks/preview_dataset.ipynb
+notebooks/simulasi_penyaringan_tab2.ipynb
 layout
 
 # --- Python & Environments ---

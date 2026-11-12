@@ -1,18 +1,19 @@
 import * as L from 'leaflet';
 import { CATEGORIES } from '../data/types';
-import type { DashboardData, Station } from '../data/types';
+import type { DashboardData, StationObservation } from '../data/types';
+import { hasMeasurements } from '../data/observations';
 import { button, element } from '../shared/dom';
 import { number } from '../shared/format';
-import { categoryColors } from '../shared/palette';
+import { categoryColors, unavailableColor } from '../shared/palette';
 import { referenceMarker } from './station-map-model';
 import type { MapMode } from './station-map-model';
 
 export function createStationMap(host: HTMLElement, reference: DashboardData['reference']): {
-  update: (stations: readonly Station[]) => void;
+  update: (stations: readonly StationObservation[]) => void;
   destroy: () => void;
 } {
   const controller = new AbortController();
-  let selected: readonly Station[] = [];
+  let selected: readonly StationObservation[] = [];
   let mode: MapMode = 'daily';
   const toolbar = element('div', 'map-toolbar');
   const modes = element('div', 'segmented-control');
@@ -76,32 +77,36 @@ export function createStationMap(host: HTMLElement, reference: DashboardData['re
       coordinates.push(position);
       const popup = element('div', 'station-popup');
       const style = referenceMarker(station, mode, reference.annual);
-      const deviation = station.average - reference.annual;
+      const measured = hasMeasurements(station);
+      const deviation = measured ? station.average - reference.annual : null;
       const identity = element('header', 'station-popup-header');
       identity.append(element('span', 'station-popup-code', station.code), element('h3', 'station-popup-name', station.name));
       const concentration = element('div', 'station-popup-concentration');
       const value = element('div', 'station-popup-value');
-      value.append(element('strong', '', number(station.average)), element('span', '', 'µg/m³'));
+      value.append(element('strong', '', station.average === null ? 'Tidak tersedia' : number(station.average)));
+      if (measured) value.append(element('span', '', 'µg/m³'));
       concentration.append(element('span', 'station-popup-label', 'PM2.5 · rata-rata periode'), value);
       const status = element('div', 'station-popup-status');
       const dot = element('span', 'station-popup-dot');
       dot.style.backgroundColor = style.color;
       dot.setAttribute('aria-hidden', 'true');
-      status.append(dot, element('span', '', mode === 'daily'
+      status.append(dot, element('span', '', !measured ? 'Data tidak mencukupi' : mode === 'daily'
         ? `ISPU Dominan: ${station.category}`
-        : `${deviation <= 0 ? 'Di bawah' : 'Di atas'} acuan tahunan`));
-      const detail = element('p', 'station-popup-detail', mode === 'daily'
+        : `${deviation !== null && deviation <= 0 ? 'Di bawah' : 'Di atas'} acuan tahunan`));
+      const detail = element('p', 'station-popup-detail', !measured ? station.unavailableReason ?? 'Tidak ada hari terukur.' : mode === 'daily'
         ? `${number(station.exceedance)}% hari > ${number(reference.daily)} µg/m³`
-        : `${deviation > 0 ? '+' : ''}${number(deviation)} µg/m³ dari acuan ${number(reference.annual)} µg/m³`);
-      popup.append(identity, element('p', 'station-popup-location', `${station.city}, ${station.province}`), concentration, status, detail);
-      if (mode === 'annual') popup.append(element('small', 'station-popup-note', 'Rata-rata periode terpilih dibandingkan dengan acuan tahunan.'));
+        : `${deviation !== null && deviation > 0 ? '+' : ''}${number(deviation ?? 0)} µg/m³ dari acuan ${number(reference.annual)} µg/m³`);
+      popup.append(identity, element('p', 'station-popup-location', `${station.city}, ${station.province}`), concentration, status, detail,
+        element('small', 'station-popup-note', `${number(station.measuredDays)} / ${number(station.periodDays)} hari terukur (${number(station.validPercentage)}%).`));
+      if (mode === 'annual' && measured) popup.append(element('small', 'station-popup-note', 'Rata-rata periode terpilih dibandingkan dengan acuan tahunan.'));
       const tooltip = element('div');
-      tooltip.append(element('strong', '', station.name), element('p', '', mode === 'daily'
+      tooltip.append(element('strong', '', station.name), element('p', '', !measured ? `${station.city} · Data tidak mencukupi` : mode === 'daily'
         ? `${station.city} · ISPU Dominan: ${station.category}`
-        : `${station.city} · ${number(station.average)} µg/m³ · ${deviation <= 0 ? 'Memenuhi' : 'Melebihi'} acuan`));
+        : `${station.city} · ${number(station.average)} µg/m³ · ${deviation !== null && deviation <= 0 ? 'Memenuhi' : 'Melebihi'} acuan`));
       L.circleMarker(position, {
-        radius: style.radius, color: '#fff', weight: 2, fillColor: style.color, fillOpacity: 0.9,
-      }).bindPopup(popup, { className: 'station-map-popup', keepInView: true, minWidth: 200, maxWidth: 240, autoPanPadding: [16, 16] }).bindTooltip(tooltip).addTo(markers);
+        radius: style.radius, color: '#fff', weight: 2, fillColor: style.color, fillOpacity: 0.9, dashArray: measured ? undefined : '3 3',
+      }).bindPopup(popup, { className: 'station-map-popup', keepInView: true, minWidth: 200, maxWidth: 240, autoPanPadding: [16, 16] }).bindTooltip(tooltip).addTo(markers)
+        .getElement()?.setAttribute('aria-label', `${station.code} · ${measured ? station.category : 'Data tidak mencukupi'}`);
     }
     bounds = coordinates.length ? L.latLngBounds(coordinates) : null;
     if (bounds) fit();
@@ -120,10 +125,13 @@ export function createStationMap(host: HTMLElement, reference: DashboardData['re
       legendTitle.textContent = `Kepatuhan Baku Mutu Tahunan PP 22/2021 (Batas: ${number(reference.annual)} µg/m³)`;
       sizeTitle.textContent = 'Skala Radius Lingkaran (Konsentrasi PM2.5 Aktual)';
       sizeDescription.textContent = `Makin besar: makin tinggi rata-rata konsentrasi PM2.5 stasiun; acuan ${number(reference.annual)} µg/m³.`;
-      const below = selected.filter(station => station.average <= reference.annual).length;
+      const measured = selected.filter(hasMeasurements);
+      const below = measured.filter(station => station.average <= reference.annual).length;
       appendLegend(`Memenuhi (≤${number(reference.annual)} µg/m³)`, below, categoryColors.Baik);
-      appendLegend(`Melebihi (>${number(reference.annual)} µg/m³)`, selected.length - below, categoryColors['Sangat Tidak Sehat']);
+      appendLegend(`Melebihi (>${number(reference.annual)} µg/m³)`, measured.length - below, categoryColors['Sangat Tidak Sehat']);
     }
+    const unavailable = selected.filter(station => !hasMeasurements(station)).length;
+    if (unavailable) appendLegend('Data tidak mencukupi', unavailable, unavailableColor);
   };
 
   function appendLegend(label: string, count: number, color: string): void {

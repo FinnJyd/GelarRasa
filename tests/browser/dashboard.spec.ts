@@ -20,7 +20,7 @@ test.beforeEach(async ({ page }) => {
   await page.route('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/**', route => route.abort());
   await page.route('https://fonts.googleapis.com/**', route => route.abort());
   await page.goto('/dashboard/', { waitUntil: 'domcontentloaded' });
-  await expect(page.locator('.doughnut-center strong')).toHaveText('27');
+  await expect(page.locator('.doughnut-center strong')).toHaveText('26');
 });
 
 test('required identity, collapsed filters, synchronized selections, and reset', async ({ page }) => {
@@ -41,7 +41,7 @@ test('required identity, collapsed filters, synchronized selections, and reset',
   await expect(page.getByLabel('Stasiun', { exact: true })).toHaveValue('Semua stasiun');
   await expect(page.locator('.doughnut-center strong')).toHaveText('2');
   await page.getByRole('button', { name: 'Reset filter', exact: true }).click();
-  await expect(page.locator('.doughnut-center strong')).toHaveText('27');
+  await expect(page.locator('.doughnut-center strong')).toHaveText('26');
   await expect(filters).toHaveAttribute('open');
   await filters.locator('summary').click();
   await expect(filters).not.toHaveAttribute('open');
@@ -64,9 +64,8 @@ test('reference content uses current panels and truthful filtered indicators', a
   await expect(exceedance).toContainText('rata-rata persentase stasiun terpilih');
   await expect(hospital.locator('.metric-value strong')).toHaveText('6,43');
   await page.getByRole('link', { name: 'Kepatuhan Regulasi', exact: true }).click();
-  await expect(page.getByRole('heading', { name: 'Audit Kepatuhan Regulasi Udara Nasional (PP 22/2021 & Permen LHK 27/2021)', exact: true })).toBeVisible();
-  await expect(page.getByRole('heading', { name: 'Modul Visualisasi Tab 2', exact: true })).toBeVisible();
-  await expect(page.getByText('Belum tersedia', { exact: true })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Ringkasan Kepatuhan PM2.5', exact: true })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Perhitungan IKU belum tersedia', exact: true })).toBeVisible();
 });
 
 test('all tabs navigate, charts and map clean up, and selections survive remount', async ({ page }) => {
@@ -76,6 +75,7 @@ test('all tabs navigate, charts and map clean up, and selections survive remount
     await page.getByRole('link', { name, exact: true }).click();
     await expect(page.getByRole('heading', { level: 2 })).toHaveText(name);
     if (name === 'Dampak Kesehatan') await expect(page.locator('.health-dashboard')).toBeVisible();
+    else if (name === 'Kepatuhan Regulasi') await expect(page.locator('.compliance-feature')).toBeVisible();
     else await expect(page.getByText('Belum tersedia', { exact: true })).toBeVisible();
     await expect(page.locator('.leaflet-container')).toHaveCount(0);
   }
@@ -115,7 +115,7 @@ test('missing data shows recovery and leaves navigation usable', async ({ page }
   await page.unroute('**/tab1_ikhtisar.json');
   await page.getByRole('link', { name: 'Ikhtisar Nasional', exact: true }).click();
   await page.getByRole('button', { name: 'Coba lagi', exact: true }).click();
-  await expect(page.locator('.doughnut-center strong')).toHaveText('27');
+  await expect(page.locator('.doughnut-center strong')).toHaveText('26');
 });
 
 for (const width of [320, 375, 768, 1024, 1440, 1920]) {
@@ -202,7 +202,7 @@ test('Chart.js composition animates visibly and canvases survive filtering and t
   const initial = await paintedPixels();
   await expect(composition).toHaveAttribute('data-animation', 'complete');
   expect(await paintedPixels()).toBeGreaterThan(initial);
-  await expect(page.locator('.doughnut-center strong')).toHaveText('27');
+  await expect(page.locator('.doughnut-center strong')).toHaveText('26');
   await expect(page.locator('.composition-legend')).toContainText('Sedang');
   const original = await composition.elementHandle();
   if (!original) throw new Error('Missing composition chart');
@@ -260,7 +260,7 @@ test('haze opening is branded, skippable, and releases delayed data access', asy
     expect(await page.locator('#app').evaluate(node => node instanceof HTMLElement && node.inert)).toBe(false);
     await expect(page.getByRole('heading', { name: 'Memuat ringkasan stasiun…' })).toBeVisible();
   } finally { release(); }
-  await expect(page.locator('.doughnut-center strong')).toHaveText('27');
+  await expect(page.locator('.doughnut-center strong')).toHaveText('26');
   await expect(page.locator('canvas[data-chart]')).toHaveCount(1);
 });
 
@@ -273,11 +273,11 @@ test('opening never traps slow loading and reduced motion disables all chart tra
     await expect(page.locator('#opening-screen')).toHaveCount(0, { timeout: 3500 });
     expect(await page.locator('#app').evaluate(node => node instanceof HTMLElement && node.inert)).toBe(false);
   } finally { release(); }
-  await expect(page.locator('.doughnut-center strong')).toHaveText('27');
+  await expect(page.locator('.doughnut-center strong')).toHaveText('26');
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.reload({ waitUntil: 'domcontentloaded' });
   await expect(page.locator('#opening-screen')).toHaveCount(0, { timeout: 500 });
-  await expect(page.locator('.doughnut-center strong')).toHaveText('27');
+  await expect(page.locator('.doughnut-center strong')).toHaveText('26');
   await expect.poll(() => page.locator('canvas[data-chart]').evaluateAll(nodes =>
     nodes.length === 1 && nodes.every(node => node.getAttribute('data-animation') === 'complete'),
   )).toBe(true);
@@ -322,7 +322,7 @@ test('searchable filters support typing, no matches, keyboard selection, and can
   await region.click();
   await region.fill('jAkArTa');
   await expect(page.getByRole('listbox', { name: 'Pilihan wilayah', exact: true }).getByRole('option')).toHaveCount(1);
-  await expect(page.locator('.doughnut-center strong')).toHaveText('27');
+  await expect(page.locator('.doughnut-center strong')).toHaveText('26');
   await region.press('Enter');
   await expect(region).toHaveValue('Jakarta');
   await expect(page.locator('.doughnut-center strong')).toHaveText('3');
@@ -348,7 +348,7 @@ test('searchable filters support typing, no matches, keyboard selection, and can
   await region.press('Enter');
   await expect(region).toHaveValue(second);
   await page.getByRole('button', { name: 'Reset filter', exact: true }).click();
-  await expect(page.locator('.doughnut-center strong')).toHaveText('27');
+  await expect(page.locator('.doughnut-center strong')).toHaveText('26');
 });
 
 test('sidebar shows only the wordmark expanded and only a centered chevron collapsed', async ({ page }) => {
@@ -405,7 +405,7 @@ test('mobile search popup fits the viewport and closes with the filter panel', a
 test('canonical entry and history navigation use tab paths and preserve selections', async ({ page, request }) => {
   await page.goto('/dashboard/index.html');
   await expect(page).toHaveURL(/\/dashboard$/);
-  await expect(page.locator('.doughnut-center strong')).toHaveText('27');
+  await expect(page.locator('.doughnut-center strong')).toHaveText('26');
   await page.locator('#dashboard-filters summary').click();
   await choose(page, 'Wilayah', 'Jakarta');
   await page.getByRole('link', { name: 'Pola Waktu', exact: true }).click();
@@ -439,7 +439,7 @@ for (const [id, path] of Object.entries(ROUTES)) {
     expect(new URL(page.url()).pathname).toBe(path);
     await expect(page.getByRole('heading', { level: 2 })).toHaveText(routeTitles[id] ?? '');
     await page.getByRole('link', { name: 'Ikhtisar Nasional', exact: true }).click();
-    await expect(page.locator('.doughnut-center strong')).toHaveText('27');
+    await expect(page.locator('.doughnut-center strong')).toHaveText('26');
   });
 }
 

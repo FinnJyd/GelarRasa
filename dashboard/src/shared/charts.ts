@@ -138,7 +138,7 @@ export function createDistributionChart(host: HTMLElement): {
   center.setAttribute('aria-hidden', 'true');
   plot.append(canvas, center);
   const legend = element('ul', 'composition-legend');
-  const empty = emptyState('Tidak ada stasiun', 'Ubah pilihan atau reset filter.');
+  const empty = emptyState('Data kategori tidak tersedia', 'Tidak ada hari terukur yang memenuhi syarat pada pilihan ini. Lokasi stasiun tetap tersedia pada peta dan tabel.');
   root.append(plot, legend, empty);
   host.append(root);
   const chart = new Chart<'doughnut', number[], string>(canvas, {

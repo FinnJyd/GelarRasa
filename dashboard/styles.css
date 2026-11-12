@@ -139,6 +139,7 @@ body[data-opening] .skip-link { visibility: hidden; }
 .panel-body { @apply min-w-0; padding: 20px 22px; }
 .panel-footnote { font-size: 12px; line-height: 1.6; color: var(--secondary); margin-top: 16px; }
 .filters { margin-bottom: 16px; }
+.filter-host { border-bottom: 1px solid var(--border); margin-bottom: 20px; }
 .filter-heading { @apply flex items-center justify-between; list-style: none; gap: 20px; padding: 15px 20px; cursor: pointer; border-radius: 14px; }
 .filter-heading::-webkit-details-marker { display: none; }
 .filter-heading-copy { @apply grid min-w-0; gap: 5px; }
@@ -170,7 +171,7 @@ body[data-opening] .skip-link { visibility: hidden; }
 .suspect-option { @apply flex items-center; gap: 8px; color: var(--secondary); font-size: 12px; min-height: 44px; }
 .suspect-option input { width: 16px; height: 16px; }
 .filter-note { margin-top: 12px; font-size: 12px; color: var(--secondary); }
-.overview { @apply grid; gap: 20px; }
+.overview { @apply grid; grid-template-columns: minmax(0, 1fr); gap: 20px; }
 .map-reference-legend { @apply flex; align-items: flex-start; gap: 24px; padding: 14px 16px; margin: 14px 0; background: var(--canvas); border: 1px solid var(--border); border-radius: 10px; }
 .map-legend-column { @apply min-w-0; flex: 1; }
 .map-reference-legend h4 { font-size: 12px; line-height: 1.5; }
@@ -240,9 +241,8 @@ body[data-opening] .skip-link { visibility: hidden; }
 .health-facts strong { font-family: 'Space Grotesk', sans-serif; font-size: 22px; }
 .health-facts span { font-size: 12px; color: var(--secondary); }
 .health-facts .health-divider { font-size: 22px; color: var(--accent); }
-.health-scope { font-size: 12px; color: var(--secondary); }
 .health-panel .panel-footnote { max-width: 250px; }
-.overview-table { padding: 0 2px; }
+.overview-table { @apply min-w-0; padding: 0 2px; }
 .data-disclosure > summary { @apply flex items-center; gap: 8px; color: var(--accent); cursor: pointer; padding: 6px 0; font-size: 13px; font-weight: 500; }
 .table-scroll { overflow-x: auto; margin-top: 14px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); }
 table { @apply w-full; border-collapse: collapse; text-align: left; font-size: 12px; }
@@ -267,6 +267,8 @@ tbody tr:last-child > * { border-bottom: 0; }
 .dialog-content { @apply grid; padding: 24px; overflow-y: auto; gap: 24px; }
 .method-section h3 { margin-bottom: 8px; }
 .method-section p { color: var(--secondary); line-height: 1.8; }
+.aqms-filtering-methodology ol { padding-left: 24px; margin: 16px 0; }
+.aqms-filtering-methodology li + li { margin-top: 16px; }
 .dialog-footer { @apply flex justify-between items-center; padding: 16px 24px; gap: 16px; border-top: 1px solid var(--border); font-size: 12px; }
 .rail-navigation { grid-template-columns: 72px minmax(0, 1fr); }
 .rail-navigation .sidebar { padding-left: 12px; padding-right: 12px; }
@@ -462,7 +464,6 @@ tbody tr:last-child > * { border-bottom: 0; }
 .health-toolbar { @apply flex justify-between items-center; gap: 24px; }
 .health-toolbar .filter-field { @apply shrink-0; width: min(100%, 340px); }
 .health-orientation { font-size: 14px; color: var(--secondary); margin-top: 6px; line-height: 1.6; }
-.health-scope { color: var(--accent); font-size: 12px; font-weight: 600; line-height: 1.7; }
 .health-metrics { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 .health-metrics .metric { @apply min-w-0; }
 .health-metrics .metric-header { min-height: 44px; }
@@ -490,3 +491,36 @@ tbody tr:last-child > * { border-bottom: 0; }
   .health-trends .health-plot { height: 220px; }
 }
 @media (max-width: 374px) { .health-metrics { grid-template-columns: minmax(0, 1fr); } }
+.compliance-feature { @apply grid gap-5; grid-template-columns: minmax(0, 1fr); min-width: 0; }
+.compliance-period-table { table-layout: fixed; min-width: 880px; }
+.compliance-period-table th, .compliance-period-table td { padding: 10px 6px; white-space: normal; overflow-wrap: anywhere; }
+.compliance-period-table tbody th { min-width: 0; }
+.compliance-metrics { @apply grid grid-cols-2 gap-4; }
+.compliance-metrics .metric-label, .compliance-metrics .metric-context { white-space: normal; overflow: visible; text-overflow: clip; }
+.compliance-pair { @apply grid gap-5; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.compliance-analysis-pair { grid-auto-rows: 1fr; }
+.compliance-analysis-pair:has(.data-disclosure[open]) { align-items: start; grid-auto-rows: auto; }
+.compliance-analysis-pair > .panel { @apply flex flex-col; }
+.compliance-analysis-pair > .panel > .panel-body { @apply flex flex-col flex-1; }
+.compliance-analysis-pair .compliance-years-chart,
+.compliance-analysis-pair .compliance-iku-chart { @apply flex flex-1; min-height: 0; }
+.compliance-analysis-pair .compliance-plot { flex: 1; height: auto !important; min-height: 160px; }
+.compliance-analysis-pair .compliance-plot > canvas { position: absolute; inset: 0; }
+.compliance-subpanel { min-width: 0; }
+.compliance-subpanel h4 { margin: 0 0 12px; font-size: 13px; font-weight: 600; }
+.compliance-distribution-toolbar { @apply flex flex-wrap items-center gap-3; margin-bottom: 14px; }
+.compliance-comparison-controls { margin-bottom: 10px; }
+.compliance-comparison-fields { @apply grid grid-cols-2 gap-3; margin-top: 10px; }
+@media (max-width: 600px) { .compliance-comparison-fields { grid-template-columns: minmax(0, 1fr); } }
+.compliance-plot { position: relative; width: 100%; min-width: 0; }
+.compliance-legend { @apply flex flex-wrap items-center gap-3; font-size: 11px; color: var(--secondary); margin-bottom: 16px; }
+.compliance-legend span { @apply inline-flex items-center gap-2; }
+.compliance-type-legend { margin-top: 16px; font-size: 12px; }
+.compliance-type-legend .compliance-legend { margin-top: 12px; }
+.compliance-year { @apply inline-flex flex-wrap items-center gap-3; margin-bottom: 10px; font-size: 12px; color: var(--secondary); }
+.compliance-year select { min-height: 44px; padding: 8px 12px; background: var(--surface-secondary); border: 1px solid var(--border); color: var(--text); }
+.compliance-methodology p { margin-top: 12px; font-size: 12px; line-height: 1.7; color: var(--secondary); }
+.compliance-methodology a { color: var(--accent); }
+@media (min-width: 1200px) { .compliance-metrics { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+@media (max-width: 1000px) { .compliance-pair { grid-template-columns: minmax(0, 1fr); } }
+@media (max-width: 374px) { .compliance-metrics { grid-template-columns: minmax(0, 1fr); } }

@@ -33,10 +33,12 @@ export function createFilters(data: DashboardData, onChange: (state: FilterState
   root: HTMLDetailsElement;
   state: () => FilterState;
   close: () => void;
+  setComplianceScope: (enabled: boolean) => void;
   destroy: () => void;
 } {
   const controller = new AbortController();
   let state = defaultFilters();
+  const effectiveState = (): FilterState => ({ ...state });
   const root = element('details', 'filters panel');
   root.id = 'dashboard-filters';
   const summary = element('summary', 'filter-heading');
@@ -215,8 +217,8 @@ export function createFilters(data: DashboardData, onChange: (state: FilterState
         active: state.siteType !== 'all',
       },
       {
-        label: state.pollutant ?? 'PM2.5',
-        active: (state.pollutant ?? 'PM2.5') !== 'PM2.5',
+        label: effectiveState().pollutant ?? 'PM2.5',
+        active: (effectiveState().pollutant ?? 'PM2.5') !== 'PM2.5',
       },
       {
         label: state.includeSuspect ? 'VALID + SUSPECT' : 'VALID',
@@ -231,7 +233,7 @@ export function createFilters(data: DashboardData, onChange: (state: FilterState
 
   const publish = (): void => {
     const cleared = synchronize();
-    onChange({ ...state }, cleared ? 'Pilihan yang tidak sesuai telah direset. ' : '');
+    onChange(effectiveState(), cleared ? 'Pilihan yang tidak sesuai telah direset. ' : '');
   };
   region.setOptions([['all', 'Semua wilayah'], ...distinct(data.stations, 'region').map(value => [value, value] satisfies [string, string])], 'all');
   reset.addEventListener('click', () => {
@@ -252,7 +254,13 @@ export function createFilters(data: DashboardData, onChange: (state: FilterState
   root.addEventListener('toggle', () => { if (!root.open) close(); }, { signal: controller.signal });
   synchronize();
   return {
-    root, state: () => ({ ...state }), close,
+    root, state: effectiveState, close,
+    setComplianceScope: enabled => {
+      explanation.textContent = enabled
+        ? 'Enam polutan mengikuti filter. IKU selalu memakai NO2 + SO2; wilayah, stasiun, tipe lokasi, tanggal, dan QC berlaku. Tahun evaluasi dan periode perbandingan dijelaskan pada grafik.'
+        : 'Aktif: Deret harian 2024–2026 · 6 Polutan kriteria · Mode QC VALID & SUSPECT.';
+      synchronize();
+    },
     destroy: () => { controller.abort(); region.destroy(); site.destroy(); station.destroy(); },
   };
 }

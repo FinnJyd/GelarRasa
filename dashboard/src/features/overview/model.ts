@@ -1,5 +1,6 @@
 import { CATEGORIES } from '../../data/types';
-import type { Category, DailyCube, FilterState, Station } from '../../data/types';
+import { hasMeasurements } from '../../data/observations';
+import type { Category, DailyCube, FilterState, MeasuredStationObservation, Station, StationObservation } from '../../data/types';
 
 export const defaultFilters = (): FilterState => ({
   region: 'all',
@@ -12,99 +13,48 @@ export const defaultFilters = (): FilterState => ({
   includeSuspect: false,
 });
 
-export function filterStations(stations: readonly Station[], state: FilterState, cube?: DailyCube): Station[] {
-  let list = stations;
-
-  if (cube) {
-    const allDates = cube.dates;
-    const start = state.startDate ?? '2024-01-01';
-    const end = state.endDate ?? '2026-10-14';
-
-    let startIndex = allDates.findIndex(d => d >= start);
-    if (startIndex === -1) startIndex = 0;
-    let endIndex = -1;
-    for (let i = allDates.length - 1; i >= 0; i--) {
-      const d = allDates[i];
-      if (d !== undefined && d <= end) {
-        endIndex = i;
-        break;
-      }
-    }
-    if (endIndex === -1) endIndex = allDates.length - 1;
-    if (startIndex > endIndex) {
-      const temp = startIndex;
-      startIndex = endIndex;
-      endIndex = temp;
-    }
-
-    const pollutantName = state.pollutant ?? 'PM2.5';
-    const polKey = pollutantName.toLowerCase().replace('.', '');
-    const threshold = cube.thresholds[polKey] ?? cube.thresholds['pm25'];
-    const limit24h = threshold?.pp22_24h ?? 55.0;
-    const bins = threshold?.ispu_bins ?? [0.0, 15.5, 55.4, 150.4, 250.4];
-    const qcMode = state.includeSuspect ? 's' : 'v';
-    const totalDays = endIndex - startIndex + 1;
-
-    list = stations.map(station => {
-      const stRecord = cube.stations[station.code];
-      const series = stRecord?.[qcMode]?.[polKey];
-      if (!series) return station;
-
-      let sum = 0;
-      let count = 0;
-      let exceedCount = 0;
-      const catCounts: Record<Category, number> = {
-        Baik: 0,
-        Sedang: 0,
-        'Tidak Sehat': 0,
-        'Sangat Tidak Sehat': 0,
-        Berbahaya: 0,
-      };
-
-      for (let d = startIndex; d <= endIndex; d++) {
-        const val = series[d];
-        if (val !== null && val !== undefined) {
-          sum += val;
-          count++;
-          if (val > limit24h) exceedCount++;
-          let dayCat: Category = 'Berbahaya';
-          if (val <= (bins[1] ?? 15.5)) dayCat = 'Baik';
-          else if (val <= (bins[2] ?? 55.4)) dayCat = 'Sedang';
-          else if (val <= (bins[3] ?? 150.4)) dayCat = 'Tidak Sehat';
-          else if (val <= (bins[4] ?? 250.4)) dayCat = 'Sangat Tidak Sehat';
-          catCounts[dayCat]++;
-        }
-      }
-
-      let dominantCat: Category = 'Baik';
-      let maxCatCount = -1;
-      for (const cat of CATEGORIES) {
-        const c = catCounts[cat] ?? 0;
-        if (c > maxCatCount) {
-          maxCatCount = c;
-          dominantCat = cat;
-        }
-      }
-
-      const avg = count > 0 ? Number((sum / count).toFixed(1)) : 0;
-      const exceedPct = count > 0 ? Number(((exceedCount / count) * 100).toFixed(1)) : 0;
-      const validPct = totalDays > 0 ? Number(((count / totalDays) * 100).toFixed(1)) : 0;
-
-      return {
-        ...station,
-        average: avg,
-        exceedance: exceedPct,
-        validPercentage: validPct,
-        category: dominantCat,
-      };
-    });
-  }
-
-  return list.filter(station =>
+export function filterStations(stations: readonly Station[], state: FilterState): Station[] {
+  return stations.filter(station =>
     (state.region === 'all' || station.region === state.region) &&
     (state.siteType === 'all' || station.siteType === state.siteType) &&
     (state.station === 'all' || station.code === state.station),
   ).sort((a, b) => b.average - a.average || a.code.localeCompare(b.code));
+}
+
+export function selectObservations(stations: readonly Station[], state: FilterState, cube: DailyCube | undefined): StationObservation[] {
+  const start = state.startDate ?? cube?.dates[0] ?? '';
+  const end = state.endDate ?? cube?.dates[cube.dates.length - 1] ?? '';
+  const indices = cube?.dates.flatMap((day, i) => day >= start && day <= end ? [i] : []) ?? [];
+  const key = (state.pollutant ?? 'PM2.5').toLowerCase().replace('.', '');
+  const threshold = cube?.thresholds[key];
+  const mode = state.includeSuspect ? 's' : 'v';
+  return filterStations(stations, state).map(station => {
+    const source = cube?.stations[station.code];
+    const series = source?.[mode][key];
+    const unsupported = source?.unavailable.includes(key) ?? false;
+    let sum = 0; let count = 0; let exceed = 0;
+    const counts: Record<Category, number> = { Baik: 0, Sedang: 0, 'Tidak Sehat': 0, 'Sangat Tidak Sehat': 0, Berbahaya: 0 };
+    if (series && threshold && !unsupported) for (const i of indices) {
+      const value = series[i];
+      if (typeof value !== 'number' || !Number.isFinite(value) || value < 0) continue;
+      sum += value; count++;
+      if (value > threshold.pp22_24h) exceed++;
+      const category = value <= (threshold.ispu_bins[1] ?? 15.5) ? 'Baik'
+        : value <= (threshold.ispu_bins[2] ?? 55.4) ? 'Sedang'
+        : value <= (threshold.ispu_bins[3] ?? 150.4) ? 'Tidak Sehat'
+        : value <= (threshold.ispu_bins[4] ?? 250.4) ? 'Sangat Tidak Sehat' : 'Berbahaya';
+      counts[category]++;
+    }
+    let category: Category | null = null;
+    if (count) for (const candidate of CATEGORIES) if (category === null || counts[candidate] > counts[category]) category = candidate;
+    const unavailableReason = count ? null : !cube || !source || !series || !threshold ? 'Ekspor harian polutan tidak tersedia.'
+      : unsupported ? 'Satuan polutan belum didukung.' : !indices.length ? 'Tidak ada tanggal pengamatan dalam rentang pilihan.'
+      : 'Tidak ada hari terukur yang memenuhi syarat ekspor pada pilihan ini.';
+    return { ...station, average: count ? Number((sum / count).toFixed(1)) : null,
+      exceedance: count ? Number((exceed / count * 100).toFixed(1)) : null, category,
+      validPercentage: indices.length ? Number((count / indices.length * 100).toFixed(1)) : 0,
+      measuredDays: count, periodDays: indices.length, unavailableReason };
+  }).sort((a, b) => (b.average ?? -1) - (a.average ?? -1) || a.code.localeCompare(b.code));
 }
 
 export function computeHospitalBurden(
@@ -181,22 +131,25 @@ export function computeHospitalBurden(
   };
 }
 
-export function summarize(stations: readonly Station[]): {
+export function summarize(stations: readonly StationObservation[]): {
   mean: number | null;
   validMean: number | null;
   exceedanceMean: number | null;
-  highest: Station | null;
+  highest: MeasuredStationObservation | null;
+  measured: number;
   distribution: { category: Category; count: number }[];
 } {
+  const measured = stations.filter(hasMeasurements);
   return {
-    mean: stations.length ? stations.reduce((sum, station) => sum + station.average, 0) / stations.length : null,
-    validMean: stations.length ? stations.reduce((sum, station) => sum + station.validPercentage, 0) / stations.length : null,
-    exceedanceMean: stations.length ? stations.reduce((sum, station) => sum + station.exceedance, 0) / stations.length : null,
-    highest: stations.reduce<Station | null>((highest, station) =>
+    measured: measured.length,
+    mean: measured.length ? measured.reduce((sum, station) => sum + station.average, 0) / measured.length : null,
+    validMean: measured.length ? measured.reduce((sum, station) => sum + station.validPercentage, 0) / measured.length : null,
+    exceedanceMean: measured.length ? measured.reduce((sum, station) => sum + station.exceedance, 0) / measured.length : null,
+    highest: measured.reduce<MeasuredStationObservation | null>((highest, station) =>
       highest === null || station.average > highest.average ? station : highest, null),
     distribution: CATEGORIES.map(category => ({
       category,
-      count: stations.filter(station => station.category === category).length,
+      count: measured.filter(station => station.category === category).length,
     })),
   };
 }

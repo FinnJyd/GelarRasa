@@ -1,8 +1,8 @@
-import type { Station } from '../data/types';
+import type { StationObservation } from '../data/types';
 import { element } from './dom';
 import { number } from './format';
 
-export function stationTable(stations: readonly Station[]): HTMLElement {
+export function stationTable(stations: readonly StationObservation[]): HTMLElement {
   const details = element('details', 'data-disclosure');
   details.append(element('summary', '', `Lihat tabel data · ${stations.length} stasiun`));
   const wrap = element('div', 'table-scroll');
@@ -25,7 +25,11 @@ export function stationTable(stations: readonly Station[]): HTMLElement {
     const name = element('th');
     name.scope = 'row';
     name.append(element('strong', '', station.code), element('span', 'table-location', station.city));
-    row.append(name, element('td', '', station.region), element('td', '', station.siteType), element('td', 'numeric', number(station.average)), element('td', '', station.category), element('td', '', station.notes));
+    const concentration = element('td', 'numeric', station.average === null ? 'Tidak tersedia' : number(station.average));
+    concentration.append(element('span', 'table-location', `${number(station.measuredDays)} / ${number(station.periodDays)} hari terukur (${number(station.validPercentage)}%)`));
+    const category = element('td', '', station.category ?? 'Data tidak mencukupi');
+    if (station.unavailableReason) category.title = station.unavailableReason;
+    row.append(name, element('td', '', station.region), element('td', '', station.siteType), concentration, category, element('td', '', station.notes));
     body.append(row);
   }
   table.append(caption, head, body);

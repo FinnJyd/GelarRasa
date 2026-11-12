@@ -107,7 +107,7 @@ export function createShell(features: readonly Feature[], onNavigate: (feature: 
   introLine.append(sectionTitle);
   const question = element('p', 'page-question');
   intro.append(breadcrumb, introLine, element('p', 'research-label', 'Pertanyaan Riset'), question);
-  const filterHost = element('div');
+  const filterHost = element('div', 'filter-host');
   const host = element('div', 'feature-host');
   const announcement = element('p', 'sr-only');
   announcement.setAttribute('role', 'status');
@@ -176,7 +176,7 @@ export function createShell(features: readonly Feature[], onNavigate: (feature: 
         if (id === feature?.id) item.setAttribute('aria-current', 'page');
         else item.removeAttribute('aria-current');
       }
-      filterHost.hidden = feature?.id !== 'overview' && feature?.id !== 'health';
+      filterHost.hidden = feature?.id !== 'overview' && feature?.id !== 'health' && feature?.id !== 'compliance';
     },
     destroy: () => { closeDrawer(false); controller.abort(); theme.destroy(); ticker.destroy(); root.remove(); },
   };

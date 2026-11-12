@@ -96,6 +96,13 @@ export function parseDashboard(raw: unknown, rawCatalog: unknown): DashboardData
   if (!Number.isFinite(Date.parse(generated))) throw new Error('Waktu ekspor tidak valid.');
   let cube: DashboardData['cube'];
   if (root['daily_cube'] && isRecord(root['daily_cube'])) {
+    const stationRows = record(root['daily_cube']['stations'], 'daily_cube.stations');
+    for (const value of Object.values(stationRows)) {
+      const station = record(value, 'daily_cube.station');
+      for (const key of list(station['unavailable'], 'daily_cube.unavailable')) {
+        if (typeof key !== 'string' || !['pm25', 'pm10', 'so2', 'co', 'o3', 'no2'].includes(key)) throw new Error('Polutan tidak tersedia tidak valid.');
+      }
+    }
     cube = root['daily_cube'] as unknown as DashboardData['cube'];
   }
   return {

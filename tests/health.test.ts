@@ -46,15 +46,19 @@ test('all six pollutants and QC change exposures without changing health counts'
   assert.ok(baseline.average && Math.abs(baseline.average - 733191 / 1018) < 1e-9);
 });
 
-test('raw logger scales are unavailable while hospital summaries remain available', () => {
-  const result = summarizeHealth(health, dashboard.stations, { ...all, station: 'AQMS-BJB-01' }, 'resp');
+test('approved particulate and gas conversion preserves hospital counts while exposing logger pairs', () => {
+  const particulate = summarizeHealth(health, dashboard.stations, { ...all, station: 'AQMS-BJB-01', pollutant: 'PM2.5' }, 'resp');
+  assert.equal(particulate.unscaled, 0);
+  assert.ok(particulate.pairs > 0);
+  const result = summarizeHealth(health, dashboard.stations, { ...all, station: 'AQMS-BJB-01', pollutant: 'CO' }, 'resp');
+  assert.deepEqual(result.daily, particulate.daily);
   assert.equal(result.hospitals, 1);
-  assert.equal(result.unscaled, 1);
-  assert.equal(result.pairs, 0);
+  assert.equal(result.unscaled, 0);
+  assert.ok(result.pairs > 0);
   assert.ok(result.average !== null && result.average > 0);
-  assert.ok(result.exposure.every(value => value === null));
-  assert.ok(result.lags.every(item => item.correlation === null));
-  assert.equal(result.bins.length, 0);
+  assert.ok(result.exposure.some(value => value !== null && value > 0));
+  assert.ok(result.lags.some(item => item.correlation !== null));
+  assert.ok(result.bins.length > 0);
 });
 
 test('sparse station coverage, dates, outcome and empty selections are explicit', () => {

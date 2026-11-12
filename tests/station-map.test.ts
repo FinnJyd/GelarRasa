@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs';
 import { test } from 'node:test';
 import { referenceMarker } from '../dashboard/src/components/station-map-model';
 import { parseDashboard } from '../dashboard/src/data/validate';
-import { categoryColors } from '../dashboard/src/shared/palette';
+import { categoryColors, unavailableColor } from '../dashboard/src/shared/palette';
 
 const read = (path: string): unknown => JSON.parse(readFileSync(new URL(path, import.meta.url), 'utf8'));
 const data = parseDashboard(read('../dashboard/tab1_ikhtisar.json'), read('../dashboard/data/station_catalog.json'));
@@ -22,4 +22,9 @@ test('annual reference includes the threshold and uses a fixed concentration sca
   assert.equal(referenceMarker({ ...station, average: 0 }, 'annual', 15).radius, 7);
   assert.equal(referenceMarker({ ...station, average: 1000 }, 'annual', 15).radius, 22);
   assert.equal(data.stations.filter(row => row.average <= data.reference.annual).length, 3);
+});
+
+test('missing observations use a neutral fixed-size marker in both map modes', () => {
+  const missing = { average: null, category: null, exceedance: null };
+  for (const mode of ['daily', 'annual'] as const) assert.deepEqual(referenceMarker(missing, mode, 15), { color: unavailableColor, radius: 7 });
 });

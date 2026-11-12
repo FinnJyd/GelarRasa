@@ -4,7 +4,7 @@ import { createFilters } from './components/filters';
 import { createMethodology } from './components/methodology';
 import { createOpening } from './components/opening';
 import { createShell } from './components/shell';
-import { compliance } from './features/compliance';
+import { mountCompliance } from './features/compliance';
 import { temporal } from './features/temporal';
 import { drivers } from './features/drivers';
 import { mountHealth } from './features/health';
@@ -22,6 +22,7 @@ let data: DashboardData | null = null;
 let filters: ReturnType<typeof createFilters> | null = null;
 let overview: ReturnType<typeof mountOverview> | null = null;
 let healthView: ReturnType<typeof mountHealth> | null = null;
+let complianceView: ReturnType<typeof mountCompliance> | null = null;
 let disposeFeature: (() => void) | null = null;
 let request: AbortController | null = null;
 let active: Feature | null = null;
@@ -44,7 +45,16 @@ const healthFeature: Feature = {
     return () => { healthView?.destroy(); healthView = null; };
   },
 };
-const features = [overviewFeature, compliance, temporal, drivers, healthFeature, recommendations];
+const complianceFeature: Feature = {
+  id: 'compliance', title: 'Kepatuhan Regulasi', icon: 'shield',
+  question: 'Sejauh mana stasiun memenuhi acuan kualitas udara, seberapa sering terjadi pelampauan, dan bagaimana perubahan kepatuhannya antar-tahun?',
+  mount: host => {
+    if (!data) return () => undefined;
+    complianceView = mountCompliance(host, data.stations, filters?.state() ?? defaultFilters());
+    return () => { complianceView?.destroy(); complianceView = null; };
+  },
+};
+const features = [overviewFeature, complianceFeature, temporal, drivers, healthFeature, recommendations];
 const shell = createShell(features, feature => router.go(feature.id), invoker => methodology.open(invoker));
 const router = createRouter(id => {
   const feature = features.find(item => item.id === id);
@@ -68,9 +78,10 @@ function navigate(feature: Feature): void {
   disposeFeature = null;
   active = feature;
   filters?.close();
+  filters?.setComplianceScope(feature.id === 'compliance');
   if (filters) filters.root.open = false;
   shell.activate(feature);
-  if ((feature.id === 'overview' || feature.id === 'health') && !data) {
+  if ((feature.id === 'overview' || feature.id === 'health' || feature.id === 'compliance') && !data) {
     if (request) renderLoading();
     else renderFailure();
     return;
@@ -110,7 +121,7 @@ async function load(): Promise<void> {
   request?.abort();
   const currentRequest = new AbortController();
   request = currentRequest;
-  if (active?.id === 'overview' || active?.id === 'health') renderLoading();
+  if (active?.id === 'overview' || active?.id === 'health' || active?.id === 'compliance') renderLoading();
   try {
     const loaded = await loadDashboard(currentRequest.signal);
     if (currentRequest.signal.aborted) return;
@@ -119,6 +130,7 @@ async function load(): Promise<void> {
     filters = createFilters(loaded, (state, announcement) => {
       overview?.update(state);
       healthView?.update(state);
+      complianceView?.update(state);
       const count = filterStations(loaded.stations, state).length;
       shell.announce(`${announcement}${count} stasiun sesuai pilihan. Analisis pada tab aktif diperbarui.`);
     });
@@ -126,13 +138,13 @@ async function load(): Promise<void> {
     request = null;
     await opening.finish();
     if (lifetime.signal.aborted) return;
-    if (active?.id === 'overview' || active?.id === 'health') navigate(active);
+    if (active?.id === 'overview' || active?.id === 'health' || active?.id === 'compliance') navigate(active);
   } catch (error: unknown) {
     if (currentRequest.signal.aborted) return;
     request = null;
     console.error('Dashboard export could not be loaded:', error);
     await opening.finish();
-    if (!lifetime.signal.aborted && (active?.id === 'overview' || active?.id === 'health')) renderFailure();
+    if (!lifetime.signal.aborted && (active?.id === 'overview' || active?.id === 'health' || active?.id === 'compliance')) renderFailure();
   }
 }
 

@@ -1,11 +1,13 @@
 import type { FilterState, Station } from '../../data/types';
 import { searchableSelect } from '../../components/search-select';
 import { element } from '../../shared/dom';
-import { date, number, period } from '../../shared/format';
+import { date, number } from '../../shared/format';
 import { metric, panel } from '../../shared/panel';
 import { healthPlot } from './charts';
 import { mean, summarizeHealth } from './model';
 import { OUTCOMES } from './types';
+import { compareAgeGroups } from './age-comparison';
+import { ageComparisonChart } from './age-comparison-chart';
 import type { HealthData, Outcome } from './types';
 
 const compactDate = (value: string): string => date(value);
@@ -26,8 +28,6 @@ export function mountHealthView(host: HTMLElement, data: HealthData, catalog: re
   });
   selector.setOptions(Object.entries(OUTCOMES), outcome);
   toolbar.append(orientation, selector.field);
-  const scope = element('p', 'health-scope');
-  scope.setAttribute('role', 'status');
   const coverage = element('p', 'health-coverage');
   const metrics = element('div', 'metrics-grid health-metrics');
   const trends = panel('Paparan & Kasus Harian', 'Dua skala terpisah dengan kalender yang sama.', 'health-trends');
@@ -47,20 +47,27 @@ export function mountHealthView(host: HTMLElement, data: HealthData, catalog: re
   responsePanel.body.append(responseHost,
     element('p', 'panel-footnote', 'Rata-rata kasus per faskes-hari berpasangan. Perbedaan ukuran faskes dan pola musim belum disesuaikan; bukan estimasi risiko.'));
   grid.append(lagPanel.root, responsePanel.root);
+  const ages = panel('Perubahan Admisi Balita & Lansia', 'Admisi pernapasan · dibanding rata-rata periode masing-masing umur', 'health-age-comparison');
+  const ageScope = element('p', 'panel-footnote'); ageScope.id = 'health-age-scope'; ageScope.setAttribute('aria-live', 'polite');
+  const ageHost = element('div');
+  ages.body.append(ageScope, ageHost, element('p', 'panel-footnote', 'P1 = paparan relatif terendah; P5 = tertinggi di tiap faskes. 0% = rata-rata periode; nilai negatif = lebih rendah. Deskriptif, belum disesuaikan cuaca/musim atau populasi; bukan kesimpulan kerentanan. Selalu memakai admisi pernapasan kedua umur, terpisah dari pemilih indikator kesehatan.'));
   const warning = element('p', 'health-quality');
-  root.append(toolbar, scope, metrics, coverage, warning, trends.root, grid);
+  root.append(toolbar, metrics, coverage, warning, trends.root, grid, ages.root);
   host.replaceChildren(root);
   const exposureChart = healthPlot(exposureHost, 'health-exposure', 'line', 'µg/m³');
   const admissionsChart = healthPlot(outcomeHost, 'health-admissions', 'line', 'Kasus / hari');
   const lagChart = healthPlot(lagHost, 'health-lag', 'line', 'Pearson r', { min: -1, max: 1 });
   const responseChart = healthPlot(responseHost, 'health-response', 'bar', 'Kasus / faskes-hari');
+  const ageChart = ageComparisonChart(ageHost);
+  ageHost.querySelector('canvas')?.setAttribute('aria-describedby', ageScope.id);
 
   function update(filters: FilterState): void {
     state = filters;
     const result = summarizeHealth(data, catalog, filters, outcome);
     const pollutant = filters.pollutant ?? 'PM2.5';
-    const start = result.dates[0], end = result.dates.at(-1);
-    scope.textContent = `${result.hospitals} faskes pilihan · ${start && end ? period(start, end) : 'Periode kosong'} · ${pollutant} · ${filters.includeSuspect ? 'VALID + SUSPECT' : 'VALID'}`;
+    const ageResult = compareAgeGroups(data, catalog, filters);
+    ageChart.update(ageResult);
+    ageScope.textContent = `${pollutant} · ${ageResult.facilities}/${ageResult.selectedFacilities} faskes memenuhi syarat · baseline ${number(ageResult.baselineDays)} faskes-hari pada seluruh periode pilihan. Baseline balita: ${display(ageResult.baselineUnder5)}; lansia: ${display(ageResult.baselineOver60)} admisi/faskes/hari.`;
     const countUnit = outcome === 'death' ? 'kematian/hari' : 'kasus/hari';
     const cards = [
       metric(OUTCOMES[outcome], display(result.average), countUnit, 'Rata-rata harian seluruh faskes pilihan'),
@@ -85,7 +92,7 @@ export function mountHealthView(host: HTMLElement, data: HealthData, catalog: re
   }
   update(initial);
   return { update, destroy: () => {
-    selector.destroy(); exposureChart.destroy(); admissionsChart.destroy(); lagChart.destroy(); responseChart.destroy(); root.remove();
+    selector.destroy(); exposureChart.destroy(); admissionsChart.destroy(); lagChart.destroy(); responseChart.destroy(); ageChart.destroy(); root.remove();
   } };
 }
 function isOutcome(value: string): value is Outcome { return Object.hasOwn(OUTCOMES, value); }

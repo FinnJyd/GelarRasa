@@ -24,9 +24,9 @@ test('health direct route, filters and outcome selection work', async ({ page })
   await openHealth(page);
   await expect(page).toHaveTitle('DA2026_Dashboard_NasiBakarCumiHitamPakKris_AlfinJayadi');
   await expect(page.locator('#dashboard-filters')).not.toHaveAttribute('open');
-  await expect(page.locator('.health-dashboard canvas')).toHaveCount(4);
+  await expect(page.locator('.health-dashboard canvas')).toHaveCount(5);
   await expect(firstMetric(page).locator('strong')).toHaveText('720,23');
-  await expect(page.locator('.health-scope')).toContainText('27 faskes pilihan');
+  await expect(page.locator('.health-scope')).toHaveCount(0);
   await choose(page, 'Indikator kesehatan', 'Kematian');
   await expect(firstMetric(page).getByRole('heading')).toHaveText('Kematian');
   await expect(firstMetric(page).locator('strong')).toHaveText('53,66');
@@ -44,39 +44,41 @@ test('health direct route, filters and outcome selection work', async ({ page })
 test('shared selections survive routes; pollutant and QC update charts without replacing canvases', async ({ page }) => {
   await page.route('https://server.arcgisonline.com/**', route => route.abort());
   await page.goto('/dashboard');
-  await expect(page.locator('.doughnut-center strong')).toHaveText('27');
+  await expect(page.locator('.doughnut-center strong')).toHaveText('26');
   await page.locator('#dashboard-filters summary').click();
   await choose(page, 'Wilayah', 'Jakarta');
   await page.getByRole('link', { name: 'Dampak Kesehatan', exact: true }).click();
-  await expect(page.locator('.health-scope')).toContainText('3 faskes pilihan');
+  await expect(page.locator('#filter-summary')).toContainText('Jakarta');
   await expect(page.locator('#dashboard-filters')).not.toHaveAttribute('open');
   const canvas = page.locator('[data-chart="health-exposure"]');
   await canvas.evaluate(node => { node.setAttribute('data-identity', 'retained'); });
   const admissions = await firstMetric(page).locator('strong').textContent();
   await page.locator('#dashboard-filters summary').click();
   await page.getByRole('button', { name: 'NO2', exact: true }).click();
-  await expect(page.locator('.health-scope')).toContainText('NO2');
+  await expect(page.locator('#filter-summary')).toContainText('NO2');
   await page.getByLabel(/SUSPECT/).check();
-  await expect(page.locator('.health-scope')).toContainText('VALID + SUSPECT');
+  await expect(page.locator('#filter-summary')).toContainText('VALID + SUSPECT');
   await expect(firstMetric(page).locator('strong')).toHaveText(admissions ?? '');
   await expect(canvas).toHaveAttribute('data-identity', 'retained');
   await page.getByRole('link', { name: 'Ikhtisar Nasional', exact: true }).click();
   await expect(page.locator('.doughnut-center strong')).toHaveText('3');
   await expect(page.locator('#filter-summary')).toContainText('NO2');
   await page.goBack();
-  await expect(page.locator('.health-scope')).toContainText('3 faskes pilihan');
+  await expect(page.locator('#filter-summary')).toContainText('Jakarta');
 });
 
-test('unscaled and sparse stations keep health summaries and expose unavailable paired analyses', async ({ page }) => {
+test('converted gas loggers show exposures while sparse stations retain explicit missing analyses', async ({ page }) => {
   await openHealth(page);
   await page.locator('#dashboard-filters summary').click();
   await choose(page, 'Stasiun', 'AQMS-BJB-01');
-  await expect(page.locator('.health-quality')).toContainText('satuan logger');
-  await expect(page.locator('.health-coverage')).toContainText('(0%)');
+  await expect(page.locator('[data-chart="health-exposure"]')).toBeVisible();
+  await page.getByRole('button', { name: 'CO', exact: true }).click();
+  await expect(page.locator('.health-quality')).not.toContainText('satuan logger');
+  await expect(page.locator('.health-coverage')).not.toContainText('(0%)');
   await expect(firstMetric(page).locator('strong')).not.toHaveText('—');
-  await expect(page.locator('[data-chart="health-exposure"]')).not.toBeVisible();
+  await expect(page.locator('[data-chart="health-exposure"]')).toBeVisible();
   await expect(page.locator('[data-chart="health-admissions"]')).toBeVisible();
-  await expect(page.locator('[data-chart="health-lag"]')).not.toBeVisible();
+  await expect(page.locator('[data-chart="health-lag"]')).toBeVisible();
   await choose(page, 'Stasiun', 'AQMS-JMB-02');
   await expect(page.locator('.health-coverage')).toContainText('(0%)');
   await choose(page, 'Stasiun', 'AQMS-JKT-01');
@@ -85,6 +87,19 @@ test('unscaled and sparse stations keep health summaries and expose unavailable 
   await page.getByLabel('Tanggal mulai', { exact: true }).blur();
   await expect(page.locator('[data-chart="health-lag"]')).not.toBeVisible();
   await expect(firstMetric(page).locator('strong')).not.toHaveText('—');
+});
+
+test('overview includes converted gas loggers without changing selected hospital coverage', async ({ page }) => {
+  await page.goto('/dashboard');
+  await expect(page.locator('.doughnut-center strong')).toHaveText('26');
+  await page.locator('#dashboard-filters summary').click();
+  await choose(page, 'Stasiun', 'AQMS-BJB-01');
+  const hospital = page.locator('.metric').filter({ has: page.getByRole('heading', { name: 'Indeks Beban Hospital (Faskes)', exact: true }) }).locator('strong');
+  const before = await hospital.textContent();
+  await page.getByRole('button', { name: 'CO', exact: true }).click();
+  await expect(page.locator('.doughnut-center strong')).toHaveText('1');
+  await expect(page.getByText(/1 stasiun pilihan belum memiliki konversi logger CO/)).not.toBeVisible();
+  await expect(hospital).toHaveText(before ?? '');
 });
 
 test('health errors offer a working retry and navigation removes the view', async ({ page }) => {
@@ -153,10 +168,42 @@ test('repeated tab changes destroy charts and avoid detached canvas painting', a
     await page.getByRole('link', { name: 'Pola Waktu', exact: true }).click();
     await expect(page.locator('.feature-host canvas')).toHaveCount(0);
     await page.getByRole('link', { name: 'Dampak Kesehatan', exact: true }).click();
-    await expect(page.locator('.health-dashboard canvas')).toHaveCount(4);
+    await expect(page.locator('.health-dashboard canvas')).toHaveCount(5);
   }
   await expect(page.locator('[data-chart="health-admissions"]')).toHaveAttribute('data-animation', 'complete');
   await expect(page.locator('html')).not.toHaveAttribute('data-detached-paint', 'true');
+});
+
+test('age comparison uses period baselines, stays independent of outcome and follows real exposure filters', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await openHealth(page);
+  const panel = page.locator('.health-age-comparison');
+  const chart = page.locator('[data-chart="health-age-comparison"]');
+  await expect(chart).toHaveAttribute('aria-label', /5 kelompok paparan/);
+  await expect(panel.locator('.sr-only li')).toHaveCount(5);
+  await expect(page.locator('#health-age-scope')).toContainText('baseline');
+  const baseline = await panel.locator('.sr-only').innerText();
+  const original = await chart.elementHandle(); if (!original) throw new Error('Age chart missing');
+  await choose(page, 'Indikator kesehatan', 'Kematian');
+  expect(await panel.locator('.sr-only').innerText()).toBe(baseline);
+  await page.locator('#dashboard-filters summary').click();
+  await page.getByRole('button', { name: 'NO2', exact: true }).click();
+  await expect(page.locator('#health-age-scope')).toContainText('NO2');
+  await expect(panel.locator('.sr-only')).not.toHaveText(baseline);
+  expect(await chart.evaluate((node, previous) => node === previous, original)).toBe(true);
+  const valid = await panel.locator('.sr-only').innerText();
+  await page.getByLabel(/SUSPECT/).check();
+  await expect(panel.locator('.sr-only')).not.toHaveText(valid);
+  await choose(page, 'Stasiun', 'AQMS-JMB-02');
+  await expect(chart).not.toBeVisible();
+  await expect(panel.getByRole('heading', { name: 'Data perbandingan umur belum mencukupi', exact: true })).toBeVisible();
+  await expect(page.locator('#health-age-scope')).toContainText('0/1 faskes');
+  await choose(page, 'Stasiun', 'AQMS-JKT-01');
+  await expect(chart).toBeVisible();
+  await page.getByLabel('Tanggal mulai', { exact: true }).fill('2026-10-14');
+  await page.getByLabel('Tanggal mulai', { exact: true }).blur();
+  await expect(chart).not.toBeVisible();
+  await expect(firstMetric(page).locator('strong')).not.toHaveText('—');
 });
 
 test('navigating away during a pending health request prevents stale rendering', async ({ page }) => {

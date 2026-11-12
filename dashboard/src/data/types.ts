@@ -27,6 +27,7 @@ export interface DailyCube {
   pollutants: readonly string[];
   thresholds: Record<string, ThresholdInfo>;
   stations: Record<string, {
+    unavailable: readonly string[];
     v: Record<string, readonly (number | null)[]>;
     s: Record<string, readonly (number | null)[]>;
   }>;
@@ -51,6 +52,21 @@ export interface Station {
   average: number;
   exceedance: number;
   validPercentage: number;
+  category: Category;
+}
+
+export interface StationObservation extends Omit<Station, 'average' | 'exceedance' | 'category'> {
+  average: number | null;
+  exceedance: number | null;
+  category: Category | null;
+  measuredDays: number;
+  periodDays: number;
+  unavailableReason: string | null;
+}
+
+export interface MeasuredStationObservation extends StationObservation {
+  average: number;
+  exceedance: number;
   category: Category;
 }
 
