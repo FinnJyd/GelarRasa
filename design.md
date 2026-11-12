@@ -418,4 +418,20 @@ User-requested tooling migration: use Vite 8 and Tailwind 4 for live development
 - Both package-manager lockfiles are synchronized, and development tooling is documented in README.md and AGENTS.md. Browser checks now target Vite; `PRANA_TEST_MODE=production` selects the built preview. Live-update checks make temporary TypeScript, CSS, HTML, and whitespace-only JSON edits and restore their exact original contents, refusing to overwrite concurrent changes.
 - Verification evidence and any limits are recorded in CHANGELOG.md. Before/after health screenshots at 320, 375, 768, 1024, and 1440px (including phone/desktop dark mode) were pixel-identical under the checked reduced-motion conditions. This comparison does not establish equality under every browser, animation frame, or input state.
 
+<<<<<<< HEAD
+=======
+### Pola Waktu dan Faktor Pemicu — 12 November 2026
+
+User-requested implementation replaces the Tab 3 (Pola Waktu) and Tab 4 (Faktor Pemicu) placeholders with dedicated strict TypeScript feature modules, full Chart.js visualizations, and reproducible Python data pipelines.
+
+- **Tab 3: Pola Waktu (`/dashboard/pola-waktu`)**:
+  - `scripts/export-temporal.py` generates `tab3_temporal.json` in both `dataset/dashboard/` and `dashboard/data/`.
+  - Four core analytical sections: (1) Profil Diurnal 24 Jam dengan rentang interkuartil P25–P75 dan mode overlay komparasi musim karhutla (Agu–Okt) vs bulan lainnya; (2) Heatmap matriks Hari × Jam (Senin–Minggu × 00–23 WIB) berbasis kanvas 2D dengan stasiun default `AQMS-KTG-01`; (3) Deret waktu PM2.5 harian stasiun hotspot karhutla (`KTG-01`, `KTG-02`, `JMB-01`, `JMB-02`, `PKN-01`, `PKU-01`, `STG-01`) dengan garis batas baku mutu PP 22/2021 (55 µg/m³ harian dan 15 µg/m³ tahunan); (4) Analisis episode ekstrem dengan algoritma penggabungan jeda 1 hari (kriteria: ≥18 jam valid/hari, konsentrasi >55 µg/m³).
+  - Filter mandiri per tab dalam accordion terlipat secara default sesuai kontrak desain.
+
+- **Tab 4: Faktor Pemicu (`/dashboard/faktor-pemicu`)**:
+  - `scripts/export-drivers.py` generates `tab4_drivers.json` in both `dataset/dashboard/` and `dashboard/data/`.
+  - Lima komponen visual: (1) Mawar Polusi (Pollution Rose) 16 sektor arah angin berbasis Chart.js `polarArea` dalam layout fixed small-multiples (`AQMS-KTG-01` hotspot karhutla, `AQMS-JKT-01` koridor perkotaan/trafik, `AQMS-KTB-01` latar bersih); (2) Matriks korelasi peringkat Spearman 6 polutan × 3 parameter cuaca (suhu, kelembapan, kecepatan angin) pada kanvas 2D dengan selektor stasiun dan toggle musim; (3) Binned plot dispersi kecepatan angin vs median PM2.5 per zonasi; (4) Scatter plot intensitas lalu lintas per jam vs gas NO2 & CO untuk 27 stasiun; (5) Komparasi jam ekstrem (>P95 = 109.8 µg/m³) vs jam normal yang membuktikan 96.4% jam ekstrem terkonsentrasi pada musim karhutla dan disertai stagnasi angin.
+
+>>>>>>> f6471f0 (Added Tab 2 & 3 + Fixed Project Directory)
 Implementation references: [Vite server options](https://vite.dev/config/server-options), [Vite build options](https://vite.dev/config/build-options), [Tailwind's Vite integration](https://tailwindcss.com/docs/installation/using-vite), and [opting out of Preflight](https://tailwindcss.com/docs/preflight).

@@ -2,6 +2,51 @@
 
 Record completed changes chronologically with dates in WIB. Each entry states the scope, reason, validation, and remaining limitations. Planned work belongs in the design audit or feature plan, not among completed changes.
 
+<<<<<<< HEAD
+=======
+## 12 November 2026 — Perbaikan pemuatan Faktor Pemicu & penyempurnaan visual Pola Waktu
+
+- **Faktor Pemicu (Tab 2)**:
+  - Memperbaiki kegagalan pemuatan `tab4_drivers.json` di [load.ts](file:///d:/Projects/Gelarrasa/dashboard/src/features/drivers/load.ts) yang disebabkan oleh stasiun berskala logger belum terverifikasi (`AQMS-BJB-01`, `MDN-01`, `PSW-01`) dengan nilai `null` pada `mean_no2` dan `mean_co`. Tipe data dan parser diperbarui untuk mendukung `number | null`, dan scatter plot memfilter titik null dengan aman.
+  - Mendaftarkan modul `Legend` dari Chart.js pada [charts.ts](file:///d:/Projects/Gelarrasa/dashboard/src/features/drivers/charts.ts) sehingga label legenda pada scatter dan plot lainnya tampil sempurna.
+- **Pola Waktu (Tab 1)**:
+  - Mendaftarkan modul `Legend` Chart.js pada [charts.ts](file:///d:/Projects/Gelarrasa/dashboard/src/features/temporal/charts.ts) sehingga legenda pada seluruh grafik diurnal, deret waktu, dan episode ekstrem kini tampil lengkap dan jelas.
+  - Memperbarui `host.replaceChildren(root)` pada [view.ts](file:///d:/Projects/Gelarrasa/dashboard/src/features/temporal/view.ts) sebelum inisialisasi instance grafik agar Chart.js dapat mengukur dimensi kanvas pada DOM aktif secara akurat.
+  - Grafik Diurnal: menambahkan overlay komparasi 4 kurva langsung (Hotspot Karhutla vs DKI Jakarta pada musim kebakaran Agu–Okt dan bulan lainnya), serta selector zonasi langsung di panel.
+  - Heatmap: menambahkan selector stasiun langsung di atas kanvas matriks untuk navigasi cepat dan membuat kanvas responsif menyesuaikan lebar kontainer.
+  - Deret Waktu: menambahkan tombol toggle "Fokus Baku Mutu (0–150 µg/m³)" vs "Skala Penuh" agar garis batas PP 22/2021 (55 µg/m³ dan 15 µg/m³) tidak terhimpit oleh lonjakan ekstrem ~1,127 µg/m³ kebakaran gambut.
+  - Episode Ekstrem: menyertakan tombol filter "Stasiun Hotspot Karhutla Saja" (rentang 14–106 hari) untuk menghindari kompresi skala visual oleh episode kontinu perkotaan Jakarta (1,018 hari).
+- **Validasi**:
+  - Verifikasi otomatis browser headless via Playwright: 0 error console pada kedua rute (`/dashboard/pola-waktu` dan `/dashboard/faktor-pemicu`).
+  - Verifikasi visual screenshot resolusi penuh (1440x900) pada kedua tab membuktikan seluruh grafik, kanvas, legenda, dan kontrol interaktif ter-render dengan presisi tinggi.
+  - `bun run typecheck`, `bun run build`, dan seluruh 34 unit test lulus 100%.
+
+## 12 November 2026 — Implementasi Tab 1 (Pola Waktu) dan Tab 2 (Faktor Pemicu)
+
+- Mengimplementasikan seluruh komponen analisis dan visualisasi untuk Tab 1 (Pola Waktu) dan Tab 2 (Faktor Pemicu), menjawab langsung pertanyaan penelitian terkait jam sibuk, anomali kebakaran hutan/lahan (karhutla), mawar polusi 16 sektor arah angin, efek dispersi meteorologi, intensitas lalu lintas, serta komparasi pemicu konsentrasi ekstrem.
+- **Data Pipelines (Python)**:
+  - `scripts/export-temporal.py`: menghasilkan `tab3_temporal.json` (173.8 KB) di `dataset/dashboard/` dan `dashboard/data/`. Menyediakan profil diurnal per jam 00–23 untuk setiap tipologi zonasi (median, P25, P75), pemisahan musim karhutla (Agu–Okt) vs bulan lainnya, matriks heatmap hari × jam, deret waktu stasiun hotspot karhutla harian, serta identifikasi episode ekstrem (≥18 jam valid, batas >55 µg/m³, penggabungan jeda 1 hari).
+  - `scripts/export-drivers.py`: menghasilkan `tab4_drivers.json` (71.8 KB) di `dataset/dashboard/` dan `dashboard/data/`. Menyediakan mawar polusi 16 arah mata angin (angin tenang <0.5 m/s dikecualikan), matriks korelasi peringkat Spearman 6 polutan × 3 parameter cuaca (suhu, kelembapan, angin) dengan toggle musim, dispersi polusi pada bin kecepatan angin (0–0.5 hingga 5+ m/s), scatter volume lalu lintas vs NO2/CO, serta komparasi jam ekstrem (>P95 = 109.8 µg/m³) vs jam normal.
+- **Frontend Tab 1 Pola Waktu (`dashboard/src/features/temporal/`)**:
+  - `types.ts`, `load.ts`, `model.ts`: schema runtime validation dengan `strict: true`, caching data, dan fungsi pemodelan.
+  - `charts.ts`: Chart.js line plot dengan pita interkuartil P25–P75 via `Filler`, mode overlay komparasi musim karhutla vs bulan lainnya, heatmap matriks 7 hari × 24 jam berbasis kanvas 2D dengan skala kategori ISPU, deret waktu harian stasiun hotspot dengan ambang batas PP 22/2021 (55 µg/m³ dan 15 µg/m³), serta bar plot durasi episode ekstrem.
+  - `view.ts`: kartu metrik ringkasan episode, accordion filter terlipat (default stasiun KTG-01 per keputusan 1A, filter tipologi zonasi), tombol toggle komparasi musim karhutla, dan catatan metodologi algoritma penggabungan episode.
+  - `index.ts`: integrasi lifecycle dengan penanganan status loading, error/retry, dan teardown abort controller.
+- **Frontend Tab 2 Faktor Pemicu (`dashboard/src/features/drivers/`)**:
+  - `types.ts`, `load.ts`, `model.ts`: validasi runtime untuk seluruh relasi pemicu meteorologi dan koridor emisi.
+  - `charts.ts`: Chart.js `polarArea` mawar polusi 16 sektor arah angin, kanvas 2D matriks korelasi Spearman dengan palet divergen biru–putih–merah, line plot dispersi kecepatan angin vs median PM2.5 per tipe zonasi, scatter plot volume kendaraan vs konsentrasi NO2/CO, serta grouped bar chart indikator meteorologi dan histogram jam kejadian ekstrem 00–23.
+  - `view.ts`: kartu metrik ringkasan faktor kunci (96.4% jam ekstrem terjadi pada musim karhutla), 3 panel mawar polusi fixed small-multiples (`AQMS-KTG-01` hotspot karhutla, `AQMS-JKT-01` koridor perkotaan, `AQMS-KTB-01` latar bersih per keputusan 3A), filter korelasi stasiun & musim, selector polutan lalu lintas, dan analisis pemicu konsentrasi ekstrem.
+  - `index.ts`: integrasi lifecycle dengan penanganan pemuatan data dan abort controller.
+- **Unit Testing**:
+  - Menambahkan `tests/temporal.test.ts` (5 uji) dan `tests/drivers.test.ts` (6 uji) yang memverifikasi validitas ekspor JSON, kelengkapan 24 jam diurnal, 16 sektor mawar polusi, korelasi Spearman, bin kecepatan angin, dan metrik komparasi ekstrem.
+- **Validasi**:
+  - `bun run typecheck` lulus 100% tanpa error di bawah konfigurasi TypeScript `strict: true`.
+  - `bun run build` sukses mentransformasi 55 modul dan menghasilkan bundle produksi (`dist/dashboard/app.js` 443.21 kB dan `app.css` 49.31 kB).
+  - Seluruh 34 unit test pada `tests/*.test.ts` lulus (23 uji baseline + 11 uji fitur baru).
+  - Sesuai instruksi git workflow: tidak melakukan commit atau push otomatis.
+
+
+>>>>>>> f6471f0 (Added Tab 2 & 3 + Fixed Project Directory)
 ## 12 November 2026 — Vite live development and Tailwind styling
 
 - Replaced the build-on-start Python development server and standalone esbuild pipeline with Vite 8.3.8 and the official Tailwind 4.3.5 Vite integration. `bun run dev`/`npm run dev` now watches source continuously: CSS hot updates preserve selections, ordinary TypeScript/HTML/export edits reload automatically, and route-registry edits restart Vite automatically. Added `preview` for checking the production build.

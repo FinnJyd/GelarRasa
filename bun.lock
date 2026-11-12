@@ -1,5 +1,9 @@
 {
   "lockfileVersion": 1,
+<<<<<<< HEAD
+=======
+  "configVersion": 0,
+>>>>>>> f6471f0 (Added Tab 2 & 3 + Fixed Project Directory)
   "workspaces": {
     "": {
       "name": "prana-dashboard",
