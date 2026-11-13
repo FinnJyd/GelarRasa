@@ -1,4 +1,6 @@
 import { loadDashboard } from './data/load';
+import { createAnalysisCache } from './data/analysis-cache';
+import type { AnalysisCache } from './data/analysis-cache';
 import type { DashboardData, Feature } from './data/types';
 import { createFilters } from './components/filters';
 import { createMethodology } from './components/methodology';
@@ -25,6 +27,7 @@ let healthView: ReturnType<typeof mountHealth> | null = null;
 let complianceView: ReturnType<typeof mountCompliance> | null = null;
 let temporalView: ReturnType<typeof mountTemporal> | null = null;
 let driversView: ReturnType<typeof mountDrivers> | null = null;
+let analysisCache: AnalysisCache | null = null;
 let disposeFeature: (() => void) | null = null;
 let request: AbortController | null = null;
 let active: Feature | null = null;
@@ -60,8 +63,8 @@ const temporalFeature: Feature = {
   id:'temporal',title:'Pola Waktu',icon:'clock',
   question:'Kapan jam dan periode puncak lonjakan polutan terjadi dalam siklus diurnal 24 jam, dan bagaimana anomali musiman karhutla mengubah drastis profil polusi?',
   mount:host=>{
-    if(!data)return()=>undefined;
-    temporalView=mountTemporal(host,data.stations,filters?.state()??defaultFilters());
+    if(!analysisCache)return()=>undefined;
+    temporalView=mountTemporal(host,analysisCache,filters?.state()??defaultFilters());
     return()=>{temporalView?.destroy();temporalView=null;};
   },
 };
@@ -69,8 +72,8 @@ const driversFeature: Feature = {
   id:'drivers',title:'Faktor Pemicu',icon:'wind',
   question:'Faktor meteorologi, arah angin (mawar polusi), dan aktivitas antropogenik apa yang menjadi pemicu utama konsentrasi ekstrem polutan di berbagai zonasi?',
   mount:host=>{
-    if(!data)return()=>undefined;
-    driversView=mountDrivers(host,data.stations,filters?.state()??defaultFilters());
+    if(!analysisCache)return()=>undefined;
+    driversView=mountDrivers(host,analysisCache,filters?.state()??defaultFilters());
     return()=>{driversView?.destroy();driversView=null;};
   },
 };
@@ -146,8 +149,11 @@ async function load(): Promise<void> {
     const loaded = await loadDashboard(currentRequest.signal);
     if (currentRequest.signal.aborted) return;
     data = loaded;
+    analysisCache?.destroy();
+    analysisCache = createAnalysisCache(loaded.stations, { start: loaded.start, end: loaded.end });
     filters?.destroy();
     filters = createFilters(loaded, (state, announcement) => {
+      void analysisCache?.prepare(state).catch(() => undefined);
       overview?.update(state);
       healthView?.update(state);
       complianceView?.update(state);
@@ -158,6 +164,7 @@ async function load(): Promise<void> {
     });
     shell.filterHost.replaceChildren(filters.root);
     if (active) filters.setScope(active.id);
+    void analysisCache.prepare(filters.state()).catch(() => undefined);
     request = null;
     await opening.finish();
     if (lifetime.signal.aborted) return;
@@ -176,6 +183,7 @@ function destroy(): void {
   opening.destroy();
   router.destroy();
   disposeFeature?.();
+  analysisCache?.destroy();
   filters?.destroy();
   methodology.destroy();
   shell.destroy();

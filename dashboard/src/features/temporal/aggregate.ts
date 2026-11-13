@@ -11,6 +11,7 @@ export function aggregateTemporal(selection: HourlySelection): TemporalData {
   const allCells = Array.from({length:168}, ():number[]=>[]);
   let longest: TemporalData['episodes_summary']['longest_episode'] = null;
   let most: TemporalData['episodes_summary']['most_episodes'] = null;
+  let comparisonDays = 0;
   for (const item of stations) {
     const { code } = item.station;
     const profile = profiles['Pilihan'] ??= Object.fromEntries(['all','haze','nonhaze'].map(mode => [mode, Array.from({ length: 24 }, () => [])]));
@@ -37,6 +38,7 @@ export function aggregateTemporal(selection: HourlySelection): TemporalData {
         comparison.push(windows.length >= 13 ? Math.max(...windows) : null);
       }
     }
+    comparisonDays += comparison.filter(value => value !== null).length;
     timeseries[code] = daily;
     heatmap[code] = Object.fromEntries(Array.from({ length: 7 }, (_, dow) => [String(dow), Object.fromEntries(Array.from({ length: 24 }, (_, hour) => {
       const values = cells[dow*24+hour] ?? []; return [String(hour), values.length >= 5 ? quantile(values,.5) : null];
@@ -69,5 +71,5 @@ export function aggregateTemporal(selection: HourlySelection): TemporalData {
     }))]));
   }
   return { meta:{ version:2, date_range:{start:dates[0] ?? '',end:dates.at(-1) ?? ''}, haze_months:[8,9,10], episode_threshold_ug_m3:reference.daily, episode_min_valid_hours:18, episode_gap_merge_days:1, pollutant },
-    diurnal:profile('all'), diurnal_haze:profile('haze'), diurnal_nonhaze:profile('nonhaze'), heatmap, timeseries:{dates,stations:timeseries}, episodes, episodes_summary:{longest_episode:longest,most_episodes:most} };
+    diurnal:profile('all'), diurnal_haze:profile('haze'), diurnal_nonhaze:profile('nonhaze'), heatmap, timeseries:{dates,stations:timeseries}, episodes, episodes_summary:{comparison_days:comparisonDays,longest_episode:longest,most_episodes:most} };
 }

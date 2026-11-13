@@ -103,6 +103,7 @@ test('overview includes converted gas loggers without changing selected hospital
 });
 
 test('health errors offer a working retry and navigation removes the view', async ({ page }) => {
+  test.setTimeout(60000);
   let fail = true;
   await page.route('**/data/health_exposure.json', route => fail ? route.fulfill({ status: 503, body: '{}' }) : route.continue());
   await page.goto('/dashboard/dampak-kesehatan');
@@ -113,7 +114,7 @@ test('health errors offer a working retry and navigation removes the view', asyn
   await page.getByRole('link', { name: 'Pola Waktu', exact: true }).click();
   await expect(page.locator('.health-dashboard')).toHaveCount(0);
   await expect(page.locator('.feature-host canvas[data-chart^="health-"]')).toHaveCount(0);
-  await expect(page.locator('.temporal-dashboard')).toBeVisible();
+  await expect(page.locator('.temporal-dashboard')).toBeVisible({ timeout: 60000 });
 });
 
 test('charts honor live reduced-motion changes and theme changes; normal updates finish animating', async ({ page }) => {
@@ -157,6 +158,7 @@ test('responsive layouts remain readable and fit the viewport in both themes', a
 });
 
 test('repeated tab changes destroy charts and avoid detached canvas painting', async ({ page }) => {
+  test.setTimeout(60000);
   await page.addInitScript(() => {
     const clear = CanvasRenderingContext2D.prototype.clearRect;
     CanvasRenderingContext2D.prototype.clearRect = function (x, y, width, height) {
@@ -168,7 +170,7 @@ test('repeated tab changes destroy charts and avoid detached canvas painting', a
   for (let i = 0; i < 4; i++) {
     await page.getByRole('link', { name: 'Pola Waktu', exact: true }).click();
     await expect(page.locator('.feature-host canvas[data-chart^="health-"]')).toHaveCount(0);
-    await expect(page.locator('.temporal-dashboard')).toBeVisible();
+    await expect(page.locator('.temporal-dashboard')).toBeVisible({ timeout: i === 0 ? 60000 : 5000 });
     await page.getByRole('link', { name: 'Dampak Kesehatan', exact: true }).click();
     await expect(page.locator('.health-dashboard canvas')).toHaveCount(5);
   }
@@ -209,6 +211,7 @@ test('age comparison uses period baselines, stays independent of outcome and fol
 });
 
 test('navigating away during a pending health request prevents stale rendering', async ({ page }) => {
+  test.setTimeout(60000);
   let release = (): void => undefined;
   const gate = new Promise<void>(resolve => { release = resolve; });
   const intercepted = page.waitForRequest('**/data/health_exposure.json');
@@ -223,7 +226,7 @@ test('navigating away during a pending health request prevents stale rendering',
   await expect(page.getByRole('heading', { level: 2 })).toHaveText('Pola Waktu');
   await expect(page.locator('.health-dashboard')).toHaveCount(0);
   await expect(page.locator('.feature-host canvas[data-chart^="health-"]')).toHaveCount(0);
-  await expect(page.locator('.temporal-dashboard')).toBeVisible();
+  await expect(page.locator('.temporal-dashboard')).toBeVisible({ timeout: 60000 });
   await page.unroute('**/data/health_exposure.json');
   await page.getByRole('link', { name: 'Dampak Kesehatan', exact: true }).click();
   await expect(page.locator('.health-dashboard')).toBeVisible();

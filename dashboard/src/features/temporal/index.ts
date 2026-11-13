@@ -1,11 +1,12 @@
-import type { FilterState, Station } from '../../data/types';
+import type { FilterState } from '../../data/types';
+import type { AnalysisCache } from '../../data/analysis-cache';
 import { filteredAnalysis } from '../../shared/filtered-analysis';
 import { mountTemporalView } from './view';
 import type { TemporalData } from './types';
 
-export function mountTemporal(host: HTMLElement, stations: readonly Station[], initial: FilterState): {update:(filters:FilterState)=>void;destroy:()=>void} {
-  const feature = filteredAnalysis<TemporalData>(host, data => mountTemporalView(host,data));
-  const update = (filters:FilterState):void => feature.update({feature:'temporal',filters,stations});
+export function mountTemporal(host: HTMLElement, cache: AnalysisCache, initial: FilterState): {update:(filters:FilterState)=>void;destroy:()=>void} {
+  const feature = filteredAnalysis<TemporalData>(host, cache, results => results.temporal, data => mountTemporalView(host,data));
+  const update = feature.update;
   update(initial);
   return {update,destroy:feature.destroy};
 }

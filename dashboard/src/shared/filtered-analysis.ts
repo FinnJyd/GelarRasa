@@ -1,41 +1,58 @@
-import type { AnalysisRequest } from '../data/hourly';
+import type { AnalysisCache, AnalysisResults } from '../data/analysis-cache';
+import type { FilterState } from '../data/types';
 import { button, element, emptyState } from './dom';
 
-export function filteredAnalysis<T>(host: HTMLElement, render: (data: T) => {destroy: () => void; update: (data:T) => void}): {
-  update: (request: AnalysisRequest) => void; destroy: () => void;
-} {
-  let worker: Worker | null = null;
+export function filteredAnalysis<T>(
+  host: HTMLElement,
+  cache: AnalysisCache,
+  select: (results: AnalysisResults) => T,
+  render: (data: T) => { destroy: () => void; update: (data: T) => void },
+): { update: (filters: FilterState) => void; destroy: () => void } {
   let view: ReturnType<typeof render> | null = null;
-  let controller = new AbortController();
+  let revision = 0;
   let active = true;
+  let controller = new AbortController();
   const status = element('p', 'panel-footnote', 'Memperbarui analisis sesuai filter…');
   status.setAttribute('role', 'status');
-  const update = (request: AnalysisRequest): void => {
-    worker?.terminate(); controller.abort(); controller = new AbortController();
-    host.setAttribute('aria-busy','true');
+
+  const show = (results: AnalysisResults): void => {
+    const data = select(results);
+    if (view) view.update(data);
+    else view = render(data);
+    status.remove();
+    host.inert = false;
+    host.removeAttribute('aria-busy');
+  };
+
+  const update = (filters: FilterState): void => {
+    const current = ++revision;
+    controller.abort(); controller = new AbortController();
+    const cached = cache.peek(filters);
+    if (cached) { show(cached); return; }
+    host.setAttribute('aria-busy', 'true');
     host.inert = true;
     if (view) host.prepend(status);
-    if (!view) host.replaceChildren(emptyState('Memuat analisis pilihan…','Menyiapkan data sesuai filter.'));
-    worker = new Worker(new URL('../data/analysis-worker.ts',import.meta.url), {type:'module'});
-    const current = worker;
-    const fail = (message: string): void => {
-      if(!active || current!==worker) return;
-      view?.destroy(); view=null; host.removeAttribute('aria-busy');
-      host.inert = false;
-      const state=emptyState('Analisis belum dapat dimuat',message); state.setAttribute('role','alert');
-      const retry=button('Coba lagi','button button-primary');
-      retry.addEventListener('click',()=>update(request),{once:true,signal:controller.signal}); state.append(retry); host.replaceChildren(state);
-      current.terminate(); worker=null;
-    };
-    current.addEventListener('error',()=>fail('Ekspor analisis belum dapat diproses.'),{signal:controller.signal});
-    current.addEventListener('message',(event:MessageEvent<{ok:true;data:T}|{ok:false;error:string}>)=>{
-      if(!active || current!==worker) return;
-      if(!event.data.ok) {fail(event.data.error);return;}
-      if(view) view.update(event.data.data); else view=render(event.data.data);
-      status.remove(); host.inert = false;
-      host.removeAttribute('aria-busy'); current.terminate(); worker=null;
-    },{signal:controller.signal});
-    current.postMessage(request);
+    else host.replaceChildren(emptyState('Memuat analisis pilihan…', 'Menyiapkan data sesuai filter.'));
+    void cache.prepare(filters).then(results => {
+      if (active && current === revision) show(results);
+    }).catch((error: unknown) => {
+      if (!active || current !== revision || (error instanceof DOMException && error.name === 'AbortError')) return;
+      view?.destroy(); view = null;
+      host.removeAttribute('aria-busy'); host.inert = false;
+      const state = emptyState('Analisis belum dapat dimuat', error instanceof Error ? error.message : 'Ekspor analisis belum dapat diproses.');
+      state.setAttribute('role', 'alert');
+      const retry = button('Coba lagi', 'button button-primary');
+      retry.addEventListener('click', () => update(filters), { once: true, signal: controller.signal });
+      state.append(retry); host.replaceChildren(state);
+    });
   };
-  return {update,destroy:()=>{active=false;controller.abort();worker?.terminate();view?.destroy();host.removeAttribute('aria-busy');host.inert=false;host.replaceChildren();}};
+
+  return {
+    update,
+    destroy(): void {
+      active = false; revision++; controller.abort();
+      view?.destroy(); view = null;
+      host.removeAttribute('aria-busy'); host.inert = false; host.replaceChildren();
+    },
+  };
 }

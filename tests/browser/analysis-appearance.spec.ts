@@ -84,6 +84,28 @@ for(const [name,route] of [['temporal','/dashboard/pola-waktu'],['drivers','/das
   });
 }
 
+test('region episode KPIs distinguish zero exceedances from missing comparison data', async ({ page }) => {
+  await page.goto('/dashboard/pola-waktu'); await ready(page);
+  const cards = page.locator('.analysis-summary .metric');
+  await expect(cards).toHaveCount(4);
+  await page.locator('#dashboard-filters summary').click();
+  await choose(page, 'Wilayah', 'Bogor'); await ready(page);
+  for (const index of [0, 1]) {
+    await expect(cards.nth(index)).toBeVisible();
+    await expect(cards.nth(index).locator('strong')).toHaveText('0');
+    await expect(cards.nth(index)).toContainText('Tidak ada pelampauan pada hari pembanding yang tersedia');
+  }
+  await choose(page, 'Wilayah', 'Jakarta'); await ready(page);
+  for (const index of [0, 1]) await expect(cards.nth(index).locator('strong')).not.toHaveText(/^(0|—)$/);
+  await choose(page, 'Wilayah', 'Sumatera'); await ready(page);
+  for (const index of [0, 1]) {
+    await expect(cards.nth(index)).toBeVisible();
+    await expect(cards.nth(index).locator('strong')).toHaveText('—');
+    await expect(cards.nth(index)).toContainText('Data pembanding belum mencukupi');
+  }
+  await expect(cards).toHaveCount(4);
+});
+
 test('hourly export failures offer retry, and rapid filter/navigation changes do not render stale results',async({page})=>{
   let fail=true;
   await page.route('**/data/hourly/manifest.json',route=>fail?route.fulfill({status:503,body:'{}'}):route.continue());

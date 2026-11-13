@@ -4,7 +4,7 @@ import { element } from './dom';
 export interface SeriesLegendEntry { label: string; color: string; visible: boolean }
 
 export function seriesLegend(host: HTMLElement, toggle: (index: number) => boolean): {
-  update: (entries: readonly SeriesLegendEntry[]) => void; destroy: () => void;
+  update: (entries: readonly SeriesLegendEntry[]) => void; setVisible: (visible: boolean) => void; destroy: () => void;
 } {
   const controller = new AbortController();
   const list = element('div', 'analysis-legend analysis-chart-legend');
@@ -26,6 +26,9 @@ export function seriesLegend(host: HTMLElement, toggle: (index: number) => boole
         button.prepend(swatch);
         return button;
       }));
+    },
+    setVisible(visible: boolean): void {
+      disclosure.hidden = !visible;
     },
     destroy(): void { controller.abort(); disclosure.remove(); },
   };

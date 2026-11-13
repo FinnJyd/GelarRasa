@@ -126,14 +126,14 @@ export function mountComplianceView(host: HTMLElement, data: ComplianceData, cat
   const partialLabel = element('label', 'suspect-option');
   const includePartial = element('input'); includePartial.type = 'checkbox';
   partialLabel.append(includePartial, document.createTextNode('Sertakan data parsial'));
-  const annualScope = element('p', 'panel-footnote'); annualScope.id = 'compliance-annual-scope';
+  const annualScope = element('p', 'sr-only'); annualScope.id = 'compliance-annual-scope';
   annualScope.setAttribute('aria-live', 'polite');
   const annualToolbar = element('div', 'compliance-distribution-toolbar');
-  annualToolbar.append(annualModes, partialLabel, annualScope);
+  annualToolbar.append(yearLabel, annualModes, partialLabel, annualScope);
   const annualHost = element('div');
   const annualNote = element('p', 'panel-footnote');
   const annualTable = element('div');
-  annual.body.append(yearLabel, annualToolbar, annualNote, annualHost, annualTable);
+  annual.body.append(annualToolbar, annualNote, annualHost, annualTable);
   const tableHost = element('div');
   const empty = emptyState('Tidak ada pengamatan', 'Ubah pilihan stasiun/tanggal/polutan atau lihat keterangan satuan pada metodologi.');
   empty.hidden = true;

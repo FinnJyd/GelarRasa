@@ -4,7 +4,7 @@ export const HOURLY_POLLUTANTS: readonly PollutantName[] = ['PM2.5', 'PM10', 'SO
 const COLUMNS = [...HOURLY_POLLUTANTS, 'temperature_c', 'humidity_pct', 'wind_speed_ms', 'wind_direction_deg'];
 export interface HourStation { station: Station; traffic: number; hours: Float64Array }
 export interface HourlySelection { dates: string[]; stations: HourStation[]; pollutant: PollutantName }
-export interface AnalysisRequest { feature: 'temporal' | 'drivers'; filters: FilterState; stations: readonly Station[] }
+export interface AnalysisRequest { filters: FilterState; stations: readonly Station[] }
 
 function record(value: unknown): Record<string, unknown> {
   if (!value || typeof value !== 'object' || Array.isArray(value)) throw new Error('Ekspor per jam tidak valid.');

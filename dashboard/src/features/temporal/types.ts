@@ -41,6 +41,7 @@ export interface MostEpisodesSummary {
 }
 
 export interface EpisodesSummary {
+  comparison_days: number;
   longest_episode: LongestEpisodeSummary | null;
   most_episodes: MostEpisodesSummary | null;
 }
