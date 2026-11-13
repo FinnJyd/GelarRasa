@@ -1,4 +1,4 @@
-import type { DashboardData, FilterState, Station } from '../data/types';
+import type { DashboardData, Feature, FilterState, Station } from '../data/types';
 import { defaultFilters, filterStations } from '../features/overview/model';
 import { button, element } from '../shared/dom';
 import { icon } from '../shared/icons';
@@ -33,7 +33,7 @@ export function createFilters(data: DashboardData, onChange: (state: FilterState
   root: HTMLDetailsElement;
   state: () => FilterState;
   close: () => void;
-  setComplianceScope: (enabled: boolean) => void;
+  setScope: (feature: Feature['id']) => void;
   destroy: () => void;
 } {
   const controller = new AbortController();
@@ -43,6 +43,8 @@ export function createFilters(data: DashboardData, onChange: (state: FilterState
   root.id = 'dashboard-filters';
   const summary = element('summary', 'filter-heading');
   const copy = element('span', 'filter-heading-copy');
+  const scopeStatus = element('span', 'filter-scope-status', 'Analisis rekomendasi belum tersedia; pilihan filter tetap tersimpan');
+  scopeStatus.hidden = true;
   const selected = element('span', 'filter-summary');
   selected.id = 'filter-summary';
   const action = element('span', 'filter-disclosure');
@@ -50,9 +52,11 @@ export function createFilters(data: DashboardData, onChange: (state: FilterState
   const arrow = icon('down');
   arrow.classList.add('disclosure-arrow');
   action.append(arrow);
-  copy.append(element('strong', '', 'Filter data'), selected);
+  copy.append(element('strong', '', 'Filter data'), scopeStatus, selected);
   summary.append(copy, action);
   const body = element('div', 'filter-body');
+  const controls = element('fieldset', 'filter-controls');
+  controls.setAttribute('aria-label', 'Pengaturan filter data');
   const grid = element('div', 'filter-grid');
   const region = searchableSelect('filter-region', 'Wilayah', value => { state.region = value; publish(); });
   const site = searchableSelect('filter-type', 'Tipe lokasi', value => { state.siteType = value; publish(); });
@@ -178,7 +182,8 @@ export function createFilters(data: DashboardData, onChange: (state: FilterState
   explanation.id = 'filter-availability';
   for (const control of [startInput, endInput, preset.select, suspectInput]) control.setAttribute('aria-describedby', explanation.id);
   choices.setAttribute('aria-describedby', explanation.id);
-  body.append(grid, footer, explanation);
+  controls.append(grid, footer);
+  body.append(controls, explanation);
   root.append(summary, body);
 
   function synchronize(): boolean {
@@ -255,8 +260,14 @@ export function createFilters(data: DashboardData, onChange: (state: FilterState
   synchronize();
   return {
     root, state: effectiveState, close,
-    setComplianceScope: enabled => {
-      explanation.textContent = enabled
+    setScope: feature => {
+      close();
+      scopeStatus.hidden = feature !== 'recommendations';
+      explanation.textContent = feature === 'recommendations'
+        ? 'Filter aktif dan pilihan tersimpan. Analisis rekomendasi belum tersedia.'
+        : feature === 'temporal' || feature === 'drivers'
+        ? 'Wilayah, stasiun, tipe lokasi, tanggal, polutan, dan QC memperbarui seluruh analisis. Kontrol pada grafik hanya mengubah tampilan atau membandingkan musim dalam periode pilihan.'
+        : feature === 'compliance'
         ? 'Enam polutan mengikuti filter. IKU selalu memakai NO2 + SO2; wilayah, stasiun, tipe lokasi, tanggal, dan QC berlaku. Tahun evaluasi dan periode perbandingan dijelaskan pada grafik.'
         : 'Aktif: Deret harian 2024–2026 · 6 Polutan kriteria · Mode QC VALID & SUSPECT.';
       synchronize();

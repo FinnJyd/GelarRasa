@@ -8,7 +8,7 @@ import { searchableSelect } from '../../components/search-select';
 import { aqmsFilteringMethodology } from '../../components/aqms-filtering-methodology';
 import { annualChart, barChart } from './charts';
 import { annualAssessment, annualDisplayRows, calendarDaysInYear, defaultComparisonCodes, distributionRows, selectRows, splitRankings, stationComparisons } from './model';
-import { REFERENCES, selectedPollutant } from './pollutants';
+import { REFERENCES, selectedPollutant } from '../../shared/pollutants';
 import { estimateIku, ikuCategory } from './iku';
 import type { AnnualView, CategoryView } from './model';
 import type { ComplianceData, ComplianceRow, IkuRow, StationComparison } from './types';

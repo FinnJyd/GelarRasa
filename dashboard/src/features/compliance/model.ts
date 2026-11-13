@@ -1,5 +1,5 @@
 import type { FilterState, PollutantName, Station } from '../../data/types';
-import { REFERENCES, selectedPollutant } from './pollutants';
+import { REFERENCES, selectedPollutant } from '../../shared/pollutants';
 import type { ChangePattern, ComplianceData, ComplianceRow, StationComparison, YearComparison } from './types';
 
 export function categoryIndex(value: number, pollutant: PollutantName = 'PM2.5'): number {

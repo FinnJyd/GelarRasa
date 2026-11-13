@@ -33,6 +33,25 @@ def records(path):
         return list(csv.DictReader(handle))
 
 
+def eligible_values(rows, site, pollutant, dates):
+    """Yield approved, finite nonnegative observations before distinct-hour aggregation."""
+    column = concentration_column(site, pollutant, rows[0]) if rows else None
+    if column is None:
+        return
+    source_column, factor = column
+    duplicates = Counter(row['timestamp_start'] for row in rows)
+    for row in rows:
+        if row['qc_flag'] not in ('VALID', 'SUSPECT') or duplicates[row['timestamp_start']] > 1:
+            continue
+        try:
+            timestamp = dt.datetime.fromisoformat(row['timestamp_start'])
+            value = float(row[source_column]) * factor
+        except (ValueError, TypeError):
+            continue
+        if timestamp.date().isoformat() in dates and math.isfinite(value) and value >= 0:
+            yield row, timestamp, value
+
+
 def export():
     sites = records(RAW / 'master/sites.csv')
     sensors = records(RAW / 'master/sensors.csv')
@@ -53,7 +72,6 @@ def export():
         code = site['station_code']
         if code in stations:
             raise ValueError(f'Duplicate station {code}')
-        duplicates = Counter(r['timestamp_start'] for r in rows)
         pollutants = {}
         for name, key in POLLUTANTS.items():
             column = concentration_column(site, key, rows[0])
@@ -63,17 +81,7 @@ def export():
             if eight_hour:
                 output['max8'] = {'v': [None] * len(dates), 's': [None] * len(dates)}
             hourly = {'v': defaultdict(list), 's': defaultdict(list)}
-            for row in rows if column else []:
-                source_column, factor = column
-                if row['qc_flag'] not in ('VALID', 'SUSPECT') or duplicates[row['timestamp_start']] > 1:
-                    continue
-                try:
-                    timestamp = dt.datetime.fromisoformat(row['timestamp_start'])
-                    value = float(row[source_column]) * factor
-                except ValueError:
-                    continue
-                if timestamp.date().isoformat() not in index or not math.isfinite(value) or value < 0:
-                    continue
+            for row, timestamp, value in eligible_values(rows, site, key, index):
                 key = (timestamp.date().isoformat(), timestamp.hour)
                 for mode in (('v', 's') if row['qc_flag'] == 'VALID' else ('s',)):
                     hourly[mode][key].append(value)

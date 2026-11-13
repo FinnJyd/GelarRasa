@@ -4,7 +4,7 @@ import { element } from '../../shared/dom';
 import { number } from '../../shared/format';
 import { chartTheme, manageChart } from '../../shared/chart-lifecycle';
 import type { PollutantName } from '../../data/types';
-import { REFERENCES } from './pollutants';
+import { REFERENCES } from '../../shared/pollutants';
 
 Chart.register(BarController, BarElement, CategoryScale, LinearScale, PointElement, ScatterController, Tooltip);
 

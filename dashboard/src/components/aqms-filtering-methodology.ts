@@ -12,7 +12,7 @@ const STEPS: readonly (readonly [string, string])[] = [
 
 export function aqmsFilteringMethodology(): HTMLElement {
   const section = element('section', 'method-section aqms-filtering-methodology');
-  section.append(element('h3', '', 'Alur penyaringan AQMS (Tab 2)'), element('p', '', 'Urutan ini menjelaskan pipeline yang digunakan Tab 2. Ekspor Tab 1 yang lebih lama masih memiliki perbedaan agregasi, sebagaimana dijelaskan pada batasan metodologi; alur ini tidak diterapkan pada rekaman kasus rumah sakit.'));
+  section.append(element('h3', '', 'Alur penyaringan AQMS (Tab 2–4)'), element('p', '', 'Tab 2 memakai agregat harian; Tab 3–4 menggunakan ekspor jam dari pemeriksaan nilai dan normalisasi yang sama. Syarat kelengkapan harian berlaku pada tren dan pelampauan Tab 3, bukan pada profil/pasangan per jam. Evaluasi tahunan hanya berlaku di Tab 2. Ekspor Tab 1 yang lebih lama masih memiliki perbedaan agregasi, sebagaimana dijelaskan pada batasan metodologi; alur ini tidak diterapkan pada rekaman kasus rumah sakit.'));
   const steps = element('ol');
   for (const [title, description] of STEPS) {
     const item = element('li');

@@ -1,6 +1,8 @@
+import type { PollutantName } from '../../data/types';
+
 export interface DirectionSector {
   direction_label: string;
-  mean_pm25: number | null;
+  mean_concentration: number | null;
   count: number;
 }
 
@@ -18,7 +20,7 @@ export type StationCorrelation = Record<CorrelationMode, CorrelationMatrix>;
 
 export interface WindBin {
   label: string;
-  median_pm25: number | null;
+  median_concentration: number | null;
   p25: number | null;
   p75: number | null;
   count: number;
@@ -26,26 +28,26 @@ export interface WindBin {
 
 export interface TrafficStationData {
   traffic_intensity_per_h: number;
-  mean_no2: number | null;
-  mean_co: number | null;
+  mean_concentration: number | null;
   site_type: string;
 }
 
 export interface ExtremeStats {
-  median_wind_speed: number;
-  median_humidity: number;
-  median_temperature: number;
-  haze_season_share: number;
+  median_wind_speed: number | null;
+  median_humidity: number | null;
+  median_temperature: number | null;
+  haze_season_share: number | null;
   hour_distribution: readonly number[];
 }
 
 export interface ExtremeVsNormal {
-  threshold_pm25: number;
+  threshold: number | null;
   extreme: ExtremeStats;
   normal: ExtremeStats;
 }
 
 export interface DriversMeta {
+  pollutant: PollutantName;
   version: number;
   date_range: { start: string; end: string };
   haze_months: readonly number[];
@@ -62,4 +64,3 @@ export interface DriversData {
   traffic_scatter: Record<string, TrafficStationData>;
   extreme_vs_normal: ExtremeVsNormal;
 }
-

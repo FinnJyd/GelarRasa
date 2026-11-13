@@ -1,3 +1,5 @@
+import { seriesLegend } from '../../shared/series-legend';
+import type { PollutantName } from '../../data/types';
 import {
   ArcElement,
   BarController,
@@ -15,7 +17,10 @@ import {
   ScatterController,
   Tooltip,
 } from 'chart.js';
-import { chartTheme } from '../../shared/chart-lifecycle';
+import { chartTheme, manageChart } from '../../shared/chart-lifecycle';
+import { manageCanvas } from '../../shared/canvas-lifecycle';
+import { matrixLegend, matrixSurface } from '../../shared/matrix-surface';
+import { analysisDetails, setSelected } from '../../shared/analysis-controls';
 import { element } from '../../shared/dom';
 import { number } from '../../shared/format';
 import type { CorrelationMatrix, DirectionSector, ExtremeVsNormal, WindBin } from './types';
@@ -40,28 +45,15 @@ Chart.register(
 
 const SECTORS_ORDER = ['N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE', 'S', 'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW', 'NNW'];
 
-export function createPollutionRose(host: HTMLElement, stationTitle: string): {
+export function createPollutionRose(host: HTMLElement, stationTitle: string, pollutant: () => PollutantName): {
   update: (sectors: readonly DirectionSector[]) => void;
   destroy: () => void;
 } {
   const card = element('div', 'rose-card');
-  card.style.flex = '1 1 260px';
-  card.style.minWidth = '240px';
-  card.style.maxWidth = '360px';
-  card.style.background = 'var(--surface)';
-  card.style.border = '1px solid var(--border)';
-  card.style.borderRadius = '10px';
-  card.style.padding = '12px';
 
   const heading = element('h4', 'rose-title', stationTitle);
-  heading.style.fontSize = '13.5px';
-  heading.style.fontWeight = '600';
-  heading.style.marginBottom = '6px';
-  heading.style.textAlign = 'center';
 
-  const frame = element('div', 'rose-plot');
-  frame.style.height = '240px';
-  frame.style.position = 'relative';
+  const frame = element('div', 'rose-plot analysis-plot');
 
   const canvas = element('canvas');
   canvas.setAttribute('role', 'img');
@@ -73,7 +65,7 @@ export function createPollutionRose(host: HTMLElement, stationTitle: string): {
 
   let currentSectors: readonly DirectionSector[] = [];
 
-  const chart = new Chart<'polarArea', number[], string>(canvas, {
+  const chart = new Chart<'polarArea', (number | null)[], string>(canvas, {
     type: 'polarArea',
     data: {
       labels: SECTORS_ORDER,
@@ -96,8 +88,8 @@ export function createPollutionRose(host: HTMLElement, stationTitle: string): {
             title: items => `Arah Angin: ${items[0]?.label ?? ''}`,
             label: item => {
               const sec = currentSectors.find(s => s.direction_label === item.label);
-              if (!sec || sec.mean_pm25 === null) return 'Tidak cukup angin signifikan (<0.5 m/s)';
-              return `Rerata PM2.5: ${number(sec.mean_pm25)} µg/m³ (n=${number(sec.count)})`;
+              if (!sec || sec.mean_concentration === null) return 'Tidak cukup angin signifikan (<0.5 m/s)';
+              return `Rerata ${pollutant()}: ${number(sec.mean_concentration)} µg/m³ (n=${number(sec.count)})`;
             },
           },
         },
@@ -108,7 +100,7 @@ export function createPollutionRose(host: HTMLElement, stationTitle: string): {
           ticks: {
             display: true,
             backdropColor: 'transparent',
-            font: { size: 9 },
+            font: { size: 12 },
             maxTicksLimit: 4,
           },
           grid: { color: 'rgba(148, 163, 184, 0.2)' },
@@ -116,7 +108,7 @@ export function createPollutionRose(host: HTMLElement, stationTitle: string): {
           pointLabels: {
             display: true,
             centerPointLabels: true,
-            font: { size: 10, weight: 600 },
+            font: { size: 12, weight: 600 },
           },
         },
       },
@@ -129,37 +121,30 @@ export function createPollutionRose(host: HTMLElement, stationTitle: string): {
     if (chart.options.scales?.['r']?.pointLabels) chart.options.scales['r'].pointLabels.color = theme.text;
   };
 
-  const observer = new MutationObserver(() => {
-    applyColors();
-    chart.update('none');
-  });
-  observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
-  applyColors();
+  const lifecycle = manageChart(chart, applyColors);
 
   return {
     update: sectors => {
+      canvas.setAttribute('aria-label', `Mawar polusi ${pollutant()} · ${stationTitle}`);
       currentSectors = sectors;
       const sectorMap = new Map<string, DirectionSector>();
       sectors.forEach(s => sectorMap.set(s.direction_label, s));
 
       const values = SECTORS_ORDER.map(dir => {
         const sec = sectorMap.get(dir);
-        return sec && sec.mean_pm25 !== null ? sec.mean_pm25 : 0;
+        return sec?.mean_concentration ?? null;
       });
 
       const dataset = chart.data.datasets[0];
       if (dataset) {
         dataset.data = values;
-        dataset.backgroundColor = values.map(v =>
-          v > 55 ? 'rgba(239, 68, 68, 0.65)' : v > 35 ? 'rgba(245, 158, 11, 0.65)' : 'rgba(13, 148, 136, 0.65)',
-        );
+        dataset.backgroundColor = 'rgba(13, 148, 136, 0.65)';
       }
       applyColors();
-      chart.update();
+      lifecycle.refresh();
     },
     destroy: () => {
-      observer.disconnect();
-      chart.destroy();
+      lifecycle.destroy();
       card.remove();
     },
   };
@@ -169,199 +154,75 @@ export function createCorrelationHeatmap(host: HTMLElement): {
   update: (matrix: CorrelationMatrix, stationName: string, modeName: string) => void;
   destroy: () => void;
 } {
-  const container = element('div', 'correlation-heatmap-container');
-  container.style.position = 'relative';
-  container.style.padding = '8px 0';
-  container.style.overflowX = 'auto';
-
-  const canvas = element('canvas');
-  canvas.setAttribute('role', 'img');
-  canvas.setAttribute('aria-label', 'Matriks Korelasi Spearman Polutan vs Cuaca');
-
-  const tooltip = element('div', 'corr-tooltip');
-  tooltip.style.position = 'absolute';
-  tooltip.style.display = 'none';
-  tooltip.style.pointerEvents = 'none';
-  tooltip.style.background = 'rgba(15, 23, 42, 0.9)';
-  tooltip.style.color = '#fff';
-  tooltip.style.padding = '6px 10px';
-  tooltip.style.borderRadius = '6px';
-  tooltip.style.fontSize = '12px';
-  tooltip.style.zIndex = '10';
-  tooltip.style.whiteSpace = 'nowrap';
-  tooltip.style.boxShadow = '0 4px 6px -1px rgba(0, 0, 0, 0.2)';
-
-  const legend = element('div', 'corr-legend');
-  legend.style.display = 'flex';
-  legend.style.alignItems = 'center';
-  legend.style.gap = '12px';
-  legend.style.marginTop = '10px';
-  legend.style.fontSize = '11.5px';
-  legend.innerHTML = `
-    <span style="color:var(--secondary)">Korelasi Spearman (r):</span>
-    <span style="display:inline-flex;align-items:center;gap:4px;"><span style="width:12px;height:12px;background:#1e40af;border-radius:2px;"></span> -1.0 (Negatif Kuat)</span>
-    <span style="display:inline-flex;align-items:center;gap:4px;"><span style="width:12px;height:12px;background:#cbd5e1;border-radius:2px;"></span> 0.0 (Netral)</span>
-    <span style="display:inline-flex;align-items:center;gap:4px;"><span style="width:12px;height:12px;background:#dc2626;border-radius:2px;"></span> +1.0 (Positif Kuat)</span>
-  `;
-
-  container.append(canvas, tooltip, legend);
-  host.append(container);
-
-  const pollutants = ['pm25', 'pm10', 'so2', 'co', 'o3', 'no2'];
-  const pollutantLabels = ['PM2.5', 'PM10', 'SO2', 'CO', 'O3', 'NO2'];
-  const weatherVars: Array<'temperature_c' | 'humidity_pct' | 'wind_speed_ms'> = [
-    'temperature_c',
-    'humidity_pct',
-    'wind_speed_ms',
-  ];
-  const weatherLabels = ['Suhu (°C)', 'Kelembapan (%)', 'Kecepatan Angin (m/s)'];
-
-  const cellWidth = 120;
-  const cellHeight = 36;
-  const labelMarginLeft = 70;
-  const labelMarginTop = 32;
-
-  canvas.width = labelMarginLeft + weatherVars.length * cellWidth + 20;
-  canvas.height = labelMarginTop + pollutants.length * cellHeight + 10;
-
-  let currentMatrix: CorrelationMatrix = {};
-  let currentStation = '';
-  let currentMode = '';
-
-  function getCorrColor(r: number | null): string {
-    if (r === null) return '#e2e8f0';
-    if (r < 0) {
-      // Diverging scale towards blue
-      const intensity = Math.min(1, Math.abs(r));
-      const red = Math.round(255 - intensity * (255 - 30));
-      const green = Math.round(255 - intensity * (255 - 64));
-      const blue = Math.round(255 - intensity * (255 - 175));
-      return `rgb(${red}, ${green}, ${blue})`;
-    } else {
-      // Diverging scale towards red
-      const intensity = Math.min(1, r);
-      const red = Math.round(255 - intensity * (255 - 220));
-      const green = Math.round(255 - intensity * (255 - 38));
-      const blue = Math.round(255 - intensity * (255 - 38));
-      return `rgb(${red}, ${green}, ${blue})`;
-    }
-  }
-
-  function render(): void {
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
+  const surface = matrixSurface(host, 'Matriks korelasi Spearman enam polutan dan tiga parameter cuaca');
+  surface.root.classList.add('correlation-matrix');
+  const { canvas, viewport } = surface;
+  const controller = new AbortController();
+  let pollutants: string[] = [], labels: string[] = [];
+  const weather: readonly ('temperature_c' | 'humidity_pct' | 'wind_speed_ms')[] = ['temperature_c', 'humidity_pct', 'wind_speed_ms'];
+  const headers = [['Suhu', '(°C)'], ['Lembap', '(%)'], ['Angin', '(m/s)']];
+  const left = 56, top = 44, cellHeight = 38;
+  const cellWidth = (): number => Math.max(60, Math.floor((viewport.clientWidth - left - 8) / 3));
+  let currentMatrix: CorrelationMatrix = {}, currentStation = '', currentMode = '';
+  matrixLegend(surface.legend, 'Spearman (r)', [['−1 · negatif', '#1e40af'], ['0 · netral', '#cbd5e1'], ['+1 · positif', '#dc2626']]);
+  function cellColors(value: number | null): { fill: string; text: string } {
     const theme = chartTheme();
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-    ctx.font = '12px Inter, sans-serif';
-    ctx.fillStyle = theme.text;
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'bottom';
-
-    // Draw Column Headers (Weather Vars)
-    weatherLabels.forEach((label, col) => {
-      const x = labelMarginLeft + col * cellWidth + cellWidth / 2;
-      ctx.fillText(label, x, labelMarginTop - 8);
-    });
-
-    // Draw Rows and Cells
-    pollutants.forEach((pKey, row) => {
-      const y = labelMarginTop + row * cellHeight;
-      ctx.textAlign = 'right';
-      ctx.textBaseline = 'middle';
-      ctx.fillStyle = theme.text;
-      ctx.fillText(pollutantLabels[row] ?? pKey, labelMarginLeft - 10, y + cellHeight / 2);
-
-      const pData = currentMatrix[pKey];
-      weatherVars.forEach((wKey, col) => {
-        const x = labelMarginLeft + col * cellWidth;
-        const rVal = pData ? pData[wKey] : null;
-
-        // Cell rect
-        ctx.fillStyle = getCorrColor(rVal);
-        ctx.fillRect(x + 2, y + 2, cellWidth - 4, cellHeight - 4);
-
-        // Cell text (r value)
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        if (rVal !== null) {
-          ctx.fillStyle = Math.abs(rVal) > 0.35 ? '#ffffff' : '#0f172a';
-          const sign = rVal > 0 ? '+' : '';
-          ctx.fillText(`${sign}${rVal.toFixed(2)}`, x + cellWidth / 2, y + cellHeight / 2);
-        } else {
-          ctx.fillStyle = '#94a3b8';
-          ctx.fillText('—', x + cellWidth / 2, y + cellHeight / 2);
-        }
+    if (value === null) return { fill: theme.grid, text: theme.text };
+    const intensity = Math.min(1, Math.abs(value));
+    const end = value < 0 ? [30, 64, 175] : [220, 38, 38];
+    const rgb = end.map(channel => Math.round(255 - intensity * (255 - channel)));
+    const linear = rgb.map(channel => { const v = channel / 255; return v <= .04045 ? v / 12.92 : ((v + .055) / 1.055) ** 2.4; });
+    const luminance = .2126 * (linear[0] ?? 0) + .7152 * (linear[1] ?? 0) + .0722 * (linear[2] ?? 0);
+    return { fill: `rgb(${rgb.join(',')})`, text: 1.05 / (luminance + .05) > (luminance + .05) / .05 ? '#ffffff' : '#000000' };
+  }
+  function render(): void {
+    const width = cellWidth(), ctx = surface.size(left + 3 * width + 8, top + Math.max(1,pollutants.length) * cellHeight + 8);
+    if (!ctx) return;
+    const theme = chartTheme(); ctx.font = '12px Inter, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillStyle = theme.text;
+    headers.forEach((lines, column) => lines.forEach((line, row) => ctx.fillText(line, left + column * width + width / 2, 12 + row * 15)));
+    pollutants.forEach((pollutant, row) => {
+      ctx.fillStyle = theme.text; ctx.textAlign = 'right';
+      ctx.fillText(labels[row] ?? pollutant, left - 8, top + row * cellHeight + cellHeight / 2);
+      weather.forEach((parameter, column) => {
+        const value = currentMatrix[pollutant]?.[parameter] ?? null, colors = cellColors(value);
+        ctx.fillStyle = colors.fill; ctx.fillRect(left + column * width + 2, top + row * cellHeight + 2, width - 4, cellHeight - 4);
+        ctx.fillStyle = colors.text; ctx.textAlign = 'center';
+        ctx.fillText(value === null ? '—' : `${value > 0 ? '+' : ''}${value.toFixed(2)}`, left + column * width + width / 2, top + row * cellHeight + cellHeight / 2);
       });
     });
   }
-
-  const handleMouseMove = (evt: MouseEvent): void => {
-    const rect = canvas.getBoundingClientRect();
-    const x = evt.clientX - rect.left;
-    const y = evt.clientY - rect.top;
-
-    if (x < labelMarginLeft || y < labelMarginTop) {
-      tooltip.style.display = 'none';
-      return;
-    }
-
-    const col = Math.floor((x - labelMarginLeft) / cellWidth);
-    const row = Math.floor((y - labelMarginTop) / cellHeight);
-
-    if (col >= 0 && col < weatherVars.length && row >= 0 && row < pollutants.length) {
-      const pKey = pollutants[row] ?? '';
-      const pLabel = pollutantLabels[row] ?? pKey;
-      const wKey = weatherVars[col] ?? 'temperature_c';
-      const wLabel = weatherLabels[col] ?? wKey;
-      const rVal = currentMatrix[pKey]?.[wKey] ?? null;
-
-      tooltip.innerHTML = `
-        <strong>${pLabel} &times; ${wLabel}</strong><br>
-        Stasiun: ${currentStation} (${currentMode})<br>
-        Korelasi Spearman (r): <strong>${rVal !== null ? (rVal > 0 ? '+' : '') + rVal.toFixed(3) : 'Kurang observasi (n<30)'}</strong>
-      `;
-      tooltip.style.display = 'block';
-      tooltip.style.left = `${Math.min(evt.clientX - rect.left + 14, rect.width - 160)}px`;
-      tooltip.style.top = `${evt.clientY - rect.top + 14}px`;
-    } else {
-      tooltip.style.display = 'none';
-    }
+  const show = (event: PointerEvent): void => {
+    const bounds = canvas.getBoundingClientRect();
+    const column = Math.floor((event.clientX - bounds.left - left) / cellWidth()), row = Math.floor((event.clientY - bounds.top - top) / cellHeight);
+    const pollutant = pollutants[row], parameter = weather[column];
+    if (!pollutant || !parameter || row < 0 || column < 0) { surface.hide(); return; }
+    const value = currentMatrix[pollutant]?.[parameter] ?? null;
+    surface.show(event, `${labels[row]} × ${headers[column]?.join(' ')}\n${currentStation} · ${currentMode}\nSpearman r: ${value === null ? 'Tidak tersedia' : value.toFixed(3)}`);
   };
-
-  const handleMouseLeave = (): void => {
-    tooltip.style.display = 'none';
-  };
-
-  canvas.addEventListener('mousemove', handleMouseMove);
-  canvas.addEventListener('mouseleave', handleMouseLeave);
-
-  const observer = new MutationObserver(render);
-  observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
-
+  canvas.addEventListener('pointermove', show, { signal: controller.signal });
+  canvas.addEventListener('pointerdown', show, { signal: controller.signal });
+  canvas.addEventListener('pointerleave', surface.hide, { signal: controller.signal });
+  const lifecycle = manageCanvas(viewport, render);
   return {
-    update: (matrix, stationName, modeName) => {
-      currentMatrix = matrix;
-      currentStation = stationName;
-      currentMode = modeName;
+    update(matrix, stationName, modeName): void {
+      currentMatrix = matrix; currentStation = stationName; currentMode = modeName;
+      pollutants=Object.keys(matrix);labels=[...pollutants];
+      canvas.setAttribute('aria-label', `Korelasi polutan dan cuaca di ${stationName}, ${modeName}; nilai tersedia pada alternatif teks.`);
+      surface.alternative.textContent = pollutants.flatMap((pollutant, row) => weather.map((parameter, column) => {
+        const value = matrix[pollutant]?.[parameter] ?? null;
+        return `${labels[row]} × ${headers[column]?.join(' ')}: ${value === null ? 'tidak tersedia' : value.toFixed(3)}`;
+      })).join('; ');
       render();
     },
-    destroy: () => {
-      observer.disconnect();
-      canvas.removeEventListener('mousemove', handleMouseMove);
-      canvas.removeEventListener('mouseleave', handleMouseLeave);
-      container.remove();
-    },
+    destroy(): void { controller.abort(); lifecycle.destroy(); surface.destroy(); },
   };
 }
 
-export function createWindBinsChart(host: HTMLElement): {
+export function createWindBinsChart(host: HTMLElement, pollutant: () => PollutantName): {
   update: (allSiteBins: Record<string, readonly WindBin[]>, activeSiteTypes: readonly string[]) => void;
   destroy: () => void;
 } {
-  const frame = element('div', 'wind-bins-plot');
-  frame.style.height = '340px';
-  frame.style.position = 'relative';
+  const frame = element('div', 'wind-bins-plot analysis-plot');
   const canvas = element('canvas');
   canvas.setAttribute('role', 'img');
   canvas.dataset['chart'] = 'wind-bins';
@@ -381,9 +242,9 @@ export function createWindBinsChart(host: HTMLElement): {
       interaction: { intersect: false, mode: 'index' },
       plugins: {
         legend: {
-          display: true,
+          display: false,
           position: 'top',
-          labels: { boxWidth: 12, font: { size: 11 } },
+          labels: { boxWidth: 12, font: { size: 12 } },
         },
         tooltip: {
           callbacks: {
@@ -415,20 +276,20 @@ export function createWindBinsChart(host: HTMLElement): {
     if (chart.options.plugins?.legend?.labels) chart.options.plugins.legend.labels.color = theme.text;
   };
 
-  const observer = new MutationObserver(() => {
-    applyColors();
-    chart.update('none');
+  const lifecycle = manageChart(chart, applyColors);
+  const legend = seriesLegend(host, index => {
+    const visible = !chart.isDatasetVisible(index);
+    chart.setDatasetVisibility(index, visible); lifecycle.refresh(); return visible;
   });
-  observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
-  applyColors();
 
   return {
     update: (allSiteBins, activeSiteTypes) => {
+      if (chart.options.scales?.['y']?.title) chart.options.scales['y'].title.text = `Median ${pollutant()} (µg/m³)`;
       const datasets = activeSiteTypes.map((st, idx) => {
         const bins = allSiteBins[st] ?? [];
         const medians = binLabels.map(lbl => {
           const b = bins.find(item => item.label === lbl);
-          return b && b.median_pm25 !== null ? b.median_pm25 : null;
+          return b && b.median_concentration !== null ? b.median_concentration : null;
         });
         const color = palette[idx % palette.length] ?? '#0284c7';
         return {
@@ -443,29 +304,30 @@ export function createWindBinsChart(host: HTMLElement): {
       });
 
       chart.data.datasets = datasets;
+      legend.update(datasets.map((dataset, index) => ({ label: dataset.label ?? '', color: typeof dataset.borderColor === 'string' ? dataset.borderColor : '#0284c7', visible: chart.isDatasetVisible(index) })));
       applyColors();
-      chart.update();
+      lifecycle.refresh();
     },
     destroy: () => {
-      observer.disconnect();
-      chart.destroy();
+      legend.destroy(); lifecycle.destroy();
       frame.remove();
     },
   };
 }
 
 export function createTrafficScatter(host: HTMLElement): {
-  update: (points: readonly TrafficPoint[], pollutant: 'no2' | 'co') => void;
+  update: (points: readonly TrafficPoint[], pollutant: PollutantName) => void;
   destroy: () => void;
 } {
-  const frame = element('div', 'traffic-scatter-plot');
-  frame.style.height = '340px';
-  frame.style.position = 'relative';
+  const frame = element('div', 'traffic-scatter-plot analysis-plot');
   const canvas = element('canvas');
   canvas.setAttribute('role', 'img');
   canvas.dataset['chart'] = 'traffic-scatter';
   frame.append(canvas);
-  host.append(frame);
+  const controller = new AbortController();
+  const legend = element('div', 'analysis-legend analysis-chart-legend');
+  const legendDetails = analysisDetails(legend, 'Legenda tipe lokasi');
+  host.append(frame, legendDetails);
 
   const siteTypeColors: Record<string, string> = {
     'Traffic / Roadside': '#ef4444',
@@ -476,7 +338,7 @@ export function createTrafficScatter(host: HTMLElement): {
     'Industrial Perimeter': '#8b5cf6',
   };
 
-  let currentPoints: readonly TrafficPoint[] = [];
+  let groupedPoints: readonly (readonly TrafficPoint[])[] = [];
 
   const chart = new Chart<'scatter', Array<{ x: number; y: number }>, string>(canvas, {
     type: 'scatter',
@@ -487,14 +349,14 @@ export function createTrafficScatter(host: HTMLElement): {
       animation: matchMedia('(prefers-reduced-motion: reduce)').matches ? false : { duration: 600 },
       plugins: {
         legend: {
-          display: true,
+          display: false,
           position: 'top',
-          labels: { boxWidth: 10, font: { size: 10 } },
+          labels: { boxWidth: 10, font: { size: 12 } },
         },
         tooltip: {
           callbacks: {
             label: item => {
-              const pt = currentPoints[item.dataIndex];
+              const pt = groupedPoints[item.datasetIndex]?.[item.dataIndex];
               if (!pt) return '';
               const xVal = item.parsed.x !== null ? number(item.parsed.x) : '—';
               const yVal = item.parsed.y !== null ? number(item.parsed.y) : '—';
@@ -506,7 +368,7 @@ export function createTrafficScatter(host: HTMLElement): {
       scales: {
         x: {
           beginAtZero: true,
-          title: { display: true, text: 'Intensitas Lalu Lintas Rata-rata (kendaraan / jam)' },
+          title: { display: true, text: 'Lalu lintas (kendaraan/jam)' },
         },
         y: {
           beginAtZero: true,
@@ -528,17 +390,21 @@ export function createTrafficScatter(host: HTMLElement): {
     if (chart.options.plugins?.legend?.labels) chart.options.plugins.legend.labels.color = theme.text;
   };
 
-  const observer = new MutationObserver(() => {
-    applyColors();
-    chart.update('none');
-  });
-  observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
-  applyColors();
+  const lifecycle = manageChart(chart, applyColors);
+
+  legend.addEventListener('click', event => {
+    const target = event.target instanceof Element ? event.target.closest('button[data-dataset]') : null;
+    if (!(target instanceof HTMLButtonElement)) return;
+    const index = Number(target.dataset['dataset']);
+    if (!chart.data.datasets[index]) return;
+    const selected = !chart.isDatasetVisible(index);
+    chart.setDatasetVisibility(index, selected); setSelected(target, selected); lifecycle.refresh();
+  }, { signal: controller.signal });
 
   return {
     update: (points, pollutant) => {
-      currentPoints = points;
-      const unit = pollutant === 'no2' ? 'NO2' : 'CO';
+      canvas.setAttribute('aria-label', `Konsentrasi ${pollutant.toUpperCase()} dan lalu lintas; ${points.length} stasiun dalam cakupan.`);
+      const unit = pollutant;
       if (chart.options.scales?.['y']?.title) {
         chart.options.scales['y'].title.text = `Rerata Konsentrasi ${unit} (µg/m³)`;
       }
@@ -551,15 +417,14 @@ export function createTrafficScatter(host: HTMLElement): {
         groups.set(pt.siteType, list);
       });
 
-      const datasets = Array.from(groups.entries()).map(([st, pts]) => {
+      groupedPoints = [...groups.values()].map(points => points.filter(point => point.concentration !== null));
+      const datasets = Array.from(groups.entries()).map(([st], index) => {
+        const pts = groupedPoints[index] ?? [];
         const color = siteTypeColors[st] ?? '#64748b';
-        const validPts = pts.filter(p => (pollutant === 'no2' ? p.no2 !== null : p.co !== null));
+        const coordinates = pts.flatMap(p => { const y = p.concentration; return y === null ? [] : [{ x: p.traffic, y }]; });
         return {
           label: st,
-          data: validPts.map(p => ({
-            x: p.traffic,
-            y: (pollutant === 'no2' ? p.no2 : p.co) as number,
-          })),
+          data: coordinates,
           backgroundColor: color,
           borderColor: color,
           pointRadius: 6,
@@ -568,12 +433,19 @@ export function createTrafficScatter(host: HTMLElement): {
       });
 
       chart.data.datasets = datasets;
+      legend.replaceChildren(...datasets.map((dataset, index) => {
+        const control = element('button'); control.type = 'button'; control.dataset['dataset'] = String(index);
+        setSelected(control, true);
+        const swatch = element('i', 'swatch'); swatch.style.backgroundColor = dataset.backgroundColor;
+        swatch.setAttribute('aria-hidden', 'true'); control.append(swatch, document.createTextNode(dataset.label));
+        return control;
+      }));
       applyColors();
-      chart.update();
+      lifecycle.refresh();
     },
     destroy: () => {
-      observer.disconnect();
-      chart.destroy();
+      controller.abort(); legendDetails.remove();
+      lifecycle.destroy();
       frame.remove();
     },
   };
@@ -584,32 +456,19 @@ export function createExtremeComparisonChart(host: HTMLElement): {
   destroy: () => void;
 } {
   const container = element('div', 'extreme-comparison-container');
-  container.style.display = 'grid';
-  container.style.gridTemplateColumns = 'repeat(auto-fit, minmax(280px, 1fr))';
-  container.style.gap = '16px';
 
   // Left: Grouped Bar Chart (Meteorology & Season Share)
   const leftBox = element('div', 'extreme-bar-box');
-  const leftTitle = element('h4', '', 'Perbandingan Indikator Meteorologi: Ekstrem vs Normal');
-  leftTitle.style.fontSize = '13.5px';
-  leftTitle.style.fontWeight = '600';
-  leftTitle.style.marginBottom = '6px';
-  const leftFrame = element('div');
-  leftFrame.style.height = '260px';
-  leftFrame.style.position = 'relative';
+  const leftTitle = element('h4', '', 'Indikator Cuaca & Musim');
+  const leftFrame = element('div', 'analysis-plot');
   const leftCanvas = element('canvas');
   leftFrame.append(leftCanvas);
   leftBox.append(leftTitle, leftFrame);
 
   // Right: 24-hour Distribution Histogram
   const rightBox = element('div', 'extreme-hour-box');
-  const rightTitle = element('h4', '', 'Distribusi Jam Terjadinya Jam Ekstrem (>P95) 00–23');
-  rightTitle.style.fontSize = '13.5px';
-  rightTitle.style.fontWeight = '600';
-  rightTitle.style.marginBottom = '6px';
-  const rightFrame = element('div');
-  rightFrame.style.height = '260px';
-  rightFrame.style.position = 'relative';
+  const rightTitle = element('h4', '', 'Waktu Terjadinya Jam Ekstrem');
+  const rightFrame = element('div', 'analysis-plot');
   const rightCanvas = element('canvas');
   rightFrame.append(rightCanvas);
   rightBox.append(rightTitle, rightFrame);
@@ -619,7 +478,7 @@ export function createExtremeComparisonChart(host: HTMLElement): {
 
   // Chart 1: Bar chart
   const barMetrics = ['Kecepatan Angin (m/s)', 'Kelembapan (%)', 'Suhu (°C)', 'Proporsi Karhutla (%)'];
-  const barChart = new Chart<'bar', number[], string>(leftCanvas, {
+  const barChart = new Chart<'bar', (number|null)[], string>(leftCanvas, {
     type: 'bar',
     data: {
       labels: barMetrics,
@@ -633,7 +492,7 @@ export function createExtremeComparisonChart(host: HTMLElement): {
       maintainAspectRatio: false,
       animation: matchMedia('(prefers-reduced-motion: reduce)').matches ? false : { duration: 600 },
       scales: {
-        x: { grid: { display: false } },
+        x: { grid: { display: false }, ticks: { maxRotation: 0, autoSkip: false, callback: function(value) { return this.getLabelForValue(Number(value)).replace('Kecepatan Angin', 'Angin').replace('Proporsi Karhutla', 'Karhutla').split(' '); } } },
         y: { beginAtZero: true, ticks: { maxTicksLimit: 5 } },
       },
     },
@@ -684,46 +543,46 @@ export function createExtremeComparisonChart(host: HTMLElement): {
   const applyColors = (): void => {
     const theme = chartTheme();
     [barChart, hourChart].forEach(c => {
+      if (c.options.scales?.['x']?.title) c.options.scales['x'].title.color = theme.text;
+      if (c.options.scales?.['y']?.title) c.options.scales['y'].title.color = theme.text;
+      if (c.options.plugins?.legend?.labels) c.options.plugins.legend.labels.color = theme.text;
       if (c.options.scales?.['x']?.ticks) c.options.scales['x'].ticks.color = theme.text;
       if (c.options.scales?.['y']?.ticks) c.options.scales['y'].ticks.color = theme.text;
       if (c.options.scales?.['y']?.grid) c.options.scales['y'].grid.color = theme.grid;
     });
   };
 
-  const observer = new MutationObserver(() => {
-    applyColors();
-    barChart.update('none');
-    hourChart.update('none');
-  });
-  observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
-  applyColors();
+  const barLifecycle = manageChart(barChart, applyColors);
+  const hourLifecycle = manageChart(hourChart, applyColors);
 
   return {
     update: data => {
       const ext = data.extreme;
       const norm = data.normal;
 
-      barChart.data.datasets[0]!.data = [
+      const extremeDataset = barChart.data.datasets[0];
+      const normalDataset = barChart.data.datasets[1];
+      const hourlyDataset = hourChart.data.datasets[0];
+      if (extremeDataset) extremeDataset.data = [
         ext.median_wind_speed,
         ext.median_humidity,
         ext.median_temperature,
-        Math.round(ext.haze_season_share * 100),
+        ext.haze_season_share === null ? null : ext.haze_season_share * 100,
       ];
-      barChart.data.datasets[1]!.data = [
+      if (normalDataset) normalDataset.data = [
         norm.median_wind_speed,
         norm.median_humidity,
         norm.median_temperature,
-        Math.round(norm.haze_season_share * 100),
+        norm.haze_season_share === null ? null : norm.haze_season_share * 100,
       ];
-      barChart.update();
+      barLifecycle.refresh();
 
-      hourChart.data.datasets[0]!.data = [...ext.hour_distribution];
-      hourChart.update();
+      if (hourlyDataset) hourlyDataset.data = [...ext.hour_distribution];
+      hourLifecycle.refresh();
     },
     destroy: () => {
-      observer.disconnect();
-      barChart.destroy();
-      hourChart.destroy();
+      barLifecycle.destroy();
+      hourLifecycle.destroy();
       container.remove();
     },
   };

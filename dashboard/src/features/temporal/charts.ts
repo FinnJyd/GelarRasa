@@ -1,3 +1,6 @@
+import { seriesLegend } from '../../shared/series-legend';
+import type { PollutantName } from '../../data/types';
+import { REFERENCES } from '../../shared/pollutants';
 import {
   BarController,
   BarElement,
@@ -11,9 +14,12 @@ import {
   PointElement,
   Tooltip,
 } from 'chart.js';
-import { chartTheme } from '../../shared/chart-lifecycle';
+import { chartTheme, manageChart } from '../../shared/chart-lifecycle';
+import { manageCanvas } from '../../shared/canvas-lifecycle';
+import { matrixLegend, matrixSurface } from '../../shared/matrix-surface';
 import { element, emptyState } from '../../shared/dom';
-import { number } from '../../shared/format';
+import type { ChartDataset } from 'chart.js';
+import { date, number } from '../../shared/format';
 import type { EpisodeWithStation } from './model';
 
 Chart.register(
@@ -36,20 +42,15 @@ export interface DiurnalPointData {
   p75: number | null;
 }
 
-export function createDiurnalChart(host: HTMLElement): {
+export function createDiurnalChart(host: HTMLElement, pollutant: () => PollutantName): {
   updateSingle: (points: readonly DiurnalPointData[], label: string) => void;
   updateOverlay: (
     hotspotHaze: readonly DiurnalPointData[],
     hotspotNonHaze: readonly DiurnalPointData[],
-    jktHaze: readonly DiurnalPointData[],
-    jktNonHaze: readonly DiurnalPointData[],
   ) => void;
   destroy: () => void;
 } {
-  const frame = element('div', 'diurnal-plot');
-  frame.style.height = '340px';
-  frame.style.position = 'relative';
-  frame.style.width = '100%';
+  const frame = element('div', 'diurnal-plot analysis-plot');
 
   const canvas = element('canvas');
   canvas.setAttribute('role', 'img');
@@ -78,7 +79,7 @@ export function createDiurnalChart(host: HTMLElement): {
           position: 'top',
           labels: {
             boxWidth: 14,
-            font: { size: 11, family: 'Inter, sans-serif' },
+            font: { size: 12, family: 'Inter, sans-serif' },
             padding: 12,
           },
         },
@@ -93,7 +94,7 @@ export function createDiurnalChart(host: HTMLElement): {
         x: {
           grid: { display: false },
           title: { display: true, text: 'Jam (WIB)' },
-          ticks: { maxTicksLimit: 12 },
+          ticks: { maxTicksLimit: 6, maxRotation: 0 },
         },
         y: {
           beginAtZero: true,
@@ -114,15 +115,11 @@ export function createDiurnalChart(host: HTMLElement): {
     if (chart.options.plugins?.legend?.labels) chart.options.plugins.legend.labels.color = theme.text;
   };
 
-  const observer = new MutationObserver(() => {
-    applyColors();
-    chart.update('none');
-  });
-  observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
-  applyColors();
+  const lifecycle = manageChart(chart, applyColors);
 
   return {
     updateSingle: (points, label) => {
+      canvas.setAttribute('aria-label', `Profil ${pollutant()} per jam · ${label} · median dan P25–P75.`);
       const medians = points.map(p => p.median);
       const p25s = points.map(p => p.p25);
       const p75s = points.map(p => p.p75);
@@ -131,6 +128,7 @@ export function createDiurnalChart(host: HTMLElement): {
       canvas.hidden = !hasData;
       if (!hasData) return;
 
+      if(chart.options.scales?.['y']?.title) chart.options.scales['y'].title.text = `${pollutant()} (µg/m³)`;
       chart.data.datasets = [
         {
           label: `${label} (Median)`,
@@ -144,7 +142,7 @@ export function createDiurnalChart(host: HTMLElement): {
           order: 1,
         },
         {
-          label: 'P75 (Batas Atas Interkuartil)',
+          label: 'P75',
           data: p75s,
           borderColor: 'transparent',
           backgroundColor: 'transparent',
@@ -154,7 +152,7 @@ export function createDiurnalChart(host: HTMLElement): {
           order: 2,
         },
         {
-          label: 'Rentang Interkuartil (P25–P75)',
+          label: 'P25–P75',
           data: p25s,
           borderColor: 'transparent',
           backgroundColor: 'rgba(2, 132, 199, 0.16)',
@@ -166,12 +164,14 @@ export function createDiurnalChart(host: HTMLElement): {
         },
       ];
       applyColors();
-      chart.update();
+      lifecycle.refresh();
     },
-    updateOverlay: (hotspotHaze, hotspotNonHaze, jktHaze, jktNonHaze) => {
+    updateOverlay: (hotspotHaze, hotspotNonHaze) => {
+      canvas.setAttribute('aria-label', `Perbandingan profil ${pollutant()} per jam pada seluruh stasiun pilihan; Agu–Okt dan Nov–Jul.`);
+      if(chart.options.scales?.['y']?.title) chart.options.scales['y'].title.text = `${pollutant()} (µg/m³)`;
       chart.data.datasets = [
         {
-          label: 'Hotspot Karhutla (Musim Karhutla Agu–Okt)',
+          label: 'Pilihan · Agu–Okt',
           data: hotspotHaze.map(p => p.median),
           borderColor: '#dc2626',
           backgroundColor: '#dc2626',
@@ -180,7 +180,7 @@ export function createDiurnalChart(host: HTMLElement): {
           tension: 0.2,
         },
         {
-          label: 'Hotspot Karhutla (Bulan Lainnya Nov–Jul)',
+          label: 'Pilihan · Nov–Jul',
           data: hotspotNonHaze.map(p => p.median),
           borderColor: '#0d9488',
           backgroundColor: '#0d9488',
@@ -189,209 +189,86 @@ export function createDiurnalChart(host: HTMLElement): {
           pointRadius: 2,
           tension: 0.2,
         },
-        {
-          label: 'DKI Jakarta (Musim Karhutla Agu–Okt)',
-          data: jktHaze.map(p => p.median),
-          borderColor: '#ea580c',
-          backgroundColor: '#ea580c',
-          borderWidth: 2.2,
-          pointRadius: 3,
-          tension: 0.2,
-        },
-        {
-          label: 'DKI Jakarta (Bulan Lainnya Nov–Jul)',
-          data: jktNonHaze.map(p => p.median),
-          borderColor: '#0284c7',
-          backgroundColor: '#0284c7',
-          borderWidth: 2,
-          borderDash: [5, 4],
-          pointRadius: 2,
-          tension: 0.2,
-        },
+
       ];
       empty.hidden = true;
       canvas.hidden = false;
       applyColors();
-      chart.update();
+      lifecycle.refresh();
     },
     destroy: () => {
-      observer.disconnect();
-      chart.destroy();
+      lifecycle.destroy();
       frame.remove();
     },
   };
 }
 
-export function createHeatmapChart(host: HTMLElement): {
+export function createHeatmapChart(host: HTMLElement, pollutant: () => PollutantName): {
   update: (grid: (number | null)[][], stationCode: string) => void;
   destroy: () => void;
 } {
-  const container = element('div', 'heatmap-container');
-  container.style.position = 'relative';
-  container.style.overflowX = 'auto';
-  container.style.width = '100%';
-  container.style.padding = '8px 0';
-
-  const canvas = element('canvas');
-  canvas.setAttribute('role', 'img');
-  canvas.setAttribute('aria-label', 'Heatmap PM2.5 per Hari dan Jam');
-  canvas.style.display = 'block';
-  canvas.style.maxWidth = '100%';
-
-  const tooltip = element('div', 'heatmap-tooltip');
-  tooltip.style.position = 'absolute';
-  tooltip.style.display = 'none';
-  tooltip.style.pointerEvents = 'none';
-  tooltip.style.background = 'rgba(15, 23, 42, 0.9)';
-  tooltip.style.color = '#fff';
-  tooltip.style.padding = '6px 10px';
-  tooltip.style.borderRadius = '6px';
-  tooltip.style.fontSize = '12px';
-  tooltip.style.zIndex = '10';
-  tooltip.style.whiteSpace = 'nowrap';
-  tooltip.style.boxShadow = '0 4px 6px -1px rgba(0, 0, 0, 0.2)';
-
-  const legend = element('div', 'heatmap-legend');
-  legend.style.display = 'flex';
-  legend.style.flexWrap = 'wrap';
-  legend.style.alignItems = 'center';
-  legend.style.gap = '12px';
-  legend.style.marginTop = '10px';
-  legend.style.fontSize = '11.5px';
-  legend.innerHTML = `
-    <span style="color:var(--secondary)">Skala Konsentrasi PM2.5 (µg/m³):</span>
-    <span style="display:inline-flex;align-items:center;gap:4px;"><span style="width:12px;height:12px;background:#059669;border-radius:2px;"></span> &le;15 (Baik)</span>
-    <span style="display:inline-flex;align-items:center;gap:4px;"><span style="width:12px;height:12px;background:#0284c7;border-radius:2px;"></span> 16–55 (Sedang)</span>
-    <span style="display:inline-flex;align-items:center;gap:4px;"><span style="width:12px;height:12px;background:#bf7b0a;border-radius:2px;"></span> 56–150 (Tidak Sehat)</span>
-    <span style="display:inline-flex;align-items:center;gap:4px;"><span style="width:12px;height:12px;background:#ef4444;border-radius:2px;"></span> 151–250 (Sangat Tidak Sehat)</span>
-    <span style="display:inline-flex;align-items:center;gap:4px;"><span style="width:12px;height:12px;background:#8875ad;border-radius:2px;"></span> &gt;250 (Berbahaya)</span>
-  `;
-
-  container.append(canvas, tooltip, legend);
-  host.append(container);
-
+  const surface = matrixSurface(host, 'PM2.5 menurut hari dan jam; geser untuk melihat seluruh jam');
+  surface.root.classList.add('temporal-matrix');
+  const { canvas, viewport } = surface;
+  const controller = new AbortController();
   const days = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'];
   let currentGrid: (number | null)[][] = [];
   let currentStation = '';
-
-  const labelMarginLeft = 70;
-  const labelMarginTop = 24;
-  const cellHeight = 28;
-
-  function calculateCellWidth(): number {
-    const available = container.clientWidth || 900;
-    return Math.max(32, Math.floor((available - labelMarginLeft - 20) / 24));
-  }
-
-  function getColor(val: number | null): string {
-    if (val === null) return '#e2e8f0';
-    if (val <= 15) return '#059669';
-    if (val <= 55) return '#0284c7';
-    if (val <= 150) return '#bf7b0a';
-    if (val <= 250) return '#ef4444';
-    return '#8875ad';
-  }
-
+  const left = 64, top = 28, cellHeight = 30;
+  const cellWidth = (): number => Math.max(26, Math.floor((viewport.clientWidth - left - 8) / 24));
+  let maximum: number | null = null;
   function render(): void {
-    const ctx = canvas.getContext('2d');
+    const width = cellWidth();
+    const ctx = surface.size(left + width * 24 + 8, top + days.length * cellHeight + 8);
     if (!ctx) return;
-    const cellWidth = calculateCellWidth();
-    canvas.width = labelMarginLeft + 24 * cellWidth + 10;
-    canvas.height = labelMarginTop + 7 * cellHeight + 10;
-
     const theme = chartTheme();
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-    ctx.font = '11px Inter, sans-serif';
-    ctx.fillStyle = theme.text;
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'bottom';
-
-    for (let h = 0; h < 24; h++) {
-      const x = labelMarginLeft + h * cellWidth + cellWidth / 2;
-      if (h % 3 === 0 || h === 23) {
-        ctx.fillText(`${String(h).padStart(2, '0')}`, x, labelMarginTop - 4);
+    ctx.font = '12px Inter, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'bottom'; ctx.fillStyle = theme.text;
+    for (let hour = 0; hour < 24; hour++) ctx.fillText(String(hour).padStart(2, '0'), left + hour * width + width / 2, top - 8);
+    days.forEach((day, row) => {
+      ctx.textAlign = 'right'; ctx.textBaseline = 'middle'; ctx.fillStyle = theme.text;
+      ctx.fillText(day, left - 8, top + row * cellHeight + cellHeight / 2);
+      for (let hour = 0; hour < 24; hour++) {
+        const value = currentGrid[row]?.[hour] ?? null;
+        ctx.fillStyle = value === null ? theme.grid : `rgba(2,132,199,${maximum ? .15+.85*value/maximum : .15})`;
+        ctx.fillRect(left + hour * width + 1, top + row * cellHeight + 1, width - 2, cellHeight - 2);
       }
-    }
-
-    for (let dow = 0; dow < 7; dow++) {
-      const y = labelMarginTop + dow * cellHeight;
-      ctx.textAlign = 'right';
-      ctx.textBaseline = 'middle';
-      ctx.fillStyle = theme.text;
-      ctx.fillText(days[dow] ?? '', labelMarginLeft - 8, y + cellHeight / 2);
-
-      const row = currentGrid[dow] ?? [];
-      for (let h = 0; h < 24; h++) {
-        const val = row[h] ?? null;
-        const x = labelMarginLeft + h * cellWidth;
-        ctx.fillStyle = getColor(val);
-        ctx.fillRect(x + 1, y + 1, cellWidth - 2, cellHeight - 2);
-      }
-    }
+    });
   }
-
-  const handleMouseMove = (evt: MouseEvent): void => {
-    const rect = canvas.getBoundingClientRect();
-    const cellWidth = calculateCellWidth();
-    const x = evt.clientX - rect.left;
-    const y = evt.clientY - rect.top;
-
-    if (x < labelMarginLeft || y < labelMarginTop) {
-      tooltip.style.display = 'none';
-      return;
-    }
-    const h = Math.floor((x - labelMarginLeft) / cellWidth);
-    const dow = Math.floor((y - labelMarginTop) / cellHeight);
-
-    if (h >= 0 && h < 24 && dow >= 0 && dow < 7) {
-      const val = currentGrid[dow]?.[h] ?? null;
-      const dayName = days[dow] ?? '';
-      const hourStr = `${String(h).padStart(2, '0')}:00`;
-      tooltip.innerHTML = `<strong>${dayName}, ${hourStr}</strong><br>Stasiun: ${currentStation}<br>Median PM2.5: ${val !== null ? number(val) + ' µg/m³' : 'Tidak cukup data'}`;
-      tooltip.style.display = 'block';
-      tooltip.style.left = `${Math.min(evt.clientX - rect.left + 14, rect.width - 160)}px`;
-      tooltip.style.top = `${evt.clientY - rect.top + 14}px`;
-    } else {
-      tooltip.style.display = 'none';
-    }
+  const show = (event: PointerEvent): void => {
+    const bounds = canvas.getBoundingClientRect();
+    const hour = Math.floor((event.clientX - bounds.left - left) / cellWidth());
+    const row = Math.floor((event.clientY - bounds.top - top) / cellHeight);
+    if (hour < 0 || hour >= 24 || row < 0 || row >= days.length) { surface.hide(); return; }
+    const value = currentGrid[row]?.[hour] ?? null;
+    surface.show(event, `${days[row]} · ${String(hour).padStart(2, '0')}:00 WIB\n${currentStation}\nMedian ${pollutant()}: ${value === null ? 'Tidak tersedia' : number(value) + ' µg/m³'}`);
   };
-
-  const handleMouseLeave = (): void => {
-    tooltip.style.display = 'none';
-  };
-
-  canvas.addEventListener('mousemove', handleMouseMove);
-  canvas.addEventListener('mouseleave', handleMouseLeave);
-
-  const observer = new MutationObserver(render);
-  observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
-  window.addEventListener('resize', render);
-
+  canvas.addEventListener('pointermove', show, { signal: controller.signal });
+  canvas.addEventListener('pointerdown', show, { signal: controller.signal });
+  canvas.addEventListener('pointerleave', surface.hide, { signal: controller.signal });
+  const lifecycle = manageCanvas(viewport, render);
   return {
-    update: (grid, stationCode) => {
-      currentGrid = grid;
-      currentStation = stationCode;
+    update(grid, stationCode): void {
+      currentGrid = grid; currentStation = stationCode;
+      const available = grid.flat().filter((value): value is number => value !== null);
+      maximum = available.length ? Math.max(...available) : null;
+      surface.legend.replaceChildren();
+      matrixLegend(surface.legend, `${pollutant()} (µg/m³)`, [[maximum === null ? 'Tidak tersedia' : `0–${number(maximum)} · warna relatif`, '#0284c7']]);
+      canvas.setAttribute('aria-label', `Median ${pollutant()} menurut hari dan jam di ${stationCode}; nilai tersedia pada alternatif teks.`);
+      surface.alternative.textContent = days.flatMap((day, row) => Array.from({ length: 24 }, (_, hour) => {
+        const value = grid[row]?.[hour] ?? null;
+        return `${day} ${hour}:00: ${value === null ? 'tidak tersedia' : number(value) + ' µg/m³'}`;
+      })).join('; ');
       render();
     },
-    destroy: () => {
-      observer.disconnect();
-      window.removeEventListener('resize', render);
-      canvas.removeEventListener('mousemove', handleMouseMove);
-      canvas.removeEventListener('mouseleave', handleMouseLeave);
-      container.remove();
-    },
+    destroy(): void { controller.abort(); lifecycle.destroy(); surface.destroy(); },
   };
 }
 
-export function createTimeseriesChart(host: HTMLElement): {
+export function createTimeseriesChart(host: HTMLElement, pollutant: () => PollutantName): {
   update: (dates: readonly string[], stations: Record<string, readonly (number | null)[]>, isCapped: boolean) => void;
   destroy: () => void;
 } {
-  const frame = element('div', 'timeseries-plot');
-  frame.style.height = '360px';
-  frame.style.position = 'relative';
-  frame.style.width = '100%';
+  const frame = element('div', 'timeseries-plot analysis-plot');
   const canvas = element('canvas');
   canvas.setAttribute('role', 'img');
   canvas.dataset['chart'] = 'timeseries';
@@ -410,11 +287,11 @@ export function createTimeseriesChart(host: HTMLElement): {
       interaction: { intersect: false, mode: 'index' },
       plugins: {
         legend: {
-          display: true,
+          display: false,
           position: 'top',
           labels: {
             boxWidth: 14,
-            font: { size: 11, family: 'Inter, sans-serif' },
+            font: { size: 12, family: 'Inter, sans-serif' },
             padding: 10,
           },
         },
@@ -428,7 +305,7 @@ export function createTimeseriesChart(host: HTMLElement): {
       scales: {
         x: {
           grid: { display: false },
-          ticks: { maxTicksLimit: 12, maxRotation: 0 },
+          ticks: { maxTicksLimit: 5, maxRotation: 0 },
         },
         y: {
           beginAtZero: true,
@@ -448,16 +325,17 @@ export function createTimeseriesChart(host: HTMLElement): {
     if (chart.options.plugins?.legend?.labels) chart.options.plugins.legend.labels.color = theme.text;
   };
 
-  const observer = new MutationObserver(() => {
-    applyColors();
-    chart.update('none');
+  const lifecycle = manageChart(chart, applyColors);
+  const legend = seriesLegend(host, index => {
+    const visible = !chart.isDatasetVisible(index);
+    chart.setDatasetVisibility(index, visible); lifecycle.refresh(); return visible;
   });
-  observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
-  applyColors();
 
   return {
     update: (dates, stations, isCapped) => {
-      chart.data.labels = dates.map(d => d.slice(5)); // 'MM-DD'
+      canvas.setAttribute('aria-label', `Tren ${pollutant()} harian · ${Object.keys(stations).length} stasiun · ${isCapped ? 'fokus 0–150 µg/m³' : 'skala penuh'}.`);
+      chart.data.labels = dates.map(date);
+      if(chart.options.scales?.['y']?.title) chart.options.scales['y'].title.text = `Rata-rata harian ${pollutant()} (µg/m³)`;
 
       if (chart.options.scales?.['y']) {
         if (isCapped) {
@@ -467,7 +345,7 @@ export function createTimeseriesChart(host: HTMLElement): {
         }
       }
 
-      const datasets: any[] = Object.entries(stations).map(([code, values], idx) => ({
+      const datasets: ChartDataset<'line', (number | null)[]>[] = Object.entries(stations).map(([code, values], idx) => ({
         label: code,
         data: [...values],
         borderColor: palette[idx % palette.length] ?? '#0284c7',
@@ -478,52 +356,27 @@ export function createTimeseriesChart(host: HTMLElement): {
         tension: 0.1,
       }));
 
-      // 55 µg/m³ threshold line
-      datasets.push({
-        label: 'Baku Mutu Harian PP 22/2021 (55 µg/m³)',
-        data: dates.map(() => 55),
-        borderColor: '#dc2626',
-        backgroundColor: 'transparent',
-        borderWidth: 2,
-        borderDash: [6, 4] as any,
-        pointRadius: 0,
-        pointHoverRadius: 0,
-        tension: 0,
-      });
-
-      // 15 µg/m³ threshold line
-      datasets.push({
-        label: 'Baku Mutu Tahunan PP 22/2021 (15 µg/m³)',
-        data: dates.map(() => 15),
-        borderColor: '#16a34a',
-        backgroundColor: 'transparent',
-        borderWidth: 1.5,
-        borderDash: [4, 4] as any,
-        pointRadius: 0,
-        pointHoverRadius: 0,
-        tension: 0,
-      });
+      const reference = REFERENCES[pollutant()];
+      if(reference.hours === 24) datasets.push({label:`PP harian · ${reference.daily} µg/m³`,data:dates.map(()=>reference.daily),borderColor:'#dc2626',borderDash:[6,4],pointRadius:0,borderWidth:2});
+      if(reference.annual !== null) datasets.push({label:`PP tahunan · ${reference.annual} µg/m³ (konteks)`,data:dates.map(()=>reference.annual),borderColor:'#16a34a',borderDash:[4,4],pointRadius:0,borderWidth:1.5});
 
       chart.data.datasets = datasets;
+      legend.update(datasets.map((dataset, index) => ({ label: dataset.label ?? '', color: typeof dataset.borderColor === 'string' ? dataset.borderColor : '#0284c7', visible: chart.isDatasetVisible(index) })));
       applyColors();
-      chart.update();
+      lifecycle.refresh();
     },
     destroy: () => {
-      observer.disconnect();
-      chart.destroy();
+      legend.destroy(); lifecycle.destroy();
       frame.remove();
     },
   };
 }
 
-export function createEpisodesChart(host: HTMLElement): {
+export function createEpisodesChart(host: HTMLElement, pollutant: () => PollutantName): {
   update: (episodes: readonly EpisodeWithStation[]) => void;
   destroy: () => void;
 } {
-  const frame = element('div', 'episodes-plot');
-  frame.style.height = '340px';
-  frame.style.position = 'relative';
-  frame.style.width = '100%';
+  const frame = element('div', 'episodes-plot analysis-plot');
   const canvas = element('canvas');
   canvas.setAttribute('role', 'img');
   canvas.dataset['chart'] = 'episodes';
@@ -552,7 +405,7 @@ export function createEpisodesChart(host: HTMLElement): {
             label: item => {
               const ep = currentEpisodes[item.dataIndex];
               return ep
-                ? `Durasi: ${ep.duration_days} hari | Puncak: ${number(ep.peak_pm25)} µg/m³ | Rerata: ${number(ep.mean_pm25)} µg/m³`
+                ? `Durasi: ${ep.duration_days} hari | Puncak: ${number(ep.peak_concentration)} µg/m³ | Rerata: ${number(ep.mean_concentration)} µg/m³`
                 : '';
             },
           },
@@ -561,7 +414,7 @@ export function createEpisodesChart(host: HTMLElement): {
       scales: {
         x: {
           beginAtZero: true,
-          title: { display: true, text: 'Durasi Episode Ekstrem (Hari Beruntun >55 µg/m³)' },
+          title: { display: true, text: 'Durasi (hari >55 µg/m³)' },
           ticks: { maxTicksLimit: 6 },
         },
         y: {
@@ -580,17 +433,16 @@ export function createEpisodesChart(host: HTMLElement): {
     if (chart.options.scales?.['y']?.ticks) chart.options.scales['y'].ticks.color = theme.text;
   };
 
-  const observer = new MutationObserver(() => {
-    applyColors();
-    chart.update('none');
-  });
-  observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
-  applyColors();
+  const lifecycle = manageChart(chart, applyColors);
 
   return {
     update: episodes => {
       currentEpisodes = episodes;
-      chart.data.labels = episodes.map(ep => `${ep.station} (${ep.start.slice(0, 7)})`);
+      const reference = REFERENCES[pollutant()];
+      if(chart.options.scales?.['x']?.title) chart.options.scales['x'].title.text = `Durasi (hari >${reference.daily} µg/m³ · ${reference.hours} jam)`;
+      frame.style.setProperty('--analysis-rows', String(episodes.length));
+      canvas.setAttribute('aria-label', `Durasi ${episodes.length} episode ekstrem; nilai dan periode tersedia pada tooltip.`);
+      chart.data.labels = episodes.map(ep => `${ep.station.replace('AQMS-', '')} · ${ep.start.slice(0, 7)}`);
       chart.data.datasets = [{
         label: 'Durasi (Hari)',
         data: episodes.map(ep => ep.duration_days),
@@ -598,11 +450,10 @@ export function createEpisodesChart(host: HTMLElement): {
         borderRadius: 4,
       }];
       applyColors();
-      chart.update();
+      lifecycle.refresh();
     },
     destroy: () => {
-      observer.disconnect();
-      chart.destroy();
+      lifecycle.destroy();
       frame.remove();
     },
   };

@@ -61,6 +61,7 @@ export default defineConfig({
     fs: { deny: ['.env', '.env.*', '**/.git/**', '**/dataset/raw/**', '**/dataset/processed/**', '**/notebooks/**', '**/*.{pem,crt}'] },
   },
   preview: { host: '127.0.0.1', port: 5500 },
+  worker: { format: 'es', rolldownOptions: { output: { entryFileNames: 'dashboard/assets/[name]-[hash].js' } } },
   build: {
     outDir: 'dist', emptyOutDir: true, target: 'es2022', assetsInlineLimit: 0,
     license: { fileName: 'dashboard/THIRD_PARTY_LICENSES.md' },

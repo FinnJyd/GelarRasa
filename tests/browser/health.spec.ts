@@ -112,7 +112,8 @@ test('health errors offer a working retry and navigation removes the view', asyn
   await expect(page.locator('.health-dashboard')).toBeVisible();
   await page.getByRole('link', { name: 'Pola Waktu', exact: true }).click();
   await expect(page.locator('.health-dashboard')).toHaveCount(0);
-  await expect(page.locator('.feature-host canvas')).toHaveCount(0);
+  await expect(page.locator('.feature-host canvas[data-chart^="health-"]')).toHaveCount(0);
+  await expect(page.locator('.temporal-dashboard')).toBeVisible();
 });
 
 test('charts honor live reduced-motion changes and theme changes; normal updates finish animating', async ({ page }) => {
@@ -166,7 +167,8 @@ test('repeated tab changes destroy charts and avoid detached canvas painting', a
   await openHealth(page);
   for (let i = 0; i < 4; i++) {
     await page.getByRole('link', { name: 'Pola Waktu', exact: true }).click();
-    await expect(page.locator('.feature-host canvas')).toHaveCount(0);
+    await expect(page.locator('.feature-host canvas[data-chart^="health-"]')).toHaveCount(0);
+    await expect(page.locator('.temporal-dashboard')).toBeVisible();
     await page.getByRole('link', { name: 'Dampak Kesehatan', exact: true }).click();
     await expect(page.locator('.health-dashboard canvas')).toHaveCount(5);
   }
@@ -220,7 +222,8 @@ test('navigating away during a pending health request prevents stale rendering',
   release();
   await expect(page.getByRole('heading', { level: 2 })).toHaveText('Pola Waktu');
   await expect(page.locator('.health-dashboard')).toHaveCount(0);
-  await expect(page.locator('.feature-host canvas')).toHaveCount(0);
+  await expect(page.locator('.feature-host canvas[data-chart^="health-"]')).toHaveCount(0);
+  await expect(page.locator('.temporal-dashboard')).toBeVisible();
   await page.unroute('**/data/health_exposure.json');
   await page.getByRole('link', { name: 'Dampak Kesehatan', exact: true }).click();
   await expect(page.locator('.health-dashboard')).toBeVisible();

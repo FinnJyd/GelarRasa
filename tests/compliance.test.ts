@@ -6,7 +6,7 @@ import { defaultFilters } from '../dashboard/src/features/overview/model';
 import { parseCompliance } from '../dashboard/src/features/compliance/load';
 import { annualAssessment, annualDisplayRows, categoryIndex, defaultComparisonCodes, stationComparisons, distributionRows, selectRows, splitRankings } from '../dashboard/src/features/compliance/model';
 import { POLLUTANTS } from '../dashboard/src/data/types';
-import { REFERENCES } from '../dashboard/src/features/compliance/pollutants';
+import { REFERENCES } from '../dashboard/src/shared/pollutants';
 import { estimateIku, ikuCategory, ikuScore } from '../dashboard/src/features/compliance/iku';
 
 const read = (path: string): unknown => JSON.parse(readFileSync(new URL(path, import.meta.url), 'utf8'));

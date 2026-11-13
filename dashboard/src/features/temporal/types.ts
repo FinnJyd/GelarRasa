@@ -1,3 +1,5 @@
+import type { PollutantName } from '../../data/types';
+
 export interface DiurnalStats {
   median: number;
   p25: number;
@@ -22,8 +24,8 @@ export interface Episode {
   start: string;
   end: string;
   duration_days: number;
-  peak_pm25: number;
-  mean_pm25: number;
+  peak_concentration: number;
+  mean_concentration: number;
 }
 
 export interface LongestEpisodeSummary {
@@ -39,11 +41,12 @@ export interface MostEpisodesSummary {
 }
 
 export interface EpisodesSummary {
-  longest_episode: LongestEpisodeSummary;
-  most_episodes: MostEpisodesSummary;
+  longest_episode: LongestEpisodeSummary | null;
+  most_episodes: MostEpisodesSummary | null;
 }
 
 export interface TemporalMeta {
+  pollutant: PollutantName;
   version: number;
   date_range: { start: string; end: string };
   haze_months: readonly number[];

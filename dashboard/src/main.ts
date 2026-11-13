@@ -5,8 +5,8 @@ import { createMethodology } from './components/methodology';
 import { createOpening } from './components/opening';
 import { createShell } from './components/shell';
 import { mountCompliance } from './features/compliance';
-import { temporal } from './features/temporal';
-import { drivers } from './features/drivers';
+import { mountTemporal } from './features/temporal';
+import { mountDrivers } from './features/drivers';
 import { mountHealth } from './features/health';
 import { recommendations } from './features/recommendations';
 import { mountOverview } from './features/overview/view';
@@ -23,6 +23,8 @@ let filters: ReturnType<typeof createFilters> | null = null;
 let overview: ReturnType<typeof mountOverview> | null = null;
 let healthView: ReturnType<typeof mountHealth> | null = null;
 let complianceView: ReturnType<typeof mountCompliance> | null = null;
+let temporalView: ReturnType<typeof mountTemporal> | null = null;
+let driversView: ReturnType<typeof mountDrivers> | null = null;
 let disposeFeature: (() => void) | null = null;
 let request: AbortController | null = null;
 let active: Feature | null = null;
@@ -54,7 +56,25 @@ const complianceFeature: Feature = {
     return () => { complianceView?.destroy(); complianceView = null; };
   },
 };
-const features = [overviewFeature, complianceFeature, temporal, drivers, healthFeature, recommendations];
+const temporalFeature: Feature = {
+  id:'temporal',title:'Pola Waktu',icon:'clock',
+  question:'Kapan jam dan periode puncak lonjakan polutan terjadi dalam siklus diurnal 24 jam, dan bagaimana anomali musiman karhutla mengubah drastis profil polusi?',
+  mount:host=>{
+    if(!data)return()=>undefined;
+    temporalView=mountTemporal(host,data.stations,filters?.state()??defaultFilters());
+    return()=>{temporalView?.destroy();temporalView=null;};
+  },
+};
+const driversFeature: Feature = {
+  id:'drivers',title:'Faktor Pemicu',icon:'wind',
+  question:'Faktor meteorologi, arah angin (mawar polusi), dan aktivitas antropogenik apa yang menjadi pemicu utama konsentrasi ekstrem polutan di berbagai zonasi?',
+  mount:host=>{
+    if(!data)return()=>undefined;
+    driversView=mountDrivers(host,data.stations,filters?.state()??defaultFilters());
+    return()=>{driversView?.destroy();driversView=null;};
+  },
+};
+const features = [overviewFeature, complianceFeature, temporalFeature, driversFeature, healthFeature, recommendations];
 const shell = createShell(features, feature => router.go(feature.id), invoker => methodology.open(invoker));
 const router = createRouter(id => {
   const feature = features.find(item => item.id === id);
@@ -78,10 +98,10 @@ function navigate(feature: Feature): void {
   disposeFeature = null;
   active = feature;
   filters?.close();
-  filters?.setComplianceScope(feature.id === 'compliance');
+  filters?.setScope(feature.id);
   if (filters) filters.root.open = false;
   shell.activate(feature);
-  if ((feature.id === 'overview' || feature.id === 'health' || feature.id === 'compliance') && !data) {
+  if (feature.id !== 'recommendations' && !data) {
     if (request) renderLoading();
     else renderFailure();
     return;
@@ -121,7 +141,7 @@ async function load(): Promise<void> {
   request?.abort();
   const currentRequest = new AbortController();
   request = currentRequest;
-  if (active?.id === 'overview' || active?.id === 'health' || active?.id === 'compliance') renderLoading();
+  if (active && active.id !== 'recommendations') renderLoading();
   try {
     const loaded = await loadDashboard(currentRequest.signal);
     if (currentRequest.signal.aborted) return;
@@ -131,20 +151,23 @@ async function load(): Promise<void> {
       overview?.update(state);
       healthView?.update(state);
       complianceView?.update(state);
+      temporalView?.update(state);
+      driversView?.update(state);
       const count = filterStations(loaded.stations, state).length;
-      shell.announce(`${announcement}${count} stasiun sesuai pilihan. Analisis pada tab aktif diperbarui.`);
+      shell.announce(`${announcement}${count} stasiun sesuai pilihan. ${active?.id === 'recommendations' ? 'Pilihan tersimpan; analisis rekomendasi belum tersedia.' : 'Analisis pada tab aktif diperbarui.'}`);
     });
     shell.filterHost.replaceChildren(filters.root);
+    if (active) filters.setScope(active.id);
     request = null;
     await opening.finish();
     if (lifetime.signal.aborted) return;
-    if (active?.id === 'overview' || active?.id === 'health' || active?.id === 'compliance') navigate(active);
+    if (active && active.id !== 'recommendations') navigate(active);
   } catch (error: unknown) {
     if (currentRequest.signal.aborted) return;
     request = null;
     console.error('Dashboard export could not be loaded:', error);
     await opening.finish();
-    if (!lifetime.signal.aborted && (active?.id === 'overview' || active?.id === 'health' || active?.id === 'compliance')) renderFailure();
+    if (!lifetime.signal.aborted && active && active.id !== 'recommendations') renderFailure();
   }
 }
 
