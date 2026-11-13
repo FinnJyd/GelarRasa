@@ -7,7 +7,7 @@ import type { Series } from './types';
 Chart.register(BarController, BarElement, CategoryScale, LinearScale, LineController, LineElement, PointElement, Tooltip);
 
 export function healthPlot(host: HTMLElement, id: string, kind: 'line' | 'bar', axis: string, bounds?: { min: number; max: number }): {
-  update: (labels: string[], values: Series, label: string, context?: readonly string[]) => void;
+  update: (labels: string[], values: Series, label: string, context?: readonly string[], range?: { min?: number; max?: number }) => void;
   destroy: () => void;
 } {
   const frame = element('div', 'health-plot');
@@ -61,8 +61,10 @@ export function healthPlot(host: HTMLElement, id: string, kind: 'line' | 'bar', 
     }
   });
   return {
-    update: (labels, values, label, context = []) => {
+    update: (labels, values, label, context = [], range) => {
       descriptions = context;
+      const scale = chart.options.scales?.y;
+      if (scale) { scale.min = range?.min; scale.max = range?.max; }
       const valid = values.filter((v): v is number => v !== null);
       const hasData = valid.length > 0;
       frame.hidden = !hasData;

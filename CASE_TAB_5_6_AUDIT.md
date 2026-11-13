@@ -8,7 +8,7 @@ Only the 33 committee CSVs supply analytical observations and dimensions. Existi
 
 - AQMS sensor_id joins sensors.csv, then sites.csv through location_id. Hospitals have no location_id column: the existing validated join uses province and normalized kecamatan, with unique anonymous hospital matches.
 - Daily exposure uses recorded calendar dates, finite nonnegative ug/m3 values, selected QC, duplicate timestamp exclusion, hourly-bin means, and at least 18 different eligible hours per day. No imputation or universal ppm conversion is introduced. VALID is primary; VALID+SUSPECT is sensitivity analysis.
-- Three ppm logger stations remain unavailable for exposure comparisons. Their recorded health counts remain available. Muaro Jambi and Merauke lack sufficient usable PM2.5 histories for modeling; no substitute series are created.
+- The approved logger normalization (scripts/unit_normalization.py) applies to BJB-01, MDN-01 and PSW-01: particulate ppm columns are treated as mg/m³ ×1,000, and gas ppmv columns convert to µg/m³ at 25 °C/1 atm. These are approved analytical assumptions, not verified conversions; no universal ppm conversion exists. JMB-02 has no days meeting the 18-hour rule and Merauke (MER-01) only two valid days, so both lack a usable PM2.5 history for pairing; no substitute series is created.
 - The common observation calendar remains 1 January 2024–14 October 2026. General respiratory, under-5 and over-60 counts remain separate; subgroup discrepancies are not reconciled with invented totals.
 - Source rows, existing health_outcomes.json and health_exposure.json measurements remain unchanged. New health_lag.json contains fixed 2024 references; runtime validation checks them against actual daily series.
 
@@ -16,45 +16,17 @@ Only the 33 committee CSVs supply analytical observations and dimensions. Existi
 
 | Requested analysis | Implementation and denominator |
 | --- | --- |
-| Dose-response | Existing selected-outcome mean admissions across paired facility-days in five equal-width concentration bins. Descriptive; not a relative-risk estimate. |
-| Age/diagnosis baseline change | Per facility, baseline mean cases on exposure ≤P25 in 2024; comparison mean cases on selected dates >P75 2024. Percent change is calculated per facility then equally averaged. At least 30 reference exposure dates, 10 pairs on each side, and positive baseline required. Under-5/over-60 respiratory groups remain separate; PPOK/CVD are labelled all ages. |
+| Dose-response | Selected paired facility-days split into five equal-count exposure quintiles; each contributing facility's mean cases inside the quintile as percent change against its own mean over the same selection, equally averaged. Raw quintile means and counts stay in tooltips. Descriptive; not a relative-risk estimate. Supersedes the earlier five equal-width raw-count bins, whose upper bins held as few as 2–3 facility-days. |
+| Age comparison (balita & lansia) | Per facility, baseline = mean under-5/over-60 respiratory admissions over all selected dates (≥30 paired days, positive baselines, dates without exposure retained in the baseline). Selected pairs split into five within-facility relative exposure quintiles P1–P5; bars show the equal-facility mean percent change against each age's period baseline. Always respiratory ages, independent of the indicator selector. Descriptive; not a relative-risk or vulnerability estimate. Supersedes the earlier fixed-2024 ≤P25/>P75 design, whose frozen baseline did not follow the selected period. |
 | Lag 0–7 | Per-facility Pearson with ≥30 aligned calendar-day pairs and nonzero variance, equally averaged. Maximum value is emphasized in the chart and caption. This is exploratory association, not a causal lag or guaranteed response window. |
-| Episode-centered study | Start above station-specific 2024 P90 after one available day ≤P90. Full selected-date exposure/outcome window −3:+7 required. Accepted centers are at least 11 days apart. The chart displays mean recorded cases per facility-episode at each relative day; tooltips additionally show percent changes normalized to each episode’s own mean days −3:−1. Positive baseline and at least three episodes required. No control group or adjusted causal interpretation. |
+| Episode-centered study | Start above station-specific 2024 P90 after one available day ≤P90. Full selected-date exposure/outcome window −3:+7 required. Accepted centers are at least 11 days apart. The chart displays mean percent change normalized to each episode’s own mean days −3:−1 on a zero-inclusive range; tooltips show mean recorded cases per facility-episode. Positive baseline and at least three episodes required. No control group or adjusted causal interpretation. |
 | Capacity pressure | Daily sum of recorded general respiratory + CVD counts across complete selected facilities, divided by recorded beds ×100. Diagnoses may overlap: counts are not deduplicated patients, BOR or beds required. Original respiratory-only KPI remains explicitly separate. |
 
 Global station/site/region/date/outcome choices affect their supported summaries; pollutant/QC alter exposure pairing and fixed reference choice, not hospital records.
 
-## Offline model and Tab 6
+## Distributed-lag simulator (removed 13 November 2026)
 
-Weather plausibility checks use −30–60 °C and 0–100% RH. The supplied health records span 22.0–32.1 °C and 64.9–99.0% RH; zero rows are excluded by those plausibility limits.
-
-Two Poisson log-link models, one per age group, are fitted independently in Python. Covariates are PM2.5 lag 0–7 divided by 10, temperature/10, RH/10, weekday indicators, hospital fixed effects, annual sine/cosine and linear elapsed years. Missing lag/weather/outcome values are excluded, not imputed. Covariance is hospital-clustered sandwich with small-sample correction. At least 60 training and 30 test observations per facility are required. Both QC modes retain 22 facilities.
-
-Train: 2024–2025 only. Test: 1 January–14 October 2026. The comparator uses identical non-PM covariates and the same training/test rows. No test values fit coefficients or define training reference profiles/support.
-
-### Full temporal evaluation
-
-| QC | Outcome | Train rows | Test rows | Model MAE | Model RMSE | No-PM MAE | No-PM RMSE |
-| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| VALID | Under 5 | 15,067 | 5,965 | 2,048.43 | 74,463.29 | 2.94 | 5.51 |
-| VALID | Over 60 | 15,067 | 5,965 | 1,827.21 | 66,687.00 | 3.25 | 6.20 |
-| VALID+SUSPECT | Under 5 | 15,427 | 6,128 | 5.88 | 52.95 | 2.94 | 5.51 |
-| VALID+SUSPECT | Over 60 | 15,427 | 6,128 | 6.15 | 53.42 | 3.26 | 6.19 |
-
-Errors are per hospital-day, not errors of national daily totals. The unrestricted model **fails to generalize extreme 2026 observations**. At KTG-01, VALID training maximum PM2.5 is 127.14 µg/m3 while the test maximum is 1,127.57. These observations remain in full evaluation. They are not silently clipped, dropped as outliers, or replaced by successful in-range metrics.
-
-Within each facility's training PM2.5 range across all eight lags, VALID has 5,274 test rows and 691 outside; sensitivity mode has 5,424 in range and 704 outside. In-range under-5 MAE is 1.60 versus 1.90 for the comparator (VALID); over-60 MAE is 1.76 versus 2.11. These supplementary results justify only bounded exploratory scenarios, not operational forecasting.
-
-### Bounded model simulator
-
-- Reference profiles average **training** covariates per facility. All eight PM2.5 lags shift by the same delta to reach the selected mean concentration. The permitted delta is the intersection of each selected facility's observed training support across its lag reference values. The control cannot extrapolate beyond that intersection.
-- Expected counts use exp(xβ). Expected counts are summed across modeled facilities, with those facility/bed denominators displayed explicitly. An unsupported station receives unavailable model outputs while factual health/manual planning remains available.
-- For a sum M of expected means, gradient g = sum(mu_i * x_i). Parameter variance is g'Cov(β)g. The 95% interval is exp(log(M) ±1.96*sqrt(variance)/M). This includes full coefficient covariance and shared uncertainty across facility predictions.
-- Bands describe the conditional expected mean, not a future patient-count interval. They omit process noise, model misspecification, residual spatial dependence, and any causal policy-effect guarantee. The two age models are separate; no unjustified joint covariance interval is fabricated for their sum.
-- Date filters select observational evidence and manual capacity totals, not model retraining or historical-reference profile changes. QC switches primary/sensitivity model; the model remains PM2.5-specific even when another pollutant is selected.
-- The existing manual percentage-admission/capacity calculator remains visibly separate from fitted PM2.5 estimation. Its exact zero identity, limits, mean/P90-after-summing rule, and unavailable states are preserved.
-
-Method references, not analytical datasets: [statsmodels GLM](https://www.statsmodels.org/stable/glm.html), [conditional mean prediction intervals](https://www.statsmodels.org/stable/generated/statsmodels.genmod.generalized_linear_model.GLMResults.get_prediction.html). Reproducible dependency versions are in scripts/requirements-analysis.txt. The browser's expected means/intervals are checked against independent NumPy calculations in dataset/processed/model_validation.json.
+The offline Poisson distributed-lag models and the `Simulasi PM2.5 dan Admisi` panel were implemented and then removed by explicit user decision: at full-network selection the scenario domain collapsed to the intersection of per-facility training exposure (as narrow as ~2 µg/m³), producing a flat, unusable chart. The whole chain was deleted with the panel: scripts/export-case-model.py, scripts/requirements-analysis.txt, model_coef.json, dataset/processed/model_validation.json, and the client-side lag-model/confidence-chart modules. `network_rank.json` generation moved into scripts/export-policy.py and reproduces byte-identical output. Tab 6 keeps the manual capacity calculator, which does not depend on the fitted model. See design.md decision log for the record.
 
 ## Response matrix and monitoring expansion
 

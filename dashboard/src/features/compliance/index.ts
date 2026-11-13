@@ -3,6 +3,8 @@ import { button, emptyState } from '../../shared/dom';
 import { loadCompliance } from './load';
 import { mountComplianceView } from './view';
 
+export { loadCompliance } from './load';
+
 export function mountCompliance(host: HTMLElement, catalog: readonly Station[], initial: FilterState) {
   const controller = new AbortController();
   let state = initial;

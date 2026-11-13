@@ -81,6 +81,12 @@ def export():
         (directory / 'policy_context.json').write_text(content)
     print(f'policy_context.json: {len(content):,} bytes; {len(stations)} stations; {len(dates)} dates')
     print('Recorded status:', dict(Counter(s['status'] for s in stations)))
+    rank = {'version': 1, 'sites': [{'code': row['station_code'], 'baseline': float(row['baseline_pm25']), 'traffic': float(row['traffic_intensity_per_h']), 'road': float(row['distance_to_road_m']), 'nearestKm': lookup[row['station_code']]['nearest']['km']} for row in sites],
+            'method': 'Min-max normalized against the full installed catalog. Baseline PM2.5 is source master context, not measured period concentration. Weights are user assumptions; existing station areas are siting-study candidates, not new sensor coordinates.'}
+    rank_content = json.dumps(rank, separators=(',', ':'), allow_nan=False) + '\n'
+    for directory in (DASH, ROOT / 'dashboard/data'):
+        (directory / 'network_rank.json').write_text(rank_content)
+    print(f'network_rank.json: {len(rank_content):,} bytes; {len(sites)} sites')
 
 
 if __name__ == '__main__':

@@ -264,7 +264,7 @@ export function createFilters(data: DashboardData, onChange: (state: FilterState
       close();
       scopeStatus.hidden = feature !== 'recommendations';
       explanation.textContent = feature === 'recommendations'
-        ? 'Tanggal dan faskes membatasi bukti, matriks respons, dan asumsi kapasitas manual; polutan dan QC mengubah cakupan paparan. Profil model tetap memakai rentang acuan latihnya.'
+        ? 'Tanggal dan faskes membatasi bukti, matriks respons, dan asumsi kapasitas manual; polutan dan QC mengubah cakupan paparan.'
         : feature === 'temporal' || feature === 'drivers'
         ? 'Wilayah, stasiun, tipe lokasi, tanggal, polutan, dan QC memperbarui seluruh analisis. Kontrol pada grafik hanya mengubah tampilan atau membandingkan musim dalam periode pilihan.'
         : feature === 'compliance'

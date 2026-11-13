@@ -463,7 +463,7 @@ tbody tr:last-child > * { border-bottom: 0; }
 
 /* Health charts share the shell while keeping their reading order and scope visible. */
 .health-dashboard { @apply grid min-w-0; gap: 20px; }
-.health-toolbar { @apply flex justify-between items-center; gap: 24px; }
+.health-toolbar { @apply flex justify-between items-center; gap: 24px; padding: 14px 20px; background: var(--surface); border: 1px solid var(--border); border-radius: 14px; box-shadow: var(--shadow); }
 .health-toolbar .filter-field { @apply shrink-0; width: min(100%, 340px); }
 .health-orientation { font-size: 14px; color: var(--secondary); margin-top: 6px; line-height: 1.6; }
 .health-metrics { grid-template-columns: repeat(4, minmax(0, 1fr)); }
@@ -573,16 +573,15 @@ tbody tr:last-child > * { border-bottom: 0; }
 .admission-simulation button { min-height: 44px; }
 
 /* Keep case-study controls aligned within their analytical panels. */
-.case-simulator, .case-network { @apply grid min-w-0; grid-template-columns: minmax(0, 1fr); gap: 16px; }
-.case-simulator > *, .case-network > * { @apply min-w-0; }
-.case-model-controls, .case-weight-controls { @apply grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; align-items: end; }
-.case-model-controls > *, .case-weight-controls > * { @apply min-w-0; }
-.case-model-controls input[type='range'], .case-weight-controls input[type='range'], #policy-radius { width: 100%; min-height: 44px; accent-color: var(--accent); }
-.case-model-controls output, .case-weight-controls output { color: var(--accent); font-size: 12px; }
-.case-model-controls button { min-height: 44px; }
+.case-network { @apply grid min-w-0; grid-template-columns: minmax(0, 1fr); gap: 16px; }
+.case-network > * { @apply min-w-0; }
+.case-weight-controls { @apply grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; align-items: end; }
+.case-weight-controls > * { @apply min-w-0; }
+.case-weight-controls input[type='range'], #policy-radius { width: 100%; min-height: 44px; accent-color: var(--accent); }
+.case-weight-controls output { color: var(--accent); font-size: 12px; }
 .case-rank-chart { position: relative; min-width: 0; }
 @media (max-width: 767px) {
-  .case-model-controls, .case-weight-controls { grid-template-columns: minmax(0, 1fr); }
+  .case-weight-controls { grid-template-columns: minmax(0, 1fr); }
 }
 .compliance-feature { @apply grid gap-5; grid-template-columns: minmax(0, 1fr); min-width: 0; }
 .compliance-period-table { table-layout: fixed; min-width: 880px; }

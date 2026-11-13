@@ -4,11 +4,11 @@ import { createFilters } from './components/filters';
 import { createMethodology } from './components/methodology';
 import { createOpening } from './components/opening';
 import { createShell } from './components/shell';
-import { mountCompliance } from './features/compliance';
+import { mountCompliance, loadCompliance } from './features/compliance';
 import { mountTemporal } from './features/temporal';
 import { mountDrivers } from './features/drivers';
-import { mountHealth } from './features/health';
-import { createRecommendations } from './features/recommendations';
+import { mountHealth, loadHealthEvidence } from './features/health';
+import { createRecommendations, loadPolicy, preloadNetwork } from './features/recommendations';
 import { mountOverview } from './features/overview/view';
 import { defaultFilters, filterStations } from './features/overview/model';
 import { button, emptyState } from './shared/dom';
@@ -144,8 +144,17 @@ async function load(): Promise<void> {
   request = currentRequest;
   if (active && active.id !== 'recommendations') renderLoading();
   try {
-    const loaded = await loadDashboard(currentRequest.signal);
+    // The opening screen owns first-load: warm every tab export before it lifts, so no tab shows its own loader later.
+    const [dashboard] = await Promise.allSettled([
+      loadDashboard(currentRequest.signal),
+      loadCompliance(currentRequest.signal),
+      loadHealthEvidence(currentRequest.signal),
+      loadPolicy(currentRequest.signal),
+      preloadNetwork(currentRequest.signal),
+    ]);
     if (currentRequest.signal.aborted) return;
+    if (dashboard.status !== 'fulfilled') throw dashboard.reason;
+    const loaded = dashboard.value;
     data = loaded;
     filters?.destroy();
     filters = createFilters(loaded, (state, announcement) => {

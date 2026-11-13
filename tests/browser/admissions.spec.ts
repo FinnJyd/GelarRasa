@@ -96,7 +96,7 @@ test('charts animate visibly, react to reduced motion, retain canvases and tear 
     await expect(page.locator('.feature-host canvas')).toHaveCount(0);
     await expect(page.locator('.leaflet-container')).toHaveCount(0);
     await page.getByRole('link', { name: 'Rekomendasi Kebijakan', exact: true }).click();
-    await expect(page.locator('.policy-dashboard canvas')).toHaveCount(4);
+    await expect(page.locator('.policy-dashboard canvas')).toHaveCount(3);
   }
 });
 

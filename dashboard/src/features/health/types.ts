@@ -1,4 +1,4 @@
-import type { AgeContrast, EpisodeSummary } from './insights';
+import type { EpisodeSummary } from './insights';
 export const OUTCOMES = {
   resp: 'Admisi pernapasan umum',
   resp_admissions_under5: 'Admisi pernapasan · balita <5 tahun',
@@ -27,9 +27,9 @@ export interface HealthData {
   discrepancies: number;
 }
 export interface LagPoint { lag: number; correlation: number | null; hospitals: number; pairs: number }
-export interface ExposureBin { label: string; mean: number; admissions: number; pairs: number }
+export interface ExposureBin { label: string; change: number | null; pairs: number; facilities: number; cases: number | null }
 export interface HealthSummary {
-  ages: AgeContrast[]; episodes: EpisodeSummary; strain: Series; strainPeak: number | null;
+  episodes: EpisodeSummary; strain: Series; strainPeak: number | null;
   dates: string[];
   daily: (number | null)[];
   exposure: (number | null)[];

@@ -40,7 +40,7 @@ export function policyMap(host: HTMLElement, data: PolicyData): { update: (rows:
     for (const station of data.stations) {
       const marker = L.circleMarker([station.latitude, station.longitude], { radius: 8, color: colors[station.status], fillColor: colors[station.status], fillOpacity: .8, weight: 2 }).addTo(map);
       marker.bindPopup(() => popup(station), { className: 'station-map-popup', maxWidth: 240 });
-      marker.bindTooltip(`${station.code} · ${station.status}`);
+      marker.bindTooltip(`${station.code} · ${station.city} · ${station.status} · terdekat ${number(station.nearest.km)} km`);
       const node = marker.getElement();
       if (node) {
         node.setAttribute('tabindex', '0'); node.setAttribute('role', 'button'); node.setAttribute('aria-label', `Detail ${station.code}, ${station.city}, ${station.status}`);

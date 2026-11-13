@@ -5,7 +5,7 @@ import { ROUTES } from '../../dashboard/src/shared/routes';
 test.beforeEach(async ({ page }) => {
   await page.route('**/MapServer/tile/**', route => route.abort());
   await page.goto('/dashboard');
-  await expect(page.locator('.doughnut-center strong')).toHaveText('27');
+  await expect(page.locator('.doughnut-center strong')).toHaveText('26');
 });
 
 test('general ticker moves, pauses, and preserves its content and instance across filters and tabs', async ({ page }) => {

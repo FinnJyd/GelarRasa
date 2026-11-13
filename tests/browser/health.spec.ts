@@ -148,7 +148,7 @@ test('responsive layouts remain readable and fit the viewport in both themes', a
   await page.addInitScript(() => {
     const original = CanvasRenderingContext2D.prototype.fillText;
     CanvasRenderingContext2D.prototype.fillText = function (text, x, y, maxWidth) {
-      if (this.canvas.dataset['chart'] === 'health-ages') {
+      if (this.canvas.dataset['chart'] === 'health-age-comparison') {
         const previous: unknown = JSON.parse(this.canvas.dataset['paintedLabels'] ?? '[]');
         const labels: string[] = Array.isArray(previous) ? previous.filter((value): value is string => typeof value === 'string') : [];
         this.canvas.dataset['paintedLabels'] = JSON.stringify([...labels, text].slice(-50));
@@ -160,11 +160,11 @@ test('responsive layouts remain readable and fit the viewport in both themes', a
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await openHealth(page);
   for (const width of [1440, 1024, 768, 375, 320]) {
-    await page.locator('[data-chart="health-ages"]').evaluate(node => { node.setAttribute('data-painted-labels', '[]'); });
+    await page.locator('[data-chart="health-age-comparison"]').evaluate(node => { node.setAttribute('data-painted-labels', '[]'); });
     await page.setViewportSize({ width, height: 1000 });
     await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
     await expect(page.locator('[data-chart="health-admissions"]')).toBeVisible();
-    for (const label of ['balita', 'lansia', 'PPOK', 'CVD']) await expect(page.locator('[data-chart="health-ages"]')).toHaveAttribute('data-painted-labels', new RegExp(label));
+    for (const label of ['Balita', 'Lansia', 'P1', 'P5']) await expect(page.locator('[data-chart="health-age-comparison"]')).toHaveAttribute('data-painted-labels', new RegExp(label));
     await page.screenshot({ path: `test-results/health-${width}-light.png`, fullPage: true });
   }
   await page.getByRole('button', { name: 'Tema gelap', exact: true }).click();
@@ -216,7 +216,7 @@ test('navigating away during a pending health request prevents stale rendering',
 
 test('case-study health panels react to dates without inventing sparse event results', async ({ page }) => {
   await openHealth(page);
-  await expect(page.locator('[data-chart="health-ages"]')).toBeVisible();
+  await expect(page.locator('[data-chart="health-age-comparison"]')).toBeVisible();
   await expect(page.locator('[data-chart="health-events"]')).toBeVisible();
   await expect(page.locator('[data-chart="health-strain"]')).toBeVisible();
   await expect(page.locator('.health-dashboard')).toContainText('Korelasi tertinggi pada jeda');
@@ -224,7 +224,7 @@ test('case-study health panels react to dates without inventing sparse event res
   await page.locator('#dashboard-filters summary').click();
   await page.getByLabel('Tanggal mulai', { exact: true }).fill('2026-10-14');
   await page.getByLabel('Tanggal mulai', { exact: true }).blur();
-  await expect(page.locator('[data-chart="health-ages"]')).not.toBeVisible();
+  await expect(page.locator('[data-chart="health-age-comparison"]')).not.toBeVisible();
   await expect(page.locator('[data-chart="health-events"]')).not.toBeVisible();
   await expect(page.locator('[data-chart="health-strain"]')).toBeVisible();
 });

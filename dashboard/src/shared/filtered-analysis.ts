@@ -8,10 +8,24 @@ export function filteredAnalysis<T>(host: HTMLElement, render: (data: T) => {des
   let view: ReturnType<typeof render> | null = null;
   let controller = new AbortController();
   let active = true;
+  // Static exports never change within a session, so repeat requests render without a worker round-trip.
+  const results = new Map<string, T>();
+  const keyOf = (request: AnalysisRequest): string => `${request.feature}:${JSON.stringify(request.filters)}:${request.stations.map(station => station.code).join(',')}`;
+  const remember = (key: string, data: T): void => {
+    results.delete(key); results.set(key, data);
+    if (results.size > 6) { const oldest = results.keys().next().value; if (oldest !== undefined) results.delete(oldest); }
+  };
   const status = element('p', 'panel-footnote', 'Memperbarui analisis sesuai filter…');
   status.setAttribute('role', 'status');
   const update = (request: AnalysisRequest): void => {
     worker?.terminate(); controller.abort(); controller = new AbortController();
+    const key = keyOf(request);
+    const hit = results.get(key);
+    if (hit !== undefined) {
+      status.remove(); host.inert = false; host.removeAttribute('aria-busy');
+      if (view) view.update(hit); else view = render(hit);
+      return;
+    }
     host.setAttribute('aria-busy','true');
     host.inert = true;
     if (view) host.prepend(status);
@@ -31,6 +45,7 @@ export function filteredAnalysis<T>(host: HTMLElement, render: (data: T) => {des
     current.addEventListener('message',(event:MessageEvent<{ok:true;data:T}|{ok:false;error:string}>)=>{
       if(!active || current!==worker) return;
       if(!event.data.ok) {fail(event.data.error);return;}
+      remember(key, event.data.data);
       if(view) view.update(event.data.data); else view=render(event.data.data);
       status.remove(); host.inert = false;
       host.removeAttribute('aria-busy'); current.terminate(); worker=null;

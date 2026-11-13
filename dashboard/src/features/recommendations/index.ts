@@ -3,6 +3,9 @@ import { button, emptyState } from '../../shared/dom';
 import { loadPolicy } from './load';
 import { mountPolicyView } from './view';
 
+export { loadPolicy } from './load';
+export { preloadNetwork } from './network-view';
+
 export function createRecommendations(ready: Promise<void>, getFilters: () => FilterState): { feature: Feature; update: (filters: FilterState) => void } {
   let view: ReturnType<typeof mountPolicyView> | null = null;
   const feature: Feature = {

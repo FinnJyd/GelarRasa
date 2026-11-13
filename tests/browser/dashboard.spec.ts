@@ -53,7 +53,7 @@ test('reference content uses current panels and truthful filtered indicators', a
   await expect(page.locator('.page-question')).toContainText('Bagaimana status kualitas udara nasional');
   await expect(page.getByRole('heading', { name: 'Indikator Kunci & Distribusi Kualitas Udara Nasional', exact: true })).toBeVisible();
   const exceedance = page.locator('.metric').filter({ has: page.getByRole('heading', { name: 'Persentase Hari Melebihi Batas', exact: true }) });
-  await expect(exceedance.locator('.metric-value strong')).toHaveText('17,7');
+  await expect(exceedance.locator('.metric-value strong')).toHaveText('16,58');
   const critical = page.locator('.metric-station');
   await expect(critical.locator('.metric-value strong')).toHaveText('AQMS-BJB-01');
   const hospital = page.locator('.metric').filter({ has: page.getByRole('heading', { name: 'Indeks Beban Hospital (Faskes)', exact: true }) });
@@ -61,11 +61,11 @@ test('reference content uses current panels and truthful filtered indicators', a
   await page.locator('#dashboard-filters summary').click();
   await choose(page, 'Stasiun', 'AQMS-BJB-01');
   await expect(exceedance.locator('.metric-value strong')).toHaveText('40,1');
-  await expect(exceedance).toContainText('rata-rata persentase stasiun terpilih');
-  await expect(hospital.locator('.metric-value strong')).toHaveText('6,43');
+  await expect(exceedance).toContainText('rata-rata stasiun terukur');
+  await expect(hospital.locator('.metric-value strong')).toHaveText('2,44');
   await page.getByRole('link', { name: 'Kepatuhan Regulasi', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Ringkasan Kepatuhan PM2.5', exact: true })).toBeVisible();
-  await expect(page.getByRole('heading', { name: 'Perhitungan IKU belum tersedia', exact: true })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Estimasi IKU Stasiun', exact: true })).toBeVisible();
 });
 
 test('all tabs navigate, charts and map clean up, and selections survive remount', async ({ page }) => {
@@ -76,8 +76,9 @@ test('all tabs navigate, charts and map clean up, and selections survive remount
     await expect(page.getByRole('heading', { level: 2 })).toHaveText(name);
     if (name === 'Dampak Kesehatan') await expect(page.locator('.health-dashboard')).toBeVisible();
     else if (name === 'Kepatuhan Regulasi') await expect(page.locator('.compliance-feature')).toBeVisible();
+    else if (name === 'Pola Waktu') await expect(page.locator('.temporal-dashboard')).toBeVisible();
+    else if (name === 'Faktor Pemicu') await expect(page.locator('.drivers-dashboard')).toBeVisible();
     else if (name === 'Rekomendasi Kebijakan') await expect(page.locator('.policy-dashboard')).toBeVisible();
-    else await expect(page.getByText('Belum tersedia', { exact: true })).toBeVisible();
     await expect(page.locator('.leaflet-container')).toHaveCount(name === 'Rekomendasi Kebijakan' ? 1 : 0);
   }
   for (let index = 0; index < 4; index++) {
@@ -200,9 +201,27 @@ test('Chart.js composition animates visibly and canvases survive filtering and t
     for (let index = 3; index < pixels.length; index += 4) if ((pixels[index] ?? 0) > 0) count++;
     return count;
   });
-  const initial = await paintedPixels();
+  // The rotation animation settles alpha coverage from a larger transient to the final frame,
+  // so direction-agnostic change across running frames is the robust "visibly animates" proof.
+  const samples: number[] = [];
+  const sampler = setInterval(() => {
+    void composition.evaluate(node => {
+      if (!(node instanceof HTMLCanvasElement)) return null;
+      if (node.getAttribute('data-animation') !== 'running') return null;
+      const context = node.getContext('2d');
+      if (!context) return null;
+      const pixels = context.getImageData(0, 0, node.width, node.height).data;
+      let count = 0;
+      for (let index = 3; index < pixels.length; index += 4) if ((pixels[index] ?? 0) > 0) count++;
+      return count;
+    }).then(value => { if (value !== null) samples.push(value); }).catch(() => undefined);
+  }, 25);
   await expect(composition).toHaveAttribute('data-animation', 'complete');
-  expect(await paintedPixels()).toBeGreaterThan(initial);
+  clearInterval(sampler);
+  await expect.poll(() => samples.length).toBeGreaterThan(2);
+  const final = await paintedPixels();
+  expect(final).toBeGreaterThan(0);
+  expect(new Set(samples).size).toBeGreaterThan(1);
   await expect(page.locator('.doughnut-center strong')).toHaveText('26');
   await expect(page.locator('.composition-legend')).toContainText('Sedang');
   const original = await composition.elementHandle();
@@ -293,7 +312,7 @@ test('map views preserve station scope and product copy contains no phase commen
   await page.getByRole('button', { name: 'Acuan Tahunan (PP 22/2021)', exact: true }).click();
   await expect(page.getByRole('button', { name: 'Acuan Tahunan (PP 22/2021)', exact: true })).toHaveAttribute('aria-pressed', 'true');
   await expect(page.locator('.map-reference-legend')).toContainText('Memenuhi (≤15 µg/m³) · 3 stn');
-  await expect(page.locator('.map-reference-legend')).toContainText('Melebihi (>15 µg/m³) · 24 stn');
+  await expect(page.locator('.map-reference-legend')).toContainText('Melebihi (>15 µg/m³) · 23 stn');
   await page.screenshot({ path: '/tmp/prana-annual-map.png', fullPage: true });
   await expect(page.locator('.health-panel, .rankings-grid')).toHaveCount(0);
   await expect(page.getByRole('heading', { name: 'Admisi pernapasan', exact: true })).toHaveCount(0);
@@ -306,11 +325,11 @@ test('map views preserve station scope and product copy contains no phase commen
   await expect(page.locator('.leaflet-interactive')).toHaveCount(3);
   await choose(page, 'Stasiun', 'JKT-01');
   await page.locator('.leaflet-interactive').click();
-  await expect(page.locator('.station-popup')).toContainText('Hari Melanggar 24-Jam:');
+  await expect(page.locator('.station-popup')).toContainText('ISPU Dominan:');
   await page.getByRole('button', { name: 'Acuan Tahunan (PP 22/2021)', exact: true }).click();
   await page.locator('.leaflet-interactive').click();
   await expect(page.locator('.station-popup')).toHaveCount(1);
-  await expect(page.locator('.station-popup')).toContainText('Deviasi Batas 15 µg/m³:');
+  await expect(page.locator('.station-popup')).toContainText('dari acuan 15 µg/m³');
   await expect(page.locator('.leaflet-interactive')).toHaveCount(1);
   expect(await page.locator('body').innerText()).not.toMatch(/\b(preliminary|round|kompetisi|perlombaan|executive cockpit)\b/i);
   await page.getByRole('button', { name: 'Metodologi', exact: true }).click();
@@ -470,12 +489,16 @@ test('icon theme choices persist preferences and follow system changes only in s
 test('map explanations share a desktop row and stack above a larger mobile map', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 1000 });
   const columns = page.locator('.map-legend-column');
+  await expect.poll(async () => {
+    const a = await columns.nth(0).boundingBox();
+    const b = await columns.nth(1).boundingBox();
+    return a && b ? Math.abs(a.y - b.y) : Number.MAX_SAFE_INTEGER;
+  }).toBeLessThan(1);
   const first = await columns.nth(0).boundingBox();
   const second = await columns.nth(1).boundingBox();
   expect(first).not.toBeNull();
   expect(second).not.toBeNull();
   if (!first || !second) throw new Error('Missing map explanation');
-  expect(Math.abs(first.y - second.y)).toBeLessThan(1);
   expect(second.x).toBeGreaterThan(first.x + first.width);
   expect((await page.locator('.station-map').boundingBox())?.height).toBeGreaterThanOrEqual(480);
   await page.setViewportSize({ width: 375, height: 812 });

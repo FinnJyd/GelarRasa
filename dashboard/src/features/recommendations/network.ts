@@ -1,4 +1,4 @@
-import { finite, list, record } from '../../shared/lag-model';
+import { finite, list, record } from '../../shared/parse';
 export interface NetworkSite { code: string; baseline: number; traffic: number; road: number; nearestKm: number }
 export function parseNetwork(raw: unknown): readonly NetworkSite[] {
   const source = record(raw); if (source['version'] !== 1) throw new Error('Versi jaringan tidak didukung.');

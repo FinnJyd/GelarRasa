@@ -1,4 +1,3 @@
-import { mountLagSimulator } from './lag-simulator';
 import { mountResponseMatrix } from './response-matrix';
 import { mountNetworkRank } from './network-view';
 import { mountSimulation } from '../../shared/admissions';
@@ -20,8 +19,7 @@ export function mountPolicyView(host: HTMLElement, data: PolicyData, initial: Fi
   const priorities = panel('Prioritas Tindakan', 'Usulan tindak lanjut berdasarkan kondisi pemantauan dan catatan layanan.');
   const actions = element('div', 'policy-actions'); priorities.body.append(actions);
   const response = panel('Matriks Respons Kesehatan', 'Sintesis pola historis PM2.5 dan kelompok usia · bukan ambang peringatan klinis');
-  const modelPanel = panel('Simulasi PM2.5 dan Admisi', 'Model distributed lag · balita dan lansia · interval ketidakpastian');
-  const simulator = panel('Asumsi Kapasitas Manual', 'Uji kenaikan admisi pernapasan umum sebagai asumsi pengguna, terpisah dari model PM2.5.');
+  const simulator = panel('Asumsi Kapasitas Manual', 'Uji kenaikan admisi pernapasan umum sebagai asumsi pengguna.');
   const rankPanel = panel('Prioritas Studi Ekspansi AQMS', 'Uji bobot baseline PM2.5, aktivitas lalu lintas, dan jarak ke stasiun terdekat.');
   const simulatorScope = element('p', 'panel-footnote'); simulator.body.append(simulatorScope);
   const network = panel('Lokasi dan Bukti', 'Jaringan terpasang dan catatan pendukung untuk meninjau usulan tindakan.');
@@ -48,9 +46,8 @@ export function mountPolicyView(host: HTMLElement, data: PolicyData, initial: Fi
   tableDisclosure.append(tableSummary, tableBody);
   network.body.append(networkLegend, coverageControl, mapHost, tableDisclosure,
     element('p', 'panel-footnote', 'Jarak antarstasiun bukan radius cakupan atau bukti populasi tidak terlayani. Penempatan baru memerlukan survei lokasi; tidak ada koordinat baru yang diasumsikan.'));
-  root.append(scope, response.root, modelPanel.root, simulator.root, rankPanel.root, network.root, priorities.root); host.replaceChildren(root);
+  root.append(scope, response.root, simulator.root, rankPanel.root, network.root, priorities.root); host.replaceChildren(root);
   const simulation = mountSimulation(simulator.body);
-  const lagSimulator = mountLagSimulator(modelPanel.body);
   const responseMatrix = mountResponseMatrix(response.body);
   const ranking = mountNetworkRank(rankPanel.body, data.stations.map(station => station.code));
   let map: ReturnType<typeof policyMap> | null = null;
@@ -117,9 +114,9 @@ export function mountPolicyView(host: HTMLElement, data: PolicyData, initial: Fi
     scope.textContent = `${summary.rows.length} stasiun · ${start && end ? period(start, end) : 'Periode tidak tersedia'} · ${summary.exposureLabel} · Minimal 18 jam per hari, dengan satuan terverifikasi.`;
     simulatorScope.textContent = `${summary.rows.length} faskes · ${start && end ? period(start, end) : 'Periode tidak tersedia'} · Pernapasan umum · Kapasitas tercatat`;
     simulation.update(admissionBaseline(summary));
-    lagSimulator.update(summary, state); responseMatrix.update(summary, state); ranking.update(summary);
+    responseMatrix.update(summary, state); ranking.update(summary);
     renderActions(); renderNetwork(); map?.update(summary.rows); updateCoverage();
   }
   render();
-  return { update: filters => { state = filters; render(); }, destroy: () => { controller.abort(); simulation.destroy(); lagSimulator.destroy(); responseMatrix.destroy(); ranking.destroy(); map?.destroy(); root.remove(); } };
+  return { update: filters => { state = filters; render(); }, destroy: () => { controller.abort(); simulation.destroy(); responseMatrix.destroy(); ranking.destroy(); map?.destroy(); root.remove(); } };
 }
