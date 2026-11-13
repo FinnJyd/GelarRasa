@@ -45,8 +45,12 @@ export function parseCompliance(value: unknown): ComplianceData {
   if (!Object.keys(stations).length) throw new Error('Ekspor tidak memuat stasiun.');
   return { dates, stations, method: root['method'] };
 }
+let cached: ComplianceData | null = null;
 export async function loadCompliance(signal: AbortSignal): Promise<ComplianceData> {
+  if (cached) return cached;
   const response = await fetch('./data/compliance_daily.json', { signal });
   if (!response.ok) throw new Error(`Ekspor kepatuhan tidak tersedia (${response.status}).`);
-  return parseCompliance(await response.json());
+  const parsed = parseCompliance(await response.json());
+  cached = parsed;
+  return cached;
 }

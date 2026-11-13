@@ -154,7 +154,12 @@ export function createDistributionChart(host: HTMLElement): {
       plugins: {
         tooltip: {
           callbacks: {
-            label: item => `${item.label}: ${number(Number(item.raw))} stasiun`,
+            label: item => {
+              let total = 0;
+              for (const value of item.chart.data.datasets[0]?.data ?? []) if (typeof value === 'number') total += value;
+              const count = Number(item.raw);
+              return `${item.label}: ${number(count)} stasiun${total ? ` (${number(count / total * 100)}%)` : ''}`;
+            },
           },
         },
       },

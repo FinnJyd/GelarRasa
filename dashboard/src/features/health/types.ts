@@ -1,3 +1,4 @@
+import type { EpisodeSummary } from './insights';
 export const OUTCOMES = {
   resp: 'Admisi pernapasan umum',
   resp_admissions_under5: 'Admisi pernapasan · balita <5 tahun',
@@ -11,7 +12,9 @@ export type Outcome = keyof typeof OUTCOMES;
 export const POLLUTANT_KEYS = ['pm25', 'pm10', 'so2', 'co', 'o3', 'no2'] as const;
 export type PollutantKey = typeof POLLUTANT_KEYS[number];
 export type Series = readonly (number | null)[];
+export interface Reference { count: number; p25: number | null; p75: number | null; p90: number | null }
 export interface HealthStation {
+  references: { v: Record<PollutantKey, Reference>; s: Record<PollutantKey, Reference> };
   hospital: string;
   beds: number;
   outcomes: Record<Outcome, Series>;
@@ -24,8 +27,9 @@ export interface HealthData {
   discrepancies: number;
 }
 export interface LagPoint { lag: number; correlation: number | null; hospitals: number; pairs: number }
-export interface ExposureBin { label: string; mean: number; admissions: number; pairs: number }
+export interface ExposureBin { label: string; change: number | null; pairs: number; facilities: number; cases: number | null }
 export interface HealthSummary {
+  episodes: EpisodeSummary; strain: Series; strainPeak: number | null;
   dates: string[];
   daily: (number | null)[];
   exposure: (number | null)[];

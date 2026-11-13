@@ -11,12 +11,17 @@ const read = (path: string): unknown => JSON.parse(readFileSync(path, 'utf8'));
 const dashboard = parseDashboard(read('dashboard/tab1_ikhtisar.json'), read('dashboard/data/station_catalog.json'));
 const dates = Array.from({ length: 100 }, (_, i) => new Date(Date.UTC(2024, 0, i + 1)).toISOString().slice(0, 10));
 const filters = defaultFilters();
+const reference = { count: 0, p25: null, p75: null, p90: null };
+const references = {
+  v: { pm25: reference, pm10: reference, so2: reference, co: reference, o3: reference, no2: reference },
+  s: { pm25: reference, pm10: reference, so2: reference, co: reference, o3: reference, no2: reference },
+};
 const station = (factor = 1): HealthStation => {
   const x = dates.map((_, i) => Math.floor(i / 20));
   const young = x.map(value => (value + 1) * 10 * factor);
   const old = x.map(value => (5 - value) * 10 * factor);
   const mode = { pm25: x, pm10: x, so2: x, no2: x, co: x, o3: x };
-  return { hospital: `RS-XXX-${factor}`, beds: 100, unavailable: [],
+  return { references, hospital: `RS-XXX-${factor}`, beds: 100, unavailable: [],
     outcomes: { resp: young, resp_admissions_under5: young, resp_admissions_over60: old,
       asthma_emergency_cases: young, copd_admissions: old, cvd: old, death: young },
     exposure: { v: mode, s: mode } };

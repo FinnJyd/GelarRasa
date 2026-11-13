@@ -15,6 +15,8 @@ These instructions apply to all work in this repository.
 
 ## Communication and comments
 
+- Use plain, direct interface copy. Do not use decorative Unicode arrows as text separators or storytelling devices. Explain relationships in words; retain SVG chevrons and icons for actual controls.
+
 - Limit changes strictly to what the user requests. Do not make unrelated fixes, refactors, formatting changes, or other file changes without explicit user approval.
 - If something outside the requested scope looks unusual or potentially incorrect, tell the user and ask whether it is intentional or a mistake before changing it.
 

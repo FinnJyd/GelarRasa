@@ -1,3 +1,4 @@
+import { quantile } from '../../shared/admissions';
 import { POLLUTANT_KEYS } from './types';
 import type { HealthData, HealthStation, PollutantKey, Series } from './types';
 
@@ -59,6 +60,13 @@ export function parseHealth(rawOutcomes: unknown, rawExposure: unknown): HealthD
       so2: series(input['so2'], dates.length), co: series(input['co'], dates.length),
       o3: series(input['o3'], dates.length), no2: series(input['no2'], dates.length),
     });
+    function references(raw: Record<string, unknown>): Record<PollutantKey, import('./types').Reference> {
+      const get = (key: PollutantKey): import('./types').Reference => {
+        const values = series(raw[key], dates.length).flatMap((n, i) => n !== null && dates[i]?.startsWith('2024-') ? [n] : []);
+        return { count: values.length, p25: quantile(values, .25), p75: quantile(values, .75), p90: quantile(values, .9) };
+      };
+      return { pm25: get('pm25'), pm10: get('pm10'), so2: get('so2'), co: get('co'), o3: get('o3'), no2: get('no2') };
+    }
     stations[code] = { hospital: id, beds, outcomes: {
       resp: series(raw['resp'], dates.length, true),
       resp_admissions_under5: series(raw['resp_admissions_under5'], dates.length, true),
@@ -67,7 +75,7 @@ export function parseHealth(rawOutcomes: unknown, rawExposure: unknown): HealthD
       copd_admissions: series(raw['copd_admissions'], dates.length, true),
       cvd: series(raw['cvd'], dates.length, true), death: series(raw['death'], dates.length, true),
     },
-      exposure: { v: mode(v), s: mode(s) }, unavailable };
+      references: { v: references(v), s: references(s) }, exposure: { v: mode(v), s: mode(s) }, unavailable };
   }
   if (!seen.size) throw new Error('Ekspor kesehatan kosong.');
   return { dates, stations, discrepancies: numeric(outcomes['resp_discrepancies']) };
@@ -83,9 +91,26 @@ export async function loadHealth(signal: AbortSignal): Promise<HealthData> {
     return response.json();
   };
   try {
-    const [outcomes, exposure] = await Promise.all([get('health_outcomes.json'), get('health_exposure.json')]);
+    const [outcomes, exposure, lag] = await Promise.all([get('health_outcomes.json'), get('health_exposure.json'), get('health_lag.json')]);
     if (signal.aborted) throw new DOMException('Aborted', 'AbortError');
-    cached = parseHealth(outcomes, exposure);
+    const parsed = parseHealth(outcomes, exposure);
+    validateHealthLag(parsed, lag);
+    cached = parsed;
     return cached;
   } finally { request.abort(); }
+}
+
+export function validateHealthLag(data: HealthData, value: unknown): void {
+  const raw = record(value), stations = record(raw['stations']);
+  if (raw['version'] !== 1 || raw['referenceYear'] !== 2024 || Object.keys(stations).length !== Object.keys(data.stations).length) throw new Error('Ekspor health_lag tidak sesuai.');
+  for (const [code, station] of Object.entries(data.stations)) {
+    const row = record(stations[code]);
+    for (const mode of ['v', 's'] as const) for (const key of POLLUTANT_KEYS) {
+      const ref = record(record(row[mode])[key]), expected = station.references[mode][key];
+      for (const field of ['count', 'p25', 'p75', 'p90'] as const) {
+        const value = ref[field], actual = expected[field];
+        if (value !== actual && !(typeof value === 'number' && actual !== null && Number.isFinite(value) && Math.abs(value - actual) < 1e-8)) throw new Error('Baseline health_lag tidak sesuai paparan.');
+      }
+    }
+  }
 }

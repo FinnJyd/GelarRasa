@@ -94,7 +94,8 @@ test('lag uses preceding calendar dates outside selected outcome window, preserv
   const dates = Array.from({ length: 50 }, (_, i) => new Date(Date.UTC(2024, 0, i + 1)).toISOString().slice(0, 10));
   const x = dates.map((_, i) => i % 7 === 0 ? 5 : i % 9);
   const y = x.map((_, i) => x[i - 2] ?? 0);
-  const item: HealthStation = {
+  const source = health.stations['AQMS-JKT-01']; assert.ok(source);
+  const item: HealthStation = { references: source.references,
     hospital: 'RS-XXX-01', beds: 100, unavailable: [],
     outcomes: { resp: y, resp_admissions_under5: y, resp_admissions_over60: y, asthma_emergency_cases: y, copd_admissions: y, cvd: y, death: y },
     exposure: { v: { pm25: x, pm10: x, co: x, so2: x, o3: x, no2: x }, s: { pm25: x, pm10: x, co: x, so2: x, o3: x, no2: x } },

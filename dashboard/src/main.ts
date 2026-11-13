@@ -6,11 +6,11 @@ import { createFilters } from './components/filters';
 import { createMethodology } from './components/methodology';
 import { createOpening } from './components/opening';
 import { createShell } from './components/shell';
-import { mountCompliance } from './features/compliance';
+import { mountCompliance, loadCompliance } from './features/compliance';
 import { mountTemporal } from './features/temporal';
 import { mountDrivers } from './features/drivers';
-import { mountHealth } from './features/health';
-import { recommendations } from './features/recommendations';
+import { mountHealth, loadHealthEvidence } from './features/health';
+import { createRecommendations, loadPolicy, preloadNetwork } from './features/recommendations';
 import { mountOverview } from './features/overview/view';
 import { defaultFilters, filterStations } from './features/overview/model';
 import { button, emptyState } from './shared/dom';
@@ -77,7 +77,8 @@ const driversFeature: Feature = {
     return()=>{driversView?.destroy();driversView=null;};
   },
 };
-const features = [overviewFeature, complianceFeature, temporalFeature, driversFeature, healthFeature, recommendations];
+const recommendations = createRecommendations(opening.ready, () => filters?.state() ?? defaultFilters());
+const features = [overviewFeature, complianceFeature, temporalFeature, driversFeature, healthFeature, recommendations.feature];
 const shell = createShell(features, feature => router.go(feature.id), invoker => methodology.open(invoker));
 const router = createRouter(id => {
   const feature = features.find(item => item.id === id);
@@ -146,8 +147,17 @@ async function load(): Promise<void> {
   request = currentRequest;
   if (active && active.id !== 'recommendations') renderLoading();
   try {
-    const loaded = await loadDashboard(currentRequest.signal);
+    // The opening screen owns first-load: warm every tab export before it lifts, so no tab shows its own loader later.
+    const [dashboard] = await Promise.allSettled([
+      loadDashboard(currentRequest.signal),
+      loadCompliance(currentRequest.signal),
+      loadHealthEvidence(currentRequest.signal),
+      loadPolicy(currentRequest.signal),
+      preloadNetwork(currentRequest.signal),
+    ]);
     if (currentRequest.signal.aborted) return;
+    if (dashboard.status !== 'fulfilled') throw dashboard.reason;
+    const loaded = dashboard.value;
     data = loaded;
     analysisCache?.destroy();
     analysisCache = createAnalysisCache(loaded.stations, { start: loaded.start, end: loaded.end });
@@ -159,8 +169,9 @@ async function load(): Promise<void> {
       complianceView?.update(state);
       temporalView?.update(state);
       driversView?.update(state);
+      recommendations.update(state);
       const count = filterStations(loaded.stations, state).length;
-      shell.announce(`${announcement}${count} stasiun sesuai pilihan. ${active?.id === 'recommendations' ? 'Pilihan tersimpan; analisis rekomendasi belum tersedia.' : 'Analisis pada tab aktif diperbarui.'}`);
+      shell.announce(`${announcement}${count} stasiun sesuai pilihan. Analisis pada tab aktif diperbarui.`);
     });
     shell.filterHost.replaceChildren(filters.root);
     if (active) filters.setScope(active.id);

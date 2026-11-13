@@ -36,6 +36,15 @@ def finite(value):
         return None
 
 
+def quantile(values, probability):
+    if not values:
+        return None
+    ordered = sorted(values)
+    position = (len(ordered) - 1) * probability
+    lo, hi = math.floor(position), math.ceil(position)
+    return ordered[lo] + (ordered[hi] - ordered[lo]) * (position - lo)
+
+
 def export():
     sites = records(RAW / 'master/sites.csv')
     sites_by_code = {site['station_code']: site for site in sites}
@@ -128,7 +137,17 @@ def export():
     manifest = {'version': 1, 'sources': provenance, 'outcomes': OUTCOMES, 'pollutants': POLLUTANTS,
                 'method': 'Recorded-date hourly means; >=18 distinct eligible hours; finite nonnegative values; duplicate timestamps excluded; v=VALID, s=VALID+SUSPECT; no imputation; approved BJB/MDN/PSW particulate mass-scale x1000 and gas ppmv * molar_mass/24.45 *1000 at assumed 25 C/1 atm.',
                 'unit_normalization': LOGGER_NORMALIZATION}
-    for name, payload in [('health_outcomes.json', outcomes), ('health_exposure.json', exposure), ('health_provenance.json', manifest)]:
+    references = {}
+    for code, station in exposures.items():
+        references[code] = {}
+        for mode in ('v', 's'):
+            references[code][mode] = {}
+            for pollutant in POLLUTANTS:
+                values = [n for date, n in zip(DATES, station[mode][pollutant]) if date.startswith('2024-') and n is not None]
+                references[code][mode][pollutant] = {'count': len(values), 'p25': quantile(values, .25), 'p75': quantile(values, .75), 'p90': quantile(values, .9)}
+    lag = {'version': 1, 'referenceYear': 2024, 'stations': references,
+           'method': 'Fixed station/pollutant/QC references; linear interpolation at (n-1)*p. Frontend selects outcomes/dates and computes descriptive lag, dose bins, age comparison and non-overlapping -3:+7 event windows from validated daily exports.'}
+    for name, payload in [('health_lag.json', lag), ('health_outcomes.json', outcomes), ('health_exposure.json', exposure), ('health_provenance.json', manifest)]:
         content = json.dumps(payload, separators=(',', ':'), allow_nan=False) + '\n'
         target = ROOT / 'dataset/dashboard' / name
         target.write_text(content)

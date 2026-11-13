@@ -40,7 +40,14 @@ export function barChart(host: HTMLElement, title: string, stacked = false, comp
       responsive: true, maintainAspectRatio: false, indexAxis: grouped ? 'x' : 'y',
       animation: false,
       layout: { padding: { right: stacked || grouped ? 0 : 38, top: grouped ? 16 : 0 } },
-      plugins: { legend: { display: false }, tooltip: { callbacks: { label: item => `${item.dataset.label}: ${number(Number(item.raw))}` } } },
+      plugins: { legend: { display: false }, tooltip: { callbacks: { label: item => {
+        // Dataset labels embed the unit as "Name (unit)"; show "Name: value unit" instead.
+        const raw = String(item.dataset.label ?? '');
+        const match = /^(.*?) \(([^)]+)\)$/.exec(raw);
+        const value = number(Number(item.raw));
+        if (!match) return `${raw}: ${value}`;
+        return match[2] === '%' ? `${match[1]}: ${value}%` : `${match[1]}: ${value} ${match[2]}`;
+      } } } },
       scales: {
         x: grouped ? { type: 'category', grid: { display: false }, border: { display: false }, ticks: { autoSkip: false, maxRotation: 0, font: { size: 11 } } }
           : { beginAtZero: true, stacked, ticks: { maxTicksLimit: 5 }, border: { display: false } },
