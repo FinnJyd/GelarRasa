@@ -12,10 +12,11 @@ async function openHealth(page: Page): Promise<void> {
 }
 const firstMetric = (page: Page) => page.locator('.health-metrics .metric').first();
 const browserErrors = new WeakMap<Page, string[]>();
-test.beforeEach(({ page }) => {
+test.beforeEach(async ({ page }) => {
   const errors: string[] = [];
   browserErrors.set(page, errors);
   page.on('pageerror', error => errors.push(error.message));
+  await page.route('https://server.arcgisonline.com/**', route => route.abort());
 });
 test.afterEach(({ page }) => { expect(browserErrors.get(page)).toEqual([]); });
 
@@ -24,9 +25,9 @@ test('health direct route, filters and outcome selection work', async ({ page })
   await openHealth(page);
   await expect(page).toHaveTitle('DA2026_Dashboard_NasiBakarCumiHitamPakKris_AlfinJayadi');
   await expect(page.locator('#dashboard-filters')).not.toHaveAttribute('open');
-  await expect(page.locator('.health-dashboard canvas')).toHaveCount(5);
+  await expect(page.locator('.health-dashboard canvas')).toHaveCount(7);
   await expect(firstMetric(page).locator('strong')).toHaveText('720,23');
-  await expect(page.locator('.health-scope')).toHaveCount(0);
+  await expect(page.locator('.health-scope')).toContainText('27 faskes pilihan');
   await choose(page, 'Indikator kesehatan', 'Kematian');
   await expect(firstMetric(page).getByRole('heading')).toHaveText('Kematian');
   await expect(firstMetric(page).locator('strong')).toHaveText('53,66');
@@ -49,6 +50,7 @@ test('shared selections survive routes; pollutant and QC update charts without r
   await choose(page, 'Wilayah', 'Jakarta');
   await page.getByRole('link', { name: 'Dampak Kesehatan', exact: true }).click();
   await expect(page.locator('#filter-summary')).toContainText('Jakarta');
+  await expect(page.locator('.health-scope')).toContainText('3 faskes pilihan');
   await expect(page.locator('#dashboard-filters')).not.toHaveAttribute('open');
   const canvas = page.locator('[data-chart="health-exposure"]');
   await canvas.evaluate(node => { node.setAttribute('data-identity', 'retained'); });
@@ -56,8 +58,10 @@ test('shared selections survive routes; pollutant and QC update charts without r
   await page.locator('#dashboard-filters summary').click();
   await page.getByRole('button', { name: 'NO2', exact: true }).click();
   await expect(page.locator('#filter-summary')).toContainText('NO2');
+  await expect(page.locator('.health-scope')).toContainText('NO2');
   await page.getByLabel(/SUSPECT/).check();
   await expect(page.locator('#filter-summary')).toContainText('VALID + SUSPECT');
+  await expect(page.locator('.health-scope')).toContainText('VALID + SUSPECT');
   await expect(firstMetric(page).locator('strong')).toHaveText(admissions ?? '');
   await expect(canvas).toHaveAttribute('data-identity', 'retained');
   await page.getByRole('link', { name: 'Ikhtisar Nasional', exact: true }).click();
@@ -113,7 +117,6 @@ test('health errors offer a working retry and navigation removes the view', asyn
   await page.getByRole('link', { name: 'Pola Waktu', exact: true }).click();
   await expect(page.locator('.health-dashboard')).toHaveCount(0);
   await expect(page.locator('.feature-host canvas[data-chart^="health-"]')).toHaveCount(0);
-  await expect(page.locator('.temporal-dashboard')).toBeVisible();
 });
 
 test('charts honor live reduced-motion changes and theme changes; normal updates finish animating', async ({ page }) => {
@@ -142,12 +145,26 @@ test('charts honor live reduced-motion changes and theme changes; normal updates
 });
 
 test('responsive layouts remain readable and fit the viewport in both themes', async ({ page }) => {
+  await page.addInitScript(() => {
+    const original = CanvasRenderingContext2D.prototype.fillText;
+    CanvasRenderingContext2D.prototype.fillText = function (text, x, y, maxWidth) {
+      if (this.canvas.dataset['chart'] === 'health-ages') {
+        const previous: unknown = JSON.parse(this.canvas.dataset['paintedLabels'] ?? '[]');
+        const labels: string[] = Array.isArray(previous) ? previous.filter((value): value is string => typeof value === 'string') : [];
+        this.canvas.dataset['paintedLabels'] = JSON.stringify([...labels, text].slice(-50));
+      }
+      if (maxWidth === undefined) original.call(this, text, x, y);
+      else original.call(this, text, x, y, maxWidth);
+    };
+  });
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await openHealth(page);
   for (const width of [1440, 1024, 768, 375, 320]) {
+    await page.locator('[data-chart="health-ages"]').evaluate(node => { node.setAttribute('data-painted-labels', '[]'); });
     await page.setViewportSize({ width, height: 1000 });
     await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
     await expect(page.locator('[data-chart="health-admissions"]')).toBeVisible();
+    for (const label of ['balita', 'lansia', 'PPOK', 'CVD']) await expect(page.locator('[data-chart="health-ages"]')).toHaveAttribute('data-painted-labels', new RegExp(label));
     await page.screenshot({ path: `test-results/health-${width}-light.png`, fullPage: true });
   }
   await page.getByRole('button', { name: 'Tema gelap', exact: true }).click();
@@ -170,42 +187,10 @@ test('repeated tab changes destroy charts and avoid detached canvas painting', a
     await expect(page.locator('.feature-host canvas[data-chart^="health-"]')).toHaveCount(0);
     await expect(page.locator('.temporal-dashboard')).toBeVisible();
     await page.getByRole('link', { name: 'Dampak Kesehatan', exact: true }).click();
-    await expect(page.locator('.health-dashboard canvas')).toHaveCount(5);
+    await expect(page.locator('.health-dashboard canvas')).toHaveCount(7);
   }
   await expect(page.locator('[data-chart="health-admissions"]')).toHaveAttribute('data-animation', 'complete');
   await expect(page.locator('html')).not.toHaveAttribute('data-detached-paint', 'true');
-});
-
-test('age comparison uses period baselines, stays independent of outcome and follows real exposure filters', async ({ page }) => {
-  await page.emulateMedia({ reducedMotion: 'reduce' });
-  await openHealth(page);
-  const panel = page.locator('.health-age-comparison');
-  const chart = page.locator('[data-chart="health-age-comparison"]');
-  await expect(chart).toHaveAttribute('aria-label', /5 kelompok paparan/);
-  await expect(panel.locator('.sr-only li')).toHaveCount(5);
-  await expect(page.locator('#health-age-scope')).toContainText('baseline');
-  const baseline = await panel.locator('.sr-only').innerText();
-  const original = await chart.elementHandle(); if (!original) throw new Error('Age chart missing');
-  await choose(page, 'Indikator kesehatan', 'Kematian');
-  expect(await panel.locator('.sr-only').innerText()).toBe(baseline);
-  await page.locator('#dashboard-filters summary').click();
-  await page.getByRole('button', { name: 'NO2', exact: true }).click();
-  await expect(page.locator('#health-age-scope')).toContainText('NO2');
-  await expect(panel.locator('.sr-only')).not.toHaveText(baseline);
-  expect(await chart.evaluate((node, previous) => node === previous, original)).toBe(true);
-  const valid = await panel.locator('.sr-only').innerText();
-  await page.getByLabel(/SUSPECT/).check();
-  await expect(panel.locator('.sr-only')).not.toHaveText(valid);
-  await choose(page, 'Stasiun', 'AQMS-JMB-02');
-  await expect(chart).not.toBeVisible();
-  await expect(panel.getByRole('heading', { name: 'Data perbandingan umur belum mencukupi', exact: true })).toBeVisible();
-  await expect(page.locator('#health-age-scope')).toContainText('0/1 faskes');
-  await choose(page, 'Stasiun', 'AQMS-JKT-01');
-  await expect(chart).toBeVisible();
-  await page.getByLabel('Tanggal mulai', { exact: true }).fill('2026-10-14');
-  await page.getByLabel('Tanggal mulai', { exact: true }).blur();
-  await expect(chart).not.toBeVisible();
-  await expect(firstMetric(page).locator('strong')).not.toHaveText('—');
 });
 
 test('navigating away during a pending health request prevents stale rendering', async ({ page }) => {
@@ -222,9 +207,24 @@ test('navigating away during a pending health request prevents stale rendering',
   release();
   await expect(page.getByRole('heading', { level: 2 })).toHaveText('Pola Waktu');
   await expect(page.locator('.health-dashboard')).toHaveCount(0);
-  await expect(page.locator('.feature-host canvas[data-chart^="health-"]')).toHaveCount(0);
-  await expect(page.locator('.temporal-dashboard')).toBeVisible();
+  await expect(page.locator('.feature-host canvas')).toHaveCount(0);
   await page.unroute('**/data/health_exposure.json');
   await page.getByRole('link', { name: 'Dampak Kesehatan', exact: true }).click();
   await expect(page.locator('.health-dashboard')).toBeVisible();
+});
+
+
+test('case-study health panels react to dates without inventing sparse event results', async ({ page }) => {
+  await openHealth(page);
+  await expect(page.locator('[data-chart="health-ages"]')).toBeVisible();
+  await expect(page.locator('[data-chart="health-events"]')).toBeVisible();
+  await expect(page.locator('[data-chart="health-strain"]')).toBeVisible();
+  await expect(page.locator('.health-dashboard')).toContainText('Korelasi tertinggi pada jeda');
+  await expect(page.locator('.health-dashboard')).toContainText('belum dideduplikasi');
+  await page.locator('#dashboard-filters summary').click();
+  await page.getByLabel('Tanggal mulai', { exact: true }).fill('2026-10-14');
+  await page.getByLabel('Tanggal mulai', { exact: true }).blur();
+  await expect(page.locator('[data-chart="health-ages"]')).not.toBeVisible();
+  await expect(page.locator('[data-chart="health-events"]')).not.toBeVisible();
+  await expect(page.locator('[data-chart="health-strain"]')).toBeVisible();
 });

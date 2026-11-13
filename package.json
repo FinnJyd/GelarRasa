@@ -16,6 +16,8 @@
     "data:health": "python3 scripts/export-health.py",
     "data:compliance": "python3 scripts/export-compliance.py",
     "data:hourly": "python3 scripts/export-hourly.py",
+    "data:policy": "python3 scripts/export-policy.py",
+    "data:case-model": "python3 scripts/export-case-model.py",
     "preview": "vite preview"
   },
   "dependencies": {

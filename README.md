@@ -113,3 +113,26 @@ Filter wilayah, tipe lokasi, dan stasiun menyelaraskan ringkasan, doughnut, tabe
 Jalankan `bun run dev` untuk menggunakan routing lokal. Halaman utama adalah `/dashboard`; setiap tab mempunyai URL sendiri sesuai `dashboard/routes.json`, misalnya `/dashboard/pola-waktu`. URL dapat dibuka langsung, di-refresh, dan ditelusuri melalui Back/Forward. Build menghasilkan entry statis untuk setiap tab; pada hosting statis gunakan clean URLs atau directory-index routing. Seluruh aset menggunakan base `/dashboard/`.
 
 Wilayah, tipe lokasi, dan stasiun dapat dicari dengan mengetik pada pilihan. Gunakan panah dan Enter atau klik hasil untuk menerapkan; Escape membatalkan pencarian. Pencarian yang belum dipilih tidak mengubah hasil analisis. Sidebar terbuka menampilkan wordmark PRANA dan chevron; saat diperkecil header hanya menampilkan chevron. Peta memakai Acuan Harian (ISPU 24-Jam) dan Acuan Tahunan (PP 22/2021), dengan legenda dinamis dari stasiun terpilih.
+
+
+### Tab 5 dan 6 sesuai konteks kasus
+
+Dampak Kesehatan mempertahankan indikator/outcome, deret paparan dan kasus, korelasi lag 0–7 dengan penanda puncak, serta kelompok konsentrasi. Tambahan: perubahan kasus terhadap baseline paparan rendah 2024 per kelompok, event-study deskriptif hari −3 sampai +7, dan proksi catatan pernapasan + CVD per 100 kapasitas tempat tidur. Perbandingan tersebut bukan risiko populasi atau keterisian.
+
+Rekomendasi Kebijakan memakai filter global yang sama. Tab memuat tindakan berbasis bukti, matriks respons historis PM2.5, simulator distributed-lag dengan IK 95% rerata bersyarat, perhitungan kapasitas manual yang terpisah, bobot prioritas studi ekspansi, radius ilustrasi jaringan, dan tabel stasiun yang tertutup secara default. Model PM2.5 tetap memiliki profil referensi latih yang eksplisit; filter tanggal memperbarui bukti pengamatan, bukan melatih ulang model. Tidak ada koordinat alat baru yang diciptakan.
+
+Reproduksi analisis:
+
+```bash
+npm run data:health
+npm run data:policy
+python3 -m venv .venv
+.venv/bin/pip install -r scripts/requirements-analysis.txt
+OPENBLAS_NUM_THREADS=1 .venv/bin/python scripts/export-case-model.py
+npm run build
+npm test
+```
+
+`health_lag.json` menyimpan baseline per stasiun/polutan/QC yang diverifikasi terhadap paparan saat pemuatan. `model_coef.json` menyimpan koefisien, kovarians penuh, profil referensi dan evaluasi temporal; `network_rank.json` menyimpan atribut sumber. Ekspor browser Tab 5/6 berukuran di bawah 2 MB per berkas dan dicerminkan di dataset/dashboard serta dashboard/data. Audit NumPy untuk perhitungan browser berada di dataset/processed/model_validation.json.
+
+**Batas model yang penting:** model dilatih pada 2024–2025 dan diuji pada 2026. Episode PM2.5 ekstrem pada data uji berada di luar rentang latih dan menyebabkan kesalahan ekstrapolasi besar. Evaluasi penuh tetap dilaporkan; simulator dibatasi pada rentang tiap faskes, dan hanya menggambarkan asosiasi bersyarat. Lihat [audit Tab 5/6](CASE_TAB_5_6_AUDIT.md), [design.md](design.md), dan [CHANGELOG.md](CHANGELOG.md) untuk definisi, keputusan dan hasil verifikasi.

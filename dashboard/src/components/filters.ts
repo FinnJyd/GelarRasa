@@ -43,7 +43,7 @@ export function createFilters(data: DashboardData, onChange: (state: FilterState
   root.id = 'dashboard-filters';
   const summary = element('summary', 'filter-heading');
   const copy = element('span', 'filter-heading-copy');
-  const scopeStatus = element('span', 'filter-scope-status', 'Analisis rekomendasi belum tersedia; pilihan filter tetap tersimpan');
+  const scopeStatus = element('span', 'filter-scope-status', 'Tanggal dan faskes membatasi bukti Tab 6; polutan dan QC mengubah cakupan paparan');
   scopeStatus.hidden = true;
   const selected = element('span', 'filter-summary');
   selected.id = 'filter-summary';
@@ -264,7 +264,7 @@ export function createFilters(data: DashboardData, onChange: (state: FilterState
       close();
       scopeStatus.hidden = feature !== 'recommendations';
       explanation.textContent = feature === 'recommendations'
-        ? 'Filter aktif dan pilihan tersimpan. Analisis rekomendasi belum tersedia.'
+        ? 'Tanggal dan faskes membatasi bukti, matriks respons, dan asumsi kapasitas manual; polutan dan QC mengubah cakupan paparan. Profil model tetap memakai rentang acuan latihnya.'
         : feature === 'temporal' || feature === 'drivers'
         ? 'Wilayah, stasiun, tipe lokasi, tanggal, polutan, dan QC memperbarui seluruh analisis. Kontrol pada grafik hanya mengubah tampilan atau membandingkan musim dalam periode pilihan.'
         : feature === 'compliance'

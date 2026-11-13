@@ -493,6 +493,97 @@ tbody tr:last-child > * { border-bottom: 0; }
   .health-trends .health-plot { height: 220px; }
 }
 @media (max-width: 374px) { .health-metrics { grid-template-columns: minmax(0, 1fr); } }
+
+/* Keep action evidence and optional planning controls visually distinct. */
+.policy-dashboard { @apply grid min-w-0; gap: 20px; }
+.policy-scope { color: var(--accent); font-size: 12px; line-height: 1.7; font-weight: 600; }
+.admission-chart { @apply relative min-w-0; }
+.admission-comparison-chart { height: 160px; }
+.policy-actions { @apply grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; align-content: start; }
+.policy-action:last-child:nth-child(odd) { grid-column: 1 / -1; }
+.policy-action { padding: 14px; border: 1px solid var(--border); border-radius: 10px; background: var(--canvas); }
+.policy-action h4, .admission-small-heading, .admission-result h4 { font-size: 13px; line-height: 1.5; margin: 0; }
+.policy-action p { font-size: 12px; line-height: 1.7; color: var(--secondary); margin-top: 7px; overflow-wrap: anywhere; }
+.policy-dashboard button { min-height: 44px; }
+.admission-simulation { @apply grid; gap: 20px; container: admission-simulator / inline-size; }
+.admission-simulation-controls { @apply grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; align-items: end; }
+.admission-simulation-controls > * { @apply min-w-0; }
+.admission-simulation-controls .segmented-control { @apply flex; height: 44px; padding: 0; border: 0; gap: 4px; background: transparent; }
+.admission-simulation-controls .segmented-control button { @apply flex items-center justify-center; flex: 1; height: 44px; min-height: 44px; padding: 8px 12px; border: 1px solid var(--border); border-radius: 8px; background: var(--canvas); }
+.admission-simulation-controls button[aria-pressed='true'], .policy-network-sort button[aria-pressed='true'] { background: var(--accent-soft); color: var(--accent); border-color: var(--accent); }
+.admission-simulation-controls > button { grid-column: 1 / -1; justify-self: end; margin: 0; height: 44px; }
+.admission-simulation-results, .admission-comparison-grid { @apply grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+.admission-result { @apply flex flex-col; padding: 18px; border: 1px solid var(--border); border-radius: 10px; background: var(--canvas); }
+.admission-result-value { font: 600 32px/1.4 'Space Grotesk', Inter, sans-serif; font-variant-numeric: tabular-nums; color: var(--text); margin-top: 8px; overflow-wrap: anywhere; }
+.admission-result-unit, .admission-result p { font-size: 12px; color: var(--secondary); line-height: 1.7; margin-top: 6px; }
+.admission-comparison-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.admission-comparison-grid > * { @apply min-w-0; }
+.admission-scenario-message, .admission-equation { font-size: 12px; line-height: 1.8; color: var(--secondary); }
+.admission-equation { padding: 12px 16px; background: var(--accent-soft); border-left: 3px solid var(--accent); border-radius: 0 8px 8px 0; }
+.policy-map { height: 480px; border-radius: 10px; margin-top: 16px; z-index: 0; }
+.policy-map .leaflet-control-zoom a { min-width: 44px; min-height: 44px; line-height: 44px; }
+.policy-network-legend { margin-top: 0; }
+.policy-network-sort { @apply flex items-center flex-wrap; gap: 10px; margin: 20px 0; font-size: 12px; }
+.policy-table-wrap { overflow-x: auto; max-width: 100%; }
+.policy-table-wrap table { width: 100%; min-width: 720px; }
+.policy-table-wrap caption { text-align: left; padding: 10px 0; color: var(--secondary); font-size: 12px; }
+.policy-table-wrap th, .policy-table-wrap td { text-align: left; vertical-align: top; padding: 12px; border-bottom: 1px solid var(--border); font-size: 12px; font-variant-numeric: tabular-nums; }
+.policy-cell-detail { @apply block; color: var(--secondary); font-size: 11px; line-height: 1.6; margin-top: 5px; max-width: 220px; }
+.policy-table-wrap td button { margin-top: 8px; }
+.admission-simulation input[aria-invalid='true'] { border-color: #ef4444; }
+@media (max-width: 767px) {
+  .policy-actions, .admission-comparison-grid, .admission-simulation-results { grid-template-columns: minmax(0, 1fr); }
+  .policy-map { height: 400px; }
+}
+
+@container admission-simulator (min-width: 760px) {
+  .admission-simulation-controls { grid-template-columns: 1.2fr 1fr 1fr auto; }
+  .admission-simulation-controls > button { grid-column: auto; justify-self: stretch; }
+}
+@container admission-simulator (max-width: 560px) {
+  .admission-simulation-controls { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .admission-simulation-controls > :first-child { grid-column: 1 / -1; }
+}
+@container admission-simulator (max-width: 360px) {
+  .admission-simulation-controls { grid-template-columns: minmax(0, 1fr); }
+  .admission-simulation-controls > button { justify-self: stretch; }
+}
+:is(.policy-table-disclosure) { margin-top: 20px; border: 1px solid var(--border); border-radius: 10px; }
+:is(.policy-table-disclosure) > summary { @apply flex items-center justify-between; min-height: 56px; gap: 16px; padding: 14px 16px; cursor: pointer; list-style: none; }
+:is(.policy-table-disclosure) > summary::-webkit-details-marker { display: none; }
+.policy-table-label { @apply flex items-center flex-wrap; gap: 8px 16px; font-size: 13px; }
+.policy-table-label .muted { font-size: 12px; }
+:is(.policy-table-disclosure) > summary svg { width: 18px; height: 18px; flex-shrink: 0; transition: transform 260ms var(--ease); }
+:is(.policy-table-disclosure)[open] > summary svg { transform: rotate(180deg); }
+.policy-table-body { padding: 0 16px 16px; }
+.policy-table-body .policy-network-sort { margin-top: 0; padding-top: 16px; border-top: 1px solid var(--border); }
+@supports (interpolate-size: allow-keywords) {
+  :is(.policy-table-disclosure) { interpolate-size: allow-keywords; }
+  :is(.policy-table-disclosure)::details-content { block-size: 0; overflow: clip; transition: block-size 260ms var(--ease), content-visibility 260ms allow-discrete; }
+  :is(.policy-table-disclosure)[open]::details-content { block-size: auto; }
+}
+@media (prefers-reduced-motion: reduce) {
+  :is(.policy-table-disclosure)::details-content { transition: none; }
+}
+
+.policy-action dl { margin: 16px 0 0; }
+.policy-action dt { font-size: 11px; font-weight: 600; color: var(--text); margin-top: 14px; }
+.policy-action dd { font-size: 12px; line-height: 1.7; color: var(--secondary); margin: 4px 0 0; overflow-wrap: anywhere; }
+.policy-action .policy-action-locations { color: var(--accent); }
+.admission-simulation button { min-height: 44px; }
+
+/* Keep case-study controls aligned within their analytical panels. */
+.case-simulator, .case-network { @apply grid min-w-0; grid-template-columns: minmax(0, 1fr); gap: 16px; }
+.case-simulator > *, .case-network > * { @apply min-w-0; }
+.case-model-controls, .case-weight-controls { @apply grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; align-items: end; }
+.case-model-controls > *, .case-weight-controls > * { @apply min-w-0; }
+.case-model-controls input[type='range'], .case-weight-controls input[type='range'], #policy-radius { width: 100%; min-height: 44px; accent-color: var(--accent); }
+.case-model-controls output, .case-weight-controls output { color: var(--accent); font-size: 12px; }
+.case-model-controls button { min-height: 44px; }
+.case-rank-chart { position: relative; min-width: 0; }
+@media (max-width: 767px) {
+  .case-model-controls, .case-weight-controls { grid-template-columns: minmax(0, 1fr); }
+}
 .compliance-feature { @apply grid gap-5; grid-template-columns: minmax(0, 1fr); min-width: 0; }
 .compliance-period-table { table-layout: fixed; min-width: 880px; }
 .compliance-period-table th, .compliance-period-table td { padding: 10px 6px; white-space: normal; overflow-wrap: anywhere; }

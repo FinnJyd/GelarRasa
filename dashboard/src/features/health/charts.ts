@@ -38,7 +38,12 @@ export function healthPlot(host: HTMLElement, id: string, kind: 'line' | 'bar', 
       scales: {
         x: { grid: { display: false }, border: { display: false },
           title: { display: id === 'health-lag', text: 'Jeda (hari)' },
-          ticks: { maxTicksLimit: id === 'health-lag' ? 8 : 6, autoSkip: id !== 'health-lag', maxRotation: 0 } },
+          ticks: { maxTicksLimit: id === 'health-lag' ? 8 : 6, autoSkip: !['health-lag', 'health-ages'].includes(id), autoSkipPadding: ['health-exposure', 'health-admissions', 'health-strain'].includes(id) ? 20 : 3, maxRotation: 0,
+            callback(value) {
+              const label = this.getLabelForValue(Number(value));
+              return this.chart.width < 480 && ['health-exposure', 'health-admissions', 'health-strain'].includes(id)
+                ? label.replace(/^\d+\s+/, '').replace(/20(\d{2})$/, '$1') : label;
+            } } },
         y: { beginAtZero: true, ...(bounds ?? {}), border: { display: false },
           ticks: { maxTicksLimit: 5 }, title: { display: true, text: axis } },
       },
@@ -64,13 +69,13 @@ export function healthPlot(host: HTMLElement, id: string, kind: 'line' | 'bar', 
       empty.hidden = hasData;
       canvas.setAttribute('aria-label', `${label}. ${valid.length} titik tersedia dari ${values.length}.`);
       summary.textContent = hasData
-        ? `${label}: minimum ${number(Math.min(...valid))}, maksimum ${number(Math.max(...valid))}. ${values.length <= 8 ? values.map((value, index) => `${labels[index] ?? ''}: ${value === null ? 'tidak tersedia' : number(value)}; ${context[index] ?? ''}`).join('. ') : ''}`
+        ? `${label}: minimum ${number(Math.min(...valid))}, maksimum ${number(Math.max(...valid))}. ${values.length <= 12 ? values.map((value, index) => `${labels[index] ?? ''}: ${value === null ? 'tidak tersedia' : number(value)}; ${context[index] ?? ''}`).join('. ') : ''}`
         : `${label}: data belum mencukupi.`;
       chart.data.labels = labels;
       const dataset = chart.data.datasets[0];
       if (dataset) {
         dataset.data = [...values]; dataset.label = label;
-        if ('pointRadius' in dataset) dataset.pointRadius = id === 'health-lag' || valid.length <= 30 ? 3 : 0;
+        if ('pointRadius' in dataset) dataset.pointRadius = id === 'health-lag' ? values.map(value => value !== null && value === Math.max(...valid) ? 7 : 3) : valid.length <= 30 ? 3 : 0;
       }
       chart.resize();
       lifecycle.refresh();

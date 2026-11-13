@@ -32,3 +32,6 @@ export function mountHealth(host: HTMLElement, catalog: readonly Station[], init
   void load();
   return { update: filters => { state = filters; view?.update(filters); }, destroy: () => { controller.abort(); view?.destroy(); host.replaceChildren(); } };
 }
+
+export { loadHealth as loadHealthEvidence } from './load';
+export { responseMatrix } from './response-matrix';

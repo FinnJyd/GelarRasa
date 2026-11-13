@@ -1,4 +1,5 @@
 import type { FilterState, Station } from '../../data/types';
+import { healthInsights } from './insights';
 import { POLLUTANT_KEYS } from './types';
 import type { HealthData, HealthSummary, Outcome, PollutantKey } from './types';
 
@@ -81,7 +82,7 @@ export function summarizeHealth(data: HealthData, catalog: readonly Station[], f
       if (x !== null && y !== null) bins.push({ label: `K${index + 1}`, mean: x, admissions: y, pairs: slice.length });
     }
   }
-  return { dates, daily, exposure, coverageByDay, under5: mean(ages5), over60: mean(ages60),
+  return { ...healthInsights(selected, data.dates, indices, key, mode, outcome), dates, daily, exposure, coverageByDay, under5: mean(ages5), over60: mean(ages60),
     average: mean(daily.filter((n): n is number => n !== null)), beds, hospitals: selected.length,
     pairs: paired.length, possiblePairs: indices.length * selected.length,
     unscaled: key ? selected.filter(item => item.unavailable.includes(key)).length : 0,

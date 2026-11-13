@@ -76,8 +76,9 @@ test('all tabs navigate, charts and map clean up, and selections survive remount
     await expect(page.getByRole('heading', { level: 2 })).toHaveText(name);
     if (name === 'Dampak Kesehatan') await expect(page.locator('.health-dashboard')).toBeVisible();
     else if (name === 'Kepatuhan Regulasi') await expect(page.locator('.compliance-feature')).toBeVisible();
+    else if (name === 'Rekomendasi Kebijakan') await expect(page.locator('.policy-dashboard')).toBeVisible();
     else await expect(page.getByText('Belum tersedia', { exact: true })).toBeVisible();
-    await expect(page.locator('.leaflet-container')).toHaveCount(0);
+    await expect(page.locator('.leaflet-container')).toHaveCount(name === 'Rekomendasi Kebijakan' ? 1 : 0);
   }
   for (let index = 0; index < 4; index++) {
     await page.getByRole('link', { name: 'Ikhtisar Nasional', exact: true }).click();
