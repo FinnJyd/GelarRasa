@@ -754,3 +754,43 @@ User rejection: a fixed calendar-2024 age baseline "does not make sense" because
 
 User feedback: per-tab "Memuat…" states duplicated the opening loading screen. Applying the collaborator's loader-cache pattern from commit 5eef89b (`let cached` in the health loader) across the app: compliance gains the same module cache; network_rank has an exported `preloadNetwork`; and `main.ts` now warms `loadDashboard`, `loadCompliance`, `loadHealthEvidence`, `loadPolicy` and `preloadNetwork` together under the opening screen (`Promise.allSettled`, dashboard export remains critical, the others best-effort so one missing file cannot block the overview). Warm caches resolve within a microtask on mount, so no tab paints its own loader on first or repeat visits. Tab 3/4 hourly shards (24 MB total) stay on demand by design — only selected stations/QC load, max four concurrent — but `filtered-analysis` now keeps a bounded LRU (6 entries) of worker results keyed by request, so revisits with unchanged filters render synchronously without a worker round-trip. The doughnut animation test now proves visible motion by requiring distinct pixel counts across `running` frames (the rotation settles alpha coverage downward, so a direction-agnostic check is the robust one under the shifted boot timing).
 
+### Upgrade dan Penataan Ulang Visualisasi Faktor Pemicu (Tab 4) — 13 November 2026
+
+User-requested modernization and refinement of the Faktor Pemicu tab (`/dashboard/faktor-pemicu`), keeping core insights while improving analytical rigor, clarity, and visual execution:
+
+1. **Ringkasan Faktor Pemicu (4 KPI cards)**:
+   - Added segmented toggle in summary header: `[Ambang Global (P95)]` vs `[Ambang per Stasiun (P95)]`.
+   - Addressed analytical artifact: when P95 is pooled globally across all 27 stations (~103.7 µg/m³), extreme hours concentrate in peatland/hotspot stations during haze season, yielding an 84.36% haze share largely by construction. Switching to station-specific P95 evaluates each station's own top 5% extremes, revealing that 73.81% of extreme hours still occur during August–October while properly reflecting local stagnation and extreme conditions across all 27 monitoring locations.
+   - Dynamically updates KPI metrics (Karhutla extreme share, wind speed during extremes vs normal, descriptive P95 threshold, station count) and propagates the active threshold mode to both the extreme conditions table and diurnal probability chart.
+
+2. **Arah Angin & Polusi (Pollution Rose)**:
+   - Dynamic multi-station selection: replaced fixed hardcoded station codes with 3 station `<select>` dropdowns populated with all stations in the active filter, defaulting to the 3 stations with the highest mean concentration of the active pollutant.
+   - Added `Skala Sama` toggle button: when enabled, synchronizes radial scale maximum ($r_{\max}$) across all three small-multiple roses for direct visual magnitude comparison.
+   - Added sample size $n$ valid hours in card subtitles (`n = X.XXX jam observasi angin ≥0,5 m/s`).
+   - Sparsed directional sectors ($< 5$ hours) are hidden/set to null to eliminate noise from rare wind directions.
+
+3. **Angin & Konsentrasi Polutan**:
+   - Replaced multi-station spaghetti lines with 1 line per `site_type` (Urban Background, Traffic / Roadside, Peatland Boundary, Industrial Perimeter, Regional / Clean Background, Urban Coastal Background).
+   - Added `[Ternormalisasi (Rasio)]` vs `[Konsentrasi Absolut]` toggle: normalized mode divides each site type's bin median by its overall median (1.0 = normal baseline), enabling direct comparison of atmospheric dilution slopes across distinct baselines.
+   - Filtered out bins with $< 5$ hours and provided $n$ observation counts in hover tooltips.
+
+4. **Lalu Lintas, Jarak Jalan & Konsentrasi**:
+   - Switched default y-axis pollutant to NO2, with a selector for `[NO2, CO, PM2.5]`, avoiding PM2.5's dominance by regional biomass burning.
+   - Added linear regression trend lines with Pearson correlation coefficient $r$ and sample size $n$ on both charts.
+   - Added `[Tanpa Musim Karhutla (Nov–Jul)]` toggle to isolate months without regional peat smoke.
+   - Added a second side-by-side scatter plot for `distance_to_road_m` (meter) showing the physical dilution effect away from arterial roadways ($r = -0.32$ to $-0.53$).
+
+5. **Kondisi saat Polusi Ekstrem (Left Subpanel)**:
+   - Replaced the inappropriate 0–100 shared axis bar chart with a structured, accessible meteorology comparison table.
+   - Compares Kecepatan Angin (m/s), Kelembapan Relatif (%), Suhu Udara (°C), and Median Jam Kejadian (WIB) between Jam Ekstrem (>P95) and Jam Normal (≤P95) with exact deltas ($\Delta$) and physical indication notes.
+   - Added seasonal switcher: `[Musim Karhutla (Agu–Okt)]`, `[Luar Karhutla (Nov–Jul)]`, and `[Semua Periode]`.
+   - Highlights physical phenomena: atmospheric stagnation ($\Delta \approx -0.3$ m/s) and humidity surge/hygroscopic aerosol growth ($\Delta \approx +11.7\%$ in non-haze extremes).
+
+6. **Waktu Terjadinya Jam Ekstrem (Right Subpanel)**:
+   - Replaced raw event counts with the conditional probability of an extreme hour per hour of day ($P(\text{Ekstrem} \mid \text{Jam } h) = \frac{N_{\text{ext}}}{N_{\text{valid}}} \times 100\%$).
+   - Multi-line chart compares Musim Karhutla (Agu–Okt) — displaying morning (07:00 WIB, 22.4%) and evening (18:00 WIB, 20.2%) peaks — with Bulan Lainnya (Nov–Jul) which remains flat at ~1.0%.
+
+7. **Faktor Paling Berpengaruh (Driver Ranking Chart)**:
+   - Replaced single-row correlation table with a horizontal bar chart displaying variance explained for daily PM2.5: $\eta^2$ for categorical factors (Stasiun 16.8%, Tipe Lokasi 15.4%, Musim Karhutla 10.4%, Diurnal Hour 0.5%) and $R^2$ for continuous daily weather (Kecepatan Angin 2.7%, Suhu Udara 2.7%, Kelembapan 0.2%).
+   - Retained the Spearman correlation matrix in an expandable `<details>` section with season switcher for in-depth exploration.
+
