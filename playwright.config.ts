@@ -12,8 +12,8 @@ export default defineConfig({
   },
   webServer: {
     command: process.env['PRANA_TEST_MODE'] === 'production'
-      ? 'npm run preview -- --port 5511 --strictPort'
-      : 'npm run dev -- --port 5511 --strictPort',
+      ? 'bun run preview -- --port 5511 --strictPort'
+      : 'bun run dev -- --port 5511 --strictPort',
     url: 'http://127.0.0.1:5511/dashboard',
     stderr: 'ignore',
     reuseExistingServer: false,

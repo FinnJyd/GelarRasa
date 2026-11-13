@@ -2,6 +2,41 @@
 
 Record completed changes chronologically with dates in WIB. Each entry states the scope, reason, validation, and remaining limitations. Planned work belongs in the design audit or feature plan, not among completed changes.
 
+## 13 November 2026 — Modernisasi & upgrade analitis Tab 4 Faktor Pemicu
+
+- **Ringkasan Faktor Pemicu (4 KPI Cards)**:
+  - Menambahkan segmented toggle `[Ambang Global (P95)]` vs `[Ambang per Stasiun (P95)]` pada toolbar ringkasan.
+  - Mengatasi bias analitis dari persentil 95 gabungan: ambang pooled P95 (103,7 µg/m³) secara artifisial mengonsentrasikan jam ekstrem pada stasiun gambut/hotspot karhutla (pangsa karhutla 84,36%). Mode ambang per stasiun mengevaluasi 5% jam tertinggi masing-masing lokasi, membuktikan bahwa 73,81% jam ekstrem lokal terkonsentrasi pada Agustus–Oktober serta mengungkap kondisi stagnasi lokal di seluruh 27 stasiun.
+  - Menghubungkan pilihan mode ambang secara reaktif ke tabel kondisi meteorologi dan kurva probabilitas diurnal ekstrem.
+- **Peringkat Faktor Pemicu PM2.5 (Pengganti Baris Korelasi Tunggal)**:
+  - Menggantikan baris korelasi tunggal dengan grafik batang horizontal *driver ranking* yang menunjukkan proporsi varians PM2.5 harian yang dijelaskan oleh masing-masing faktor.
+  - Menghitung $\eta^2$ (Eta squared) untuk faktor kategorikal: Stasiun (16,8%), Tipe Lokasi (15,4%), Musim Karhutla (10,4%), dan Jam Hari Diurnal (0,5%).
+  - Menghitung $R^2$ untuk faktor meteorologi kontinu harian: Kecepatan Angin (2,7%, korelasi negatif $r = -0,165$), Suhu Udara (2,7%, $r = +0,163$), dan Kelembapan Relatif (0,2%, $r = +0,046$).
+  - Mempertahankan matriks korelasi Spearman lengkap (suhu, lembap, angin) dalam pengungkapan `<details>` terlipat dengan selektor musim (`Semua`, `Agu–Okt`, `Nov–Jul`).
+- **Arah Angin & Polusi (Pollution Rose)**:
+  - Menambahkan kontrol pemilihan 3 stasiun interaktif (bawaan: 3 stasiun dengan rata-rata konsentrasi polutan tertinggi dalam filter aktif).
+  - Menambahkan tombol toggle `Skala Sama` untuk menyamakan batas skala radius radial ($r_{\max}$) pada ketiga mawar polusi sehingga perbandingan magnitudo visual menjadi presisi.
+  - Menampilkan jumlah jam observasi valid ($n$) pada subjudul setiap kartu mawar polusi (`n = X.XXX jam observasi angin ≥0,5 m/s`).
+  - Menyembunyikan sektor arah angin dengan data tidak mencukupi ($<5$ jam observasi) untuk mencegah artefak akibat sedikit sampel.
+- **Angin & Konsentrasi Polutan**:
+  - Mengganti puluhan garis stasiun bertumpuk dengan 1 garis per `site_type` (zonasi: Urban Background, Traffic / Roadside, Peatland Boundary, Industrial Perimeter, Regional / Clean Background, Urban Coastal Background).
+  - Menambahkan toggle `Ternormalisasi (Rasio)` vs `Konsentrasi Absolut`: mode ternormalisasi membagi konsentrasi tiap kelompok kecepatan angin terhadap median tipe lokasi tersebut (1,0 = median normal) sehingga kemiringan dispersi atmosfer dapat dibandingkan langsung lintas baseline yang berbeda.
+  - Mengabaikan kelompok kecepatan angin dengan $<5$ jam observasi dan mencantumkan $n$ jam pada tooltip.
+- **Lalu Lintas, Jarak Jalan & Konsentrasi Polutan Primer**:
+  - Mengalihkan sumbu y polutan bawaan ke NO2 dengan selektor interaktif `[NO2] [CO] [PM2.5]` untuk mengamati polutan primer lalu lintas yang tidak terdominasi asap karhutla.
+  - Menambahkan garis tren regresi linier dengan koefisien korelasi Pearson $r$ dan jumlah stasiun $n$ pada setiap grafik scatter.
+  - Menambahkan toggle `Tanpa Musim Karhutla (Nov–Jul)` vs `Semua Bulan` untuk mengisolasi periode non-karhutla.
+  - Menambahkan scatter plot kedua berdampingan untuk `distance_to_road_m` (meter), menunjukkan korelasi negatif pengenceran polutan terhadap jarak ke jalan raya ($r = -0,32$ hingga $-0,53$).
+- **Kondisi saat Polusi Ekstrem & Waktu Terjadinya Jam Ekstrem**:
+  - Menggantikan grafik batang sumbu 0–100 gabungan dengan tabel komparasi meteorologi terstruktur: Kecepatan Angin (m/s), Kelembapan (%), Suhu (°C), dan Median Jam Kejadian (WIB) antara jam ekstrem (>P95) vs normal (≤P95) disertai nilai selisih ($\Delta$).
+  - Menyediakan switcher musim: `Musim Karhutla (Agu–Okt)`, `Luar Karhutla (Nov–Jul)`, dan `Semua Periode`.
+  - Mengonversi jumlah kejadian mentah pada grafik waktu ekstrem menjadi kurva probabilitas kondisional $P(\text{Ekstrem} \mid \text{Jam } h)$ per jam hari (00–23 WIB) dengan dua garis komparasi (Musim Karhutla dengan puncak pagi 07:00 WIB 22,4% & sore 18:00 WIB 20,2% vs Bulan Lainnya flat ~1,0%).
+- **Validasi**:
+  - `bun x tsc --noEmit` lolos 100% tanpa error (`strict: true`, `noUncheckedIndexedAccess: true`).
+  - Unit test `tests/drivers.test.ts` (8 pengujian terpadu) lolos 100%, memverifikasi eta², R², kuantil P95 global vs lokal, metrik lalu lintas/jarak jalan, dan normalisasi angin.
+  - Suite unit test `tests/*.test.ts` (46 pengujian pada 6 modul pengujian inti) lolos 100%.
+  - `bun run build` sukses membangun bundel produksi `app.js` (547 kB) dan `app.css` (65,8 kB) dalam 428ms.
+
 ## 13 November 2026 — Penyatuan kontainer panel & pemendekan catatan kaki tren harian (Tab 3 Pola Waktu)
 
 - **Penyatuan Kontainer & Catatan Kaki 2 Baris (`dashboard/src/features/temporal/`)**:

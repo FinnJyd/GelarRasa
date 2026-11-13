@@ -684,11 +684,20 @@ tbody tr:last-child > * { border-bottom: 0; }
 .analysis-plot > canvas { max-width: 100%; }
 .analysis-dashboard .rose-small-multiples { @apply grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr)); gap: 16px; }
 .analysis-dashboard .rose-card { min-width: 0; padding: 14px; background: var(--surface-secondary); border: 1px solid var(--border); border-radius: 10px; }
-.analysis-dashboard .rose-title { min-height: 44px; text-align: center; font-size: 13px; font-weight: 600; line-height: 1.6; margin-bottom: 8px; }
+.analysis-dashboard .rose-title { text-align: center; font-size: 13px; font-weight: 600; line-height: 1.4; margin-bottom: 2px; }
+.analysis-dashboard .rose-subtitle { text-align: center; font-size: 11px; margin-bottom: 8px; }
 .analysis-dashboard .rose-plot { height: 280px; }
+.analysis-dashboard .rose-station-select { font-size: 12px; padding: 4px 8px; border: 1px solid var(--border); border-radius: 6px; background: var(--surface); color: var(--text); }
 .analysis-dashboard .episodes-plot { height: max(240px, calc(var(--analysis-rows, 0) * 28px + 70px)); }
+.analysis-dashboard .driver-rankings-plot { height: 280px; }
+.analysis-dashboard .traffic-scatter-grid { @apply grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; }
 .analysis-dashboard .extreme-comparison-container { @apply grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; }
 .analysis-dashboard .extreme-comparison-container h4 { font-size: 13px; font-weight: 600; line-height: 1.6; margin-bottom: 12px; }
+.analysis-dashboard .extreme-table-container { width: 100%; overflow-x: auto; scrollbar-width: thin; }
+.analysis-dashboard .extreme-table { width: 100%; border-collapse: collapse; font-size: 12px; line-height: 1.5; }
+.analysis-dashboard .extreme-table th, .analysis-dashboard .extreme-table td { padding: 8px 10px; border-bottom: 1px solid var(--border); text-align: left; }
+.analysis-dashboard .extreme-table th.text-right, .analysis-dashboard .extreme-table td.text-right { text-align: right; }
+.analysis-dashboard .extreme-diurnal-plot { height: 280px; }
 .analysis-matrix { position: relative; min-width: 0; padding: 8px 0; }
 .analysis-matrix-scroll { width: 100%; overflow-x: auto; scrollbar-width: thin; border-radius: 6px; }
 .analysis-matrix-scroll:focus-visible { outline: 2px solid var(--focus); outline-offset: 4px; }
@@ -702,6 +711,7 @@ tbody tr:last-child > * { border-bottom: 0; }
 @media (max-width: 1200px) { .analysis-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 900px) {
   .analysis-dashboard .extreme-comparison-container { grid-template-columns: minmax(0, 1fr); }
+  .analysis-dashboard .traffic-scatter-grid { grid-template-columns: minmax(0, 1fr); }
 }
 @media (max-width: 600px) {
   .analysis-controls > .filter-field { max-width: none; width: 100%; flex-basis: 100%; }
