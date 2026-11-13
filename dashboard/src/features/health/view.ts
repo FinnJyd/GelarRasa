@@ -19,19 +19,27 @@ export function mountHealthView(host: HTMLElement, data: HealthData, catalog: re
   let state = initial;
   let outcome: Outcome = 'resp';
   const root = element('div', 'health-dashboard');
-  const toolbar = element('div', 'health-toolbar');
-  const orientation = element('div');
-  orientation.append(element('p', 'eyebrow', 'PAPARAN DAN ADMISI'),
-    element('p', 'health-orientation', 'Telusuri hubungan polutan dengan kasus harian di faskes pilihan.'));
+  const summaryPanel = element('section', 'panel health-summary-panel');
+  const header = element('header', 'panel-header health-summary-header');
+  const titleGroup = element('div', 'health-summary-title');
+  titleGroup.append(
+    element('h3', '', 'Paparan dan Admisi'),
+    element('p', '', 'Telusuri hubungan polutan dengan kasus harian di faskes pilihan.')
+  );
   const selector = searchableSelect('health-outcome', 'Indikator kesehatan', value => {
     if (isOutcome(value)) { outcome = value; update(state); }
   });
   selector.setOptions(Object.entries(OUTCOMES), outcome);
-  toolbar.append(orientation, selector.field);
-  const scope = element('p', 'health-scope');
+  header.append(titleGroup, selector.field);
+
+  const scope = element('p', 'health-scope sr-only');
   scope.setAttribute('role', 'status');
   const coverage = element('p', 'health-coverage');
   const metrics = element('div', 'metrics-grid health-metrics');
+
+  const body = element('div', 'panel-body');
+  body.append(scope, metrics, coverage);
+  summaryPanel.append(header, body);
   const trends = panel('Paparan & Kasus Harian', 'Dua skala terpisah dengan kalender yang sama.', 'health-trends');
   const exposureTitle = element('h4', 'health-plot-title');
   const exposureHost = element('div');
@@ -59,7 +67,7 @@ export function mountHealthView(host: HTMLElement, data: HealthData, catalog: re
   const strainPanel = panel('Tekanan Admisi Pernapasan dan CVD', 'Jumlah catatan admisi per 100 tempat tidur tercatat · bukan keterisian');
   const strainHost = element('div'), strainCaption = element('p', 'panel-footnote'); strainPanel.body.append(strainHost, strainCaption);
   const warning = element('p', 'health-quality');
-  root.append(toolbar, scope, metrics, coverage, warning, trends.root, grid, more, strainPanel.root);
+  root.append(summaryPanel, warning, trends.root, grid, more, strainPanel.root);
   host.replaceChildren(root);
   const exposureChart = healthPlot(exposureHost, 'health-exposure', 'line', 'µg/m³');
   const admissionsChart = healthPlot(outcomeHost, 'health-admissions', 'line', 'Kasus / hari');

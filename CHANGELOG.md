@@ -2,6 +2,40 @@
 
 Record completed changes chronologically with dates in WIB. Each entry states the scope, reason, validation, and remaining limitations. Planned work belongs in the design audit or feature plan, not among completed changes.
 
+## 13 November 2026 — Penyatuan filter admisi & KPI cards Tab 5 (Dampak Kesehatan)
+
+- **Penyatuan Kontainer Ringkasan Kesehatan (`dashboard/src/features/health/view.ts`, `dashboard/styles.css`)**:
+  - Menggabungkan baris filter admisi (`health-toolbar`: pemilih indikator kesehatan + teks orientasi) dan 4 kartu metrik KPI (`health-metrics`) ke dalam satu kontainer panel terpadu (`.health-summary-panel`).
+  - Menetapkan **Paparan dan Admisi** sebagai judul kontainer resmi (`<h3>Paparan dan Admisi</h3>`) dengan subjudul *"Telusuri hubungan polutan dengan kasus harian di faskes pilihan."* dan kontrol dropdown *Indikator kesehatan* di sisi kanan header.
+  - Menghapus teks cakupan `27 faskes pilihan · 1 Jan 2024 – 14 Okt 2026 · PM2.5 · VALID` dari tampilan visual (dibuat `sr-only` dengan `role="status"` agar aksesibilitas pembaca layar dan penegasan test tetap terpenuhi).
+  - Menyusun hierarki visual yang elegan: panel header dengan pemisah garis bawah halus (`border-bottom: 1px solid var(--border)`), kartu-kartu KPI berada di dalam panel-body sebagai sub-kartu berlatar `--surface-secondary`, dan catatan cakupan kelengkapan pasangan berada di bagian bawah.
+  - Menyesuaikan penataan responsif mobile pada layar ≤767px agar header dan dropdown bertumpuk rapi.
+- **Validasi**:
+  - `bun run typecheck` (`tsc --noEmit`) lulus 100% tanpa error (`strict: true`).
+  - Unit test `tests/health.test.ts`, `tests/health-age-comparison.test.ts`, `tests/temporal.test.ts`, dan `tests/compliance.test.ts` (32/32 pengujian) lulus 100%.
+  - `bun run build` sukses menghasilkan bundel produksi terbarui (`app.js` dan `app.css`).
+
+## 13 November 2026 — Perbaikan visual Donut Kategori ISPU, Segmented Controls, dan Polish Tab 1–3
+
+- **Donut Chart Kategori ISPU Dominan Stasiun (`dashboard/src/shared/charts.ts`)**:
+  - Memperbaiki masalah legend duplikat mengambang di atas canvas donut dan angka `26 stasiun` yang terdorong ke atas menabrak cincin dengan menyetel eksplisit `plugins: { legend: { display: false } }`.
+  - Donut chart kini kembali terpusat sempurna pada canvas, teks `26 stasiun` berada presisi di tengah lubang donut, dan hanya tabel legend HTML di sebelah kanan yang ditampilkan.
+  - Menerapkan `legend: { display: false }` pada `createRankingChart` agar terhindar dari legend liar serupa.
+- **Tab 3 Pola Waktu (`dashboard/styles.css`, `dashboard/src/features/temporal/charts.ts`)**:
+  - Menambahkan `align-self: flex-start; margin-bottom: 14px;` pada `.temporal-subpanel .segmented-control` sehingga kontrol pilihan mode tidak menabrak batas atas grafik di bawahnya.
+  - Memberi border halus `rgba(2, 132, 199, 0.45)` dan `borderWidth: 1` pada swatch legenda dan kurva batas *Rentang P25–P75* pada grafik tren harian dan profil diurnal agar kotak legendanya tidak tampak kosong/transparan di mode terang.
+  - Menyelaraskan kontras warna sel heatmap (`cellColor`) dengan meningkatkan opasitas batas bawah (`a = 0.55`) agar sel konsentrasi terendah tampak biru cerah dan selaras dengan swatch biru `#0284c7` pada legenda.
+  - Mencegah clipping label badge stasiun pada sumbu Y grafik episode dengan `Math.max(4, endX - totalW)`.
+- **Tab 2 Kepatuhan Regulasi (`dashboard/src/features/compliance/view.ts`, `dashboard/styles.css`)**:
+  - Memindahkan posisi catatan kaki `annualNote` pada panel *Evaluasi Acuan Tahunan* ke bawah canvas grafik dot plot (sebelumnya terjepit di atas grafik di bawah toolbar).
+  - Menyelaraskan dimensi dan sudut dropdown `Tahun evaluasi` (`min-height: 36px; padding: 6px 10px; border-radius: 8px;`) agar seimbang dengan segmented control `Top 10 | Seluruh stasiun` di sampingnya.
+- **Tab 1 Ikhtisar Nasional (`dashboard/src/features/overview/view.ts`)**:
+  - Menghapus label `· Dataset sintetis` dari footer Ikhtisar Nasional sesuai aturan panduan komite pada `AGENTS.md`.
+- **Validasi**:
+  - `bun run typecheck` (`tsc --noEmit`) lulus 100% tanpa error (`strict: true`).
+  - Unit test `tests/temporal.test.ts`, `tests/compliance.test.ts`, `tests/health.test.ts`, dan `tests/policy.test.ts` (38/38 pengujian) lulus 100%.
+  - `bun run build` sukses menghasilkan bundel produksi terbarui (`app.js` dan `app.css`).
+
 ## 13 November 2026 — Penyatuan kontainer panel & pemendekan catatan kaki tren harian (Tab 3 Pola Waktu)
 
 - **Penyatuan Kontainer & Catatan Kaki 2 Baris (`dashboard/src/features/temporal/`)**:

@@ -133,7 +133,7 @@ export function mountComplianceView(host: HTMLElement, data: ComplianceData, cat
   const annualHost = element('div');
   const annualNote = element('p', 'panel-footnote');
   const annualTable = element('div');
-  annual.body.append(annualToolbar, annualNote, annualHost, annualTable);
+  annual.body.append(annualToolbar, annualHost, annualNote, annualTable);
   const tableHost = element('div');
   const empty = emptyState('Tidak ada pengamatan', 'Ubah pilihan stasiun/tanggal/polutan atau lihat keterangan satuan pada metodologi.');
   empty.hidden = true;

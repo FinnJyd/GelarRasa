@@ -176,10 +176,10 @@ export function createDiurnalChart(host: HTMLElement, pollutant: () => Pollutant
         {
           label: 'Rentang P25–P75',
           data: p25s,
-          borderColor: 'transparent',
+          borderColor: 'rgba(2, 132, 199, 0.45)',
           backgroundColor: 'rgba(2, 132, 199, 0.16)',
           pointRadius: 0,
-          borderWidth: 0,
+          borderWidth: 1,
           fill: '-1',
           tension: 0.2,
           order: 3,
@@ -252,14 +252,14 @@ export function createHeatmapChart(host: HTMLElement, pollutant: () => Pollutant
       const r = Math.round(2 + u * 232);
       const g = Math.round(132 - u * 44);
       const b = Math.round(199 - u * 187);
-      const a = 0.25 + u * 0.50;
+      const a = 0.55 + u * 0.25;
       return `rgba(${r}, ${g}, ${b}, ${a.toFixed(2)})`;
     }
     const u = (t - 0.5) / 0.5;
     const r = Math.round(234 - u * 14);
     const g = Math.round(88 - u * 50);
     const b = Math.round(12 + u * 26);
-    const a = 0.75 + u * 0.20;
+    const a = 0.80 + u * 0.18;
     return `rgba(${r}, ${g}, ${b}, ${a.toFixed(2)})`;
   }
 
@@ -455,10 +455,10 @@ export function createTimeseriesChart(host: HTMLElement, pollutant: () => Pollut
           {
             label: 'Rentang P25–P75',
             data: p25s,
-            borderColor: 'transparent',
+            borderColor: 'rgba(2, 132, 199, 0.45)',
             backgroundColor: 'rgba(2, 132, 199, 0.18)',
             pointRadius: 0,
-            borderWidth: 0,
+            borderWidth: 1,
             fill: '-1',
             tension: 0.15,
             order: 3,
@@ -607,7 +607,7 @@ export function createEpisodesChart(host: HTMLElement, pollutant: () => Pollutan
         const badgeH = 18;
         const totalW = badgeW + 4 + dateW;
         const endX = chartInstance.chartArea.left - 6;
-        const badgeX = endX - totalW;
+        const badgeX = Math.max(4, endX - totalW);
         const badgeY = y - badgeH / 2;
 
         ctx.fillStyle = color.bg;

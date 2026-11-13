@@ -33,7 +33,7 @@ export function mountOverview(
   geography.body.append(mapHost);
   const tableHost = element('div', 'overview-table');
   const footer = element('footer', 'overview-footer');
-  footer.append(element('p', '', 'Sumber: telemetri AQMS & data kesehatan · Dataset sintetis'));
+  footer.append(element('p', '', 'Sumber: telemetri AQMS & data kesehatan'));
   root.append(unitNote, indicators.root, geography.root, tableHost, footer);
   host.replaceChildren(root);
   const distributionChart = createDistributionChart(compositionHost);

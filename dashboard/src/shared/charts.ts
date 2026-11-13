@@ -64,6 +64,7 @@ export function createRankingChart(host: HTMLElement, name: string): {
         ? false : { duration: 900, easing: 'easeOutQuart' },
       layout: { padding: { right: 45, top: 2 } },
       plugins: {
+        legend: { display: false },
         tooltip: {
           displayColors: false,
           callbacks: {
@@ -152,6 +153,7 @@ export function createDistributionChart(host: HTMLElement): {
         ? false : { duration: 1000, animateRotate: true, animateScale: false, easing: 'easeOutQuart' },
       layout: { padding: 8 },
       plugins: {
+        legend: { display: false },
         tooltip: {
           callbacks: {
             label: item => {
