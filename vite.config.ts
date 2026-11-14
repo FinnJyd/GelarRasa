@@ -1,8 +1,9 @@
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { defineConfig } from 'vite';
+import { defineConfig, loadEnv } from 'vite';
 import type { Connect, Plugin } from 'vite';
 import tailwindcss from '@tailwindcss/vite';
+import { handleChatNode } from './api/chat.ts';
 
 const root = import.meta.dirname;
 const registry: unknown = JSON.parse(readFileSync(resolve(root, 'dashboard/routes.json'), 'utf8'));
@@ -47,12 +48,25 @@ function dashboardRoutes(): Plugin {
   };
 }
 
-export default defineConfig({
+function chatApi(env: Record<string, string | undefined>): Plugin {
+  return {
+    name: 'prana-chat-api',
+    configureServer(server) {
+      server.middlewares.use('/api/chat', (request, response) => {
+        void handleChatNode(request, response, env);
+      });
+    },
+  };
+}
+
+export default defineConfig(({ mode }) => {
+  const env: Record<string, string | undefined> = { ...process.env, ...loadEnv(mode, root, '') };
+  return {
   root,
   base: '/',
   appType: 'mpa',
   publicDir: false,
-  plugins: [tailwindcss(), dashboardRoutes()],
+  plugins: [tailwindcss(), dashboardRoutes(), chatApi(env)],
   input: resolve(root, 'dashboard/entry.html'),
   server: {
     host: '127.0.0.1', port: 5500,
@@ -72,4 +86,5 @@ export default defineConfig({
         ? 'dashboard/app.css' : 'dashboard/assets/[name]-[hash][extname]',
     } },
   },
+  };
 });

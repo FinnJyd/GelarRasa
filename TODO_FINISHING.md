@@ -25,3 +25,19 @@ Keputusan yang perlu disepakati pada sesi finishing:
 4. Penyimpanan hasil dan penanda asal secara terpisah, jejak metode/parameter, pembaruan ekspor dan metodologi, serta pengujian bahwa mode nonaktif tetap menghasilkan angka observasi yang sama.
 
 Acuan observasi yang harus tetap dipertahankan: [kontrak penyaringan](AGENTS.md#shared-aqms-filtering-contract) dan [notebook penyaringan Tab 2](notebooks/simulasi_penyaringan_tab2.ipynb). Implementasi baru dibahas setelah metode dan batas penggunaannya disepakati.
+
+## Restrukturisasi Teks Metodologi Dashboard (Fokus Keputusan Analitis)
+
+- [ ] Perbarui teks modal/drawer Metodologi agar lebih mudah terbaca dan berfokus pada **keputusan teknis/analitis terapan (*analytical decisions*)**, bukan narasi proses atau riwayat audit masa lalu.
+
+Dicatat 14 November 2026 (WIB). Status: **diagendakan dalam todolist**.
+
+Tujuan: Menjadikan modal Metodologi transparan, otoritatif, ringkas, dan mudah dipahami pengambil kebijakan maupun dewan juri tanpa dibebani paragraf panjang (*wall of text*) atau catatan riwayat perbaikan bug internal.
+
+Pilar keputusan yang akan diterapkan:
+1. **Integritas Data & Kontrol Kualitas (QC)**: Default hanya menerima `VALID` (`SUSPECT` via opsi eksplisit), syarat validitas harian $\ge 18$ jam unik, kebijakan tanpa imputasi (*zero-imputation policy*).
+2. **Standarisasi Satuan Instrumen**: Normalisasi partikulat ke $\mu\text{g}/\text{m}^3$ (faktor $\times 1.000$ untuk logger berskala mg/m³ di 3 stasiun) dan konversi molekuler gas pada kondisi referensi standar ($25^\circ\text{C}, 1\text{ atm}$).
+3. **Kepatuhan Baku Mutu (PP 22/2021 & ISPU)**: Aturan 24 jam untuk PM2.5/PM10/SO2/NO2; Moving Average 8 jam harian untuk CO/O3 (min. 13/17 jendela); ambang kelengkapan evaluasi tahunan 75%; estimasi IKU stasiun adaptasi Permen LHK 27/2021.
+4. **Analisis Dinamika Waktu & Faktor Pemicu (Tab 3 & 4)**: Dekomposisi varians ($\eta^2$ untuk faktor kategorik dan $R^2$ untuk cuaca kontinu); ambang batas ekstremitas P95; pemisahan musim karhutla (Agu–Okt) vs normal (Nov–Jul).
+5. **Dampak Kesehatan & Tekanan Fasilitas Kesehatan (Tab 5)**: Korelasi jeda waktu Pearson lag 0–7 hari (syarat $\ge 30$ pasangan); stratifikasi respons 5 kuintil paparan (P1–P5); rasio tekanan tempat tidur RS = (Pernapasan + CVD) / Kapasitas $\times 100$.
+6. **Pemodelan Kebijakan & Prioritas Ekspansi (Tab 6)**: Pemeringkatan wilayah baru berbasis normalisasi min-maks 3 kriteria (baseline polusi, volume lalu lintas, jarak tetangga terdekat); radius ilustrasi spasial (10–300 km).

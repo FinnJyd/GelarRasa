@@ -1,6 +1,7 @@
 import type { Feature } from '../data/types';
 import { button, element, image } from '../shared/dom';
 import { icon } from '../shared/icons';
+import { followLayout } from '../shared/layout-follow';
 import { ROUTES } from '../shared/routes';
 import { createThemeControl } from './theme-control';
 import { createFactTicker } from './fact-ticker';
@@ -119,6 +120,8 @@ export function createShell(features: readonly Feature[], onNavigate: (feature: 
   document.getElementById('app')?.replaceChildren(root);
   collapse.addEventListener('click', () => {
     if (matchMedia('(max-width: 767px)').matches) { closeDrawer(); mobileMenu.focus(); return; }
+    // The grid animates smoothly; layout-follow freezes chart/map resizes so only the final size redraws.
+    followLayout(matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 400);
     const collapsed = root.classList.toggle('rail-navigation');
     collapse.setAttribute('aria-expanded', String(!collapsed));
     collapse.setAttribute('aria-label', collapsed ? 'Perbesar navigasi' : 'Perkecil navigasi');

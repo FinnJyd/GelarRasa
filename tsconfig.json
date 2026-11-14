@@ -19,14 +19,15 @@
     "verbatimModuleSyntax": true,
     "isolatedModules": true,
     "skipLibCheck": false,
+    "allowImportingTsExtensions": true,
     "noEmit": true,
     "types": [
-      "node",
-      "vite/client"
+      "node"
     ],
     "resolveJsonModule": true
   },
   "include": [
+    "api/**/*.ts",
     "dashboard/src/**/*.ts",
     "tests/**/*.ts",
     "playwright.config.ts",
