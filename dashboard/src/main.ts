@@ -87,6 +87,8 @@ const router = createRouter(id => {
   if (feature) navigate(feature);
   else renderNotFound();
 });
+// Static hosts have no "/" middleware (the dev server 308s it); canonicalize like dev does.
+if (location.pathname === '/') history.replaceState(null, '', '/dashboard');
 const initial = features.find(item => item.id === resolveRoute(location.pathname));
 if (initial) navigate(initial);
 else renderNotFound();
