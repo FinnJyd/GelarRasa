@@ -12,6 +12,7 @@ import {
   LineController,
   LineElement,
   PointElement,
+  ScatterController,
   Tooltip,
 } from 'chart.js';
 import { chartTheme, manageChart } from '../../shared/chart-lifecycle';
@@ -21,7 +22,7 @@ import { element, emptyState } from '../../shared/dom';
 import type { ChartDataset, Plugin } from 'chart.js';
 import { date, number } from '../../shared/format';
 import { computeDailyStationAggregate } from './model';
-import type { EpisodeWithStation } from './model';
+import type { EpisodeScatterPoint, EpisodeWithStation, MonthSummary } from './model';
 
 Chart.register(
   BarController,
@@ -33,6 +34,7 @@ Chart.register(
   LineController,
   LineElement,
   PointElement,
+  ScatterController,
   Tooltip,
 );
 
@@ -717,6 +719,283 @@ export function createEpisodesChart(host: HTMLElement, pollutant: () => Pollutan
         backgroundColor: episodes.map(ep => ep.duration_days > 100 ? '#ef4444' : ep.duration_days > 30 ? '#ea580c' : '#0284c7'),
         borderRadius: 4,
       }];
+      applyColors();
+      lifecycle.refresh();
+    },
+    destroy: () => {
+      lifecycle.destroy();
+      frame.remove();
+    },
+  };
+}
+
+export function createMonthlySeasonalityChart(host: HTMLElement, pollutant: () => PollutantName): {
+  update: (data: readonly MonthSummary[], mode: 'years' | 'distribution') => void;
+  destroy: () => void;
+} {
+  const frame = element('div', 'monthly-seasonality-plot analysis-plot');
+  const canvas = element('canvas');
+  canvas.setAttribute('role', 'img');
+  canvas.dataset['chart'] = 'monthly-seasonality';
+  frame.append(canvas);
+  host.append(frame);
+
+  const monthLabels = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+
+  const chart = new Chart<'line', (number | null)[], string>(canvas, {
+    type: 'line',
+    data: {
+      labels: monthLabels,
+      datasets: [],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      animation: matchMedia('(prefers-reduced-motion: reduce)').matches ? false : { duration: 500 },
+      interaction: { intersect: false, mode: 'index' },
+      plugins: {
+        legend: {
+          display: true,
+          position: 'top',
+          labels: {
+            boxWidth: 12,
+            font: { size: 11 },
+          },
+        },
+        tooltip: {
+          callbacks: {
+            title: items => `Bulan: ${items[0]?.label ?? ''}`,
+            label: item => {
+              if (item.raw === null || item.raw === undefined) return `${item.dataset.label ?? ''}: Tidak ada data`;
+              return `${item.dataset.label ?? ''}: ${number(Number(item.raw))} µg/m³`;
+            },
+          },
+        },
+      },
+      scales: {
+        x: {
+          grid: { display: false },
+          title: { display: true, text: 'Bulan Kalender' },
+        },
+        y: {
+          beginAtZero: true,
+          title: { display: true, text: 'Konsentrasi (µg/m³)' },
+        },
+      },
+    },
+  });
+
+  const applyColors = (): void => {
+    const theme = chartTheme();
+    if (chart.options.scales?.['x']?.ticks) chart.options.scales['x'].ticks.color = theme.text;
+    if (chart.options.scales?.['x']?.title) chart.options.scales['x'].title.color = theme.text;
+    if (chart.options.scales?.['y']?.ticks) chart.options.scales['y'].ticks.color = theme.text;
+    if (chart.options.scales?.['y']?.grid) chart.options.scales['y'].grid.color = theme.grid;
+    if (chart.options.scales?.['y']?.title) chart.options.scales['y'].title.color = theme.text;
+    if (chart.options.plugins?.legend?.labels) chart.options.plugins.legend.labels.color = theme.text;
+  };
+
+  const lifecycle = manageChart(chart, applyColors);
+
+  return {
+    update: (data, mode) => {
+      const pol = pollutant();
+      const reference = REFERENCES[pol];
+      canvas.setAttribute('aria-label', `Siklus musiman bulanan ${pol} Jan–Des`);
+
+      if (chart.options.scales?.['y']?.title) {
+        chart.options.scales['y'].title.text = `Konsentrasi ${pol} (µg/m³)`;
+      }
+
+      const refLine: ChartDataset<'line', (number | null)[]> = {
+        label: `Baku Mutu PP 22/2021 (${reference.daily} µg/m³)`,
+        data: monthLabels.map(() => reference.daily),
+        borderColor: '#ef4444',
+        borderDash: [5, 5],
+        borderWidth: 1.5,
+        pointRadius: 0,
+        fill: false,
+      };
+
+      if (mode === 'years') {
+        chart.data.datasets = [
+          {
+            label: '2024',
+            data: data.map(d => d.y2024),
+            borderColor: '#0284c7',
+            backgroundColor: '#0284c7',
+            borderWidth: 2,
+            pointRadius: 4,
+            tension: 0.15,
+            fill: false,
+          },
+          {
+            label: '2025',
+            data: data.map(d => d.y2025),
+            borderColor: '#ea580c',
+            backgroundColor: '#ea580c',
+            borderWidth: 2,
+            pointRadius: 4,
+            tension: 0.15,
+            fill: false,
+          },
+          {
+            label: '2026',
+            data: data.map(d => d.y2026),
+            borderColor: '#8b5cf6',
+            backgroundColor: '#8b5cf6',
+            borderWidth: 2,
+            pointRadius: 4,
+            tension: 0.15,
+            fill: false,
+          },
+          refLine,
+        ];
+      } else {
+        chart.data.datasets = [
+          {
+            label: 'Rentang Bawah (P25)',
+            data: data.map(d => d.combinedP25),
+            borderColor: 'transparent',
+            backgroundColor: 'transparent',
+            pointRadius: 0,
+            fill: false,
+          },
+          {
+            label: 'Rentang P25–P75',
+            data: data.map(d => d.combinedP75),
+            borderColor: 'transparent',
+            backgroundColor: 'rgba(13, 148, 136, 0.2)',
+            pointRadius: 0,
+            fill: '-1',
+          },
+          {
+            label: 'Median Gabungan',
+            data: data.map(d => d.combinedMedian),
+            borderColor: '#0d9488',
+            backgroundColor: '#0d9488',
+            borderWidth: 2.5,
+            pointRadius: 4.5,
+            tension: 0.15,
+            fill: false,
+          },
+          refLine,
+        ];
+      }
+
+      applyColors();
+      lifecycle.refresh();
+    },
+    destroy: () => {
+      lifecycle.destroy();
+      frame.remove();
+    },
+  };
+}
+
+export function createEpisodeSeverityScatterChart(host: HTMLElement, pollutant: () => PollutantName): {
+  update: (points: readonly EpisodeScatterPoint[]) => void;
+  destroy: () => void;
+} {
+  const frame = element('div', 'episode-severity-plot analysis-plot');
+  const canvas = element('canvas');
+  canvas.setAttribute('role', 'img');
+  canvas.dataset['chart'] = 'episode-severity';
+  frame.append(canvas);
+  host.append(frame);
+
+  let currentPoints: readonly EpisodeScatterPoint[] = [];
+
+  const chart = new Chart<'scatter', Array<{ x: number; y: number }>, string>(canvas, {
+    type: 'scatter',
+    data: {
+      datasets: [{
+        label: 'Episode Pelampauan',
+        data: [],
+        backgroundColor: [],
+        borderColor: [],
+        pointRadius: 5.5,
+        pointHoverRadius: 8,
+      }],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      animation: matchMedia('(prefers-reduced-motion: reduce)').matches ? false : { duration: 500 },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          displayColors: false,
+          callbacks: {
+            title: items => {
+              const idx = items[0]?.dataIndex ?? -1;
+              const pt = currentPoints[idx];
+              return pt ? `${pt.station} · ${pt.start} s.d. ${pt.end}` : '';
+            },
+            label: item => {
+              const idx = item.dataIndex;
+              const pt = currentPoints[idx];
+              if (!pt) return '';
+              return [
+                `Durasi: ${number(pt.x)} hari beruntun`,
+                `Konsentrasi Puncak: ${number(pt.y)} µg/m³`,
+                `Rerata Episode: ${number(pt.mean)} µg/m³`,
+              ];
+            },
+          },
+        },
+      },
+      scales: {
+        x: {
+          beginAtZero: false,
+          min: 1,
+          title: { display: true, text: 'Durasi Episode (Hari Beruntun)' },
+        },
+        y: {
+          beginAtZero: true,
+          title: { display: true, text: 'Konsentrasi Puncak (µg/m³)' },
+        },
+      },
+    },
+  });
+
+  const applyColors = (): void => {
+    const theme = chartTheme();
+    if (chart.options.scales?.['x']?.ticks) chart.options.scales['x'].ticks.color = theme.text;
+    if (chart.options.scales?.['x']?.grid) chart.options.scales['x'].grid.color = theme.grid;
+    if (chart.options.scales?.['x']?.title) chart.options.scales['x'].title.color = theme.text;
+    if (chart.options.scales?.['y']?.ticks) chart.options.scales['y'].ticks.color = theme.text;
+    if (chart.options.scales?.['y']?.grid) chart.options.scales['y'].grid.color = theme.grid;
+    if (chart.options.scales?.['y']?.title) chart.options.scales['y'].title.color = theme.text;
+  };
+
+  const lifecycle = manageChart(chart, applyColors);
+
+  return {
+    update: points => {
+      currentPoints = points;
+      const pol = pollutant();
+      const reference = REFERENCES[pol];
+      canvas.setAttribute('aria-label', `Matriks keparahan episode pelampauan ${pol}; durasi vs puncak konsentrasi.`);
+
+      if (chart.options.scales?.['y']?.title) {
+        chart.options.scales['y'].title.text = `Puncak ${pol} (µg/m³) · acuan ${reference.daily} µg/m³`;
+      }
+
+      const colors = points.map(pt =>
+        pt.x > 30 ? 'rgba(239, 68, 68, 0.75)' : pt.x > 10 ? 'rgba(234, 88, 12, 0.75)' : 'rgba(2, 132, 199, 0.75)'
+      );
+      const borderColors = points.map(pt =>
+        pt.x > 30 ? '#dc2626' : pt.x > 10 ? '#c2410c' : '#0369a1'
+      );
+
+      const ds = chart.data.datasets[0];
+      if (ds) {
+        ds.data = points.map(pt => ({ x: pt.x, y: pt.y }));
+        ds.backgroundColor = colors;
+        ds.borderColor = borderColors;
+      }
+
       applyColors();
       lifecycle.refresh();
     },

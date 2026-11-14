@@ -2,6 +2,268 @@
 
 Record completed changes chronologically with dates in WIB. Each entry states the scope, reason, validation, and remaining limitations. Planned work belongs in the design audit or feature plan, not among completed changes.
 
+## 14 November 2026 — Penerapan garis pembagi (*divider*) pada seluruh kontainer 2 grafik
+
+- **Penyelarasan Garis Pembagi Visual (`dashboard/styles.css`, `dashboard/src/features/temporal/view.ts`, `dashboard/src/features/drivers/view.ts`)**:
+  - Menstandarisasi garis pembagi (*divider border*) yang tampak jelas (*visible*) pada seluruh panel yang memiliki 2 grafik berdampingan di seluruh dashboard, konsisten dengan panel acuan *Profil Polusi & Tren Harian*:
+    1. **Tab 2**: *Perbandingan Konsentrasi Antarstasiun* (`.compliance-subpanel:first-child`).
+    2. **Tab 3**: *Episode Pelampauan & Keparahan Ekstrem* (`.episode-comparison-grid > :first-child`).
+    3. **Tab 4**: *Arah Angin & Dispersi Polutan* (`.wind-dynamics-grid > :first-child`).
+    4. **Tab 4**: *Lalu Lintas, Jarak Jalan & Konsentrasi* (`.traffic-scatter-grid > :first-child`).
+    5. **Tab 4**: *Karakteristik & Waktu Jam Ekstrem* (`.extreme-comparison-container > :first-child`).
+    6. **Tab 5**: *Hubungan Paparan & Respons Kasus* (`.health-split-grid > :first-child`).
+    7. **Tab 5**: *Episode Ekstrem & Stratifikasi Kelompok Rentan* (`.health-split-grid > :first-child`).
+  - Mengatur perilaku responsif:
+    - Mode Desktop ($\ge 1024\text{px}$ / $\ge 1001\text{px}$): Garis pembagi vertikal di sisi kanan kolom pertama (`border-right: 1px solid var(--border); padding-right: 24px; gap: 24px;`) yang memposisikan garis tepat di tengah ruang kosong 48px antar-grafik.
+    - Mode Mobile/Tablet ($\le 1023\text{px}$ / $\le 1000\text{px}$): Garis pembagi horizontal di dasar kolom pertama (`border-bottom: 1px solid var(--border); padding-bottom: 24px; gap: 24px;`).
+- **Validasi**:
+  - `bun x tsc --noEmit` lolos 100% tanpa error (`strict: true`).
+  - Unit test `tests/*.test.ts` (53/53 pengujian) lolos 100%.
+  - `bun run build` sukses membangun bundel produksi `app.js` (554,6 kB) dan `app.css` (68,8 kB).
+
+## 14 November 2026 — Pembaruan tooltip interaktif pada analisis faktor pemicu (Tab 4)
+
+- **Penyempurnaan Tooltip Scatter Lalu Lintas & Jarak Jalan (`dashboard/src/features/drivers/charts.ts`)**:
+  - Mengubah format tooltip dari teks teknis `x=... → y=...` menjadi kartu keterangan terstruktur:
+    - Judul: `[Kode Stasiun] · [Tipe Zonasi]` (atau `Garis Tren Regresi`)
+    - Baris 1: `Lalu lintas: X kend/jam` atau `Jarak ke jalan: X m`
+    - Baris 2: `Konsentrasi: Y µg/m³`
+- **Pengaktifan Hover Tunggal & Fokus pada Dispersi Angin (`dashboard/src/features/drivers/charts.ts`)**:
+  - Mengubah mode interaksi tooltip dari `mode: 'index'` (yang menampilkan seluruh tipe zonasi sekaligus sehingga sangat ramai) menjadi `mode: 'nearest', intersect: true` (hanya fokus pada 1 titik/garis zonasi yang disentuh kursor).
+  - Menampilkan ringkasan bersih 1 baris untuk zonasi terkait:
+    - Judul: `[Tipe Zonasi] · Angin [X] m/s`
+    - Baris: `Rasio: X× median` (pada mode rasio) atau `Konsentrasi: X µg/m³` (pada mode absolut).
+- **Validasi**:
+  - `bun x tsc --noEmit` lolos 100% tanpa error (`strict: true`).
+  - Unit test `tests/*.test.ts` (53/53 pengujian) lolos 100%.
+  - `bun run build` sukses membangun bundel produksi `app.js` (554,6 kB) dan `app.css` (67,6 kB).
+
+## 14 November 2026 — Restrukturisasi Tab 5: Pengelompokan 4 grafik ke 2 kontainer terpadu (50:50)
+
+- **Penyatuan Kontainer Analitis Tab 5 (`dashboard/src/features/health/view.ts`, `dashboard/styles.css`)**:
+  - Mengelompokkan 4 grafik analisis dampak kesehatan menjadi 2 kontainer panel terpadu dengan proporsi simetris 50:50:
+    1. **Kelompok 1 (`Hubungan Paparan & Respons Kasus`)**:
+       - *Kiri (50% — Line Chart)*: `Jeda Paparan & Kasus` (Korelasi Pearson eksploratif lag 0–7 hari).
+       - *Kanan (50% — Bar Chart)*: `Kasus Menurut Tingkat Paparan` (Distribusi 5 kuintil konsentrasi polutan).
+    2. **Kelompok 2 (`Episode Ekstrem & Stratifikasi Kelompok Rentan`)**:
+       - *Kiri (50% — Bar Chart)*: `Perubahan Admisi Balita & Lansia` (Diferensiasi kerentanan usia balita <5 th vs lansia >60 th pada 5 kelompok paparan P1–P5).
+       - *Kanan (50% — Line Chart)*: `Kasus di Sekitar Episode Paparan` (Event study pergerakan kasus hari −3…+7 di sekitar awal episode >P90).
+  - Menggunakan layout grid simetris `.health-split-grid` (`repeat(2, minmax(0, 1fr))`) yang otomatis responsif menjadi 1 kolom pada layar $\le 900\text{px}$.
+  - Memadatkan seluruh teks catatan kaki di bawah masing-masing grafik menjadi $\le 2$ baris.
+- **Validasi**:
+  - `bun x tsc --noEmit` lolos 100% tanpa error (`strict: true`).
+  - Unit test `tests/*.test.ts` (53/53 pengujian) lolos 100%.
+  - `bun run build` sukses membangun bundel produksi `app.js` (554,6 kB) dan `app.css` (67,6 kB).
+
+## 14 November 2026 — Penghapusan teks ringkasan scope di Tab 6 (Intervensi & Rekomendasi)
+
+- **Pembersihan Ringkasan Scope Redundan (`dashboard/src/features/recommendations/view.ts`)**:
+  - Menghapus elemen paragraf `scope` (`.policy-scope`) di bagian atas Tab 6 yang menampilkan teks redundan: `27 stasiun · 1 Jan 2024 – 14 Okt 2026 · PM2.5 · VALID · Minimal 18 jam per hari, dengan satuan terverifikasi.`.
+  - Informasi status filter dan cakupan data telah terpusat dan konsisten di bilah filter global (`filters panel`) serta catatan spesifik pada panel masing-masing.
+- **Validasi**:
+  - `bun x tsc --noEmit` lolos 100% tanpa error (`strict: true`).
+  - Unit test `tests/*.test.ts` (53/53 pengujian) lolos 100%.
+  - `bun run build` sukses membangun bundel produksi `app.js` (554,4 kB) dan `app.css` (67,1 kB).
+
+## 14 November 2026 — Pembaruan teks eyebrow brand PRANA di topbar
+
+- **Pembaruan Teks Eyebrow Brand (`dashboard/src/components/shell.ts`)**:
+  - Mengubah teks sub-judul (*eyebrow branding*) pada area header aplikasi (`topbar-title`) dari `PRANA: SISTEM PEMANTAUAN KUALITAS UDARA NASIONAL` menjadi `PRANA: Pollution, Respiratory & Atmospheric Network Analytics`.
+  - Tetap mempertahankan judul aplikasi wajib `DA2026_Dashboard_NasiBakarCumiHitamPakKris_AlfinJayadi` secara persis tanpa perubahan.
+- **Validasi**:
+  - `bun x tsc --noEmit` lolos 100% tanpa error (`strict: true`).
+  - Unit test `tests/*.test.ts` (67/67 pengujian di 9 suite test) lolos 100%.
+  - `bun run build` sukses membangun bundel produksi `app.js` (554,6 kB) dan `app.css` (67,1 kB).
+
+## 14 November 2026 — Pembaruan teks eyebrow brand PRANA di topbar
+
+- **Pembaruan Teks Eyebrow Brand (`dashboard/src/components/shell.ts`)**:
+  - Mengubah teks sub-judul (*eyebrow branding*) pada area header aplikasi (`topbar-title`) dari `PRANA: SISTEM PEMANTAUAN KUALITAS UDARA NASIONAL` menjadi `PRANA: Pollution, Respiratory & Atmospheric Network Analytics`.
+  - Tetap mempertahankan judul aplikasi wajib `DA2026_Dashboard_NasiBakarCumiHitamPakKris_AlfinJayadi` secara persis tanpa perubahan.
+- **Validasi**:
+  - `bun x tsc --noEmit` lolos 100% tanpa error (`strict: true`).
+  - Unit test `tests/*.test.ts` (67/67 pengujian di 9 suite test) lolos 100%.
+  - `bun run build` sukses membangun bundel produksi `app.js` (554,6 kB) dan `app.css` (67,1 kB).
+
+## 14 November 2026 — Penyesuaian urutan panel Tab 3: Heatmap sebelum Siklus Musiman Bulanan
+
+- **Penyelarasan Hierarki Waktu Tab 3 (`dashboard/src/features/temporal/view.ts`)**:
+  - Mengubah urutan tampilan panel sehingga *Polusi menurut Hari & Jam* (Heatmap 7 hari × 24 jam) tampil sebelum *Siklus Musiman Bulanan* (Jan–Des).
+  - Menghasilkan alur narasi waktu yang berjenjang dan logis (*progressive temporal zoom-out*):
+    1. Dinamika Harian & Deret Waktu (*Profil Diurnal 24 Jam & Tren Harian*)
+    2. Dinamika Mingguan (*Heatmap Hari Kerja vs Akhir Pekan*)
+    3. Dinamika Tahunan / Musiman (*Siklus Musiman Bulanan Jan–Des*)
+    4. Episode Pelampauan Berhari-hari (*Peringkat Durasi Top 10 & Matriks Keparahan*)
+- **Validasi**:
+  - `bun x tsc --noEmit` lolos 100% tanpa error (`strict: true`).
+  - Unit test `tests/*.test.ts` (67/67 pengujian di 9 suite test) lolos 100%.
+  - `bun run build` sukses membangun bundel produksi `app.js` (554,6 kB) dan `app.css` (67,1 kB).
+
+## 14 November 2026 — Penambahan visualisasi Siklus Musiman Bulanan dan Matriks Keparahan Episode (Tab 3)
+
+- **Siklus Musiman Bulanan Jan–Des (`dashboard/src/features/temporal/model.ts`, `dashboard/src/features/temporal/charts.ts`, `dashboard/src/features/temporal/view.ts`, `dashboard/styles.css`)**:
+  - Menambahkan panel visualisasi baru *Siklus Musiman Bulanan* (Jan–Des) untuk mengisi gap analitis musiman tahunan pada Tab 3 (Pola Waktu).
+  - Menyediakan 2 mode interaktif:
+    - `Komparasi Antar-Tahun`: garis tren bulanan membandingkan tahun 2024 (biru), 2025 (oranye), dan 2026 (ungu) terhadap acuan baku mutu harian PP 22/2021.
+    - `Rentang Gabungan (P25–P75)`: median bulanan gabungan seluruh stasiun pilihan dengan pita rentang interkuartil P25–P75.
+  - Memperlihatkan secara jelas lonjakan konsentrasi pada puncak musim kemarau/karhutla (Agustus–Oktober) dibandingkan musim hujan.
+- **Matriks Keparahan Episode Ekstrem (`dashboard/src/features/temporal/model.ts`, `dashboard/src/features/temporal/charts.ts`, `dashboard/src/features/temporal/view.ts`, `dashboard/styles.css`)**:
+  - Menambahkan scatter plot *Matriks Keparahan: Durasi vs Konsentrasi Puncak* berdampingan dengan *Peringkat Durasi Episode (Top 10)* dalam satu panel terpadu 50:50 (*Episode Pelampauan & Keparahan Ekstrem*).
+  - Memetakan setiap episode pelampauan terukur: sumbu X untuk durasi episode (hari beruntun), sumbu Y untuk konsentrasi puncak ($\mu\text{g}/\text{m}^3$), dengan pewarnaan berdasarkan ambang durasi (>30 hari merah, >10 hari oranye, ≤10 hari biru).
+  - Tooltip interaktif menampilkan kode stasiun, rentang tanggal kejadian, durasi hari, konsentrasi puncak, dan rata-rata konsentrasi episode.
+  - Melengkapi Tab 3 menjadi total 6 visualisasi analitis yang berimbang dengan tab lainnya.
+- **Validasi**:
+  - `bun x tsc --noEmit` lolos 100% tanpa error (`strict: true`).
+  - Unit test `tests/*.test.ts` (67/67 pengujian di 9 suite test, bertambah 2 test baru untuk model musiman dan scatter) lolos 100%.
+  - `bun run build` sukses membangun bundel produksi `app.js` (554,6 kB) dan `app.css` (67,1 kB).
+
+## 14 November 2026 — Pembatasan tampilan Durasi Episode Pelampauan menjadi Top 10 (Tab 3)
+
+- **Batasan Episode Pelampauan Top 10 (`dashboard/src/features/temporal/model.ts`, `dashboard/src/features/temporal/view.ts`)**:
+  - Mengubah batas maksimum tampilan peringkat episode ekstrem pada grafik *Durasi Episode Pelampauan* (Tab 3: Pola Waktu) dari 15 episode menjadi **Top 10** episode (`limit = 10`).
+  - Diterapkan secara seragam pada mode *Per stasiun* (`getLongestEpisodePerStation(data, 10)`) dan mode *Semua episode* (`getTopEpisodes(data, 10)`).
+  - Mengurangi tinggi vertikal canvas dari 490px menjadi 350px (`10 baris × 28px + 70px`), menjadikan grafik lebih ringkas, padat, dan mudah dipindai pengguna.
+  - Memperbarui teks catatan kaki panel menjadi ringkas maksimal 2 baris: `"Peringkat menampilkan maksimum 10 episode terpanjang dalam rentang pilihan. Bandingkan rata-rata 24 jam (PM2.5/PM10/SO2/NO2) atau maksimum 8 jam (CO/O3) terhadap acuan PP 22/2021. Hari hilang memutus episode."`
+- **Validasi**:
+  - `bun x tsc --noEmit` lolos 100% tanpa error (`strict: true`).
+  - Unit test `tests/*.test.ts` (65/65 pengujian di 9 suite test) lolos 100%.
+  - `bun run build` sukses membangun bundel produksi `app.js` (547,0 kB) dan `app.css` (66,7 kB).
+
+## 14 November 2026 — Pengecilan ukuran dan pemadatan komponen legenda seri
+
+- **Kompaktifikasi Legenda Seri (`dashboard/src/shared/series-legend.ts`, `dashboard/styles.css`)**:
+  - Menandai disclosure legenda seri dengan kelas `.series-legend-disclosure` dan mengecilkan tombol ringkasannya (*summary*) menjadi `font-size: 11px`, `padding: 3px 0`, serta `margin-top: 10px`.
+  - Mengecilkan ukuran tombol item seri pada `.analysis-chart-legend button`: tinggi tombol dipadatkan dari `40px` menjadi `28px`, ukuran font dari `12px` menjadi `11px`, padding menjadi `3px 8px`, dan swatch warna menjadi `7px × 7px`.
+  - Menyesuaikan tinggi kartu mawar polusi (`.rose-card`) pada kolom kiri menjadi `314px` agar tetap sejajar (*flush*) dengan batas bawah tombol ringkasan legenda seri yang telah dipadatkan.
+- **Validasi**:
+  - `bun x tsc --noEmit` lolos 100% tanpa error (`strict: true`).
+  - Unit test `tests/*.test.ts` (65/65 pengujian di 9 suite test) lolos 100%.
+  - `bun run build` sukses membangun bundel produksi `app.js` (547,2 kB) dan `app.css` (66,7 kB).
+
+## 14 November 2026 — Penyesuaian tinggi kartu arah angin setara legenda seri & penambahan spasi judul (Tab 4)
+
+- **Penyelarasan Kartu Mawar Polusi (`dashboard/styles.css`)**:
+  - Menyesuaikan tinggi kartu mawar polusi (`.rose-card`) dari `280px` menjadi `328px`, menyelaraskan batas bawah kartu secara presisi dengan tombol ringkasan disclosure *Legenda seri* di kolom kanan grafik kecepatan angin dispersi (`280px` plot + `16px` margin + `32px` summary).
+  - Menambah spasi vertikal (*margin-bottom*) antara nama stasiun/kartu (`.rose-title`) dan canvas chart mawar polusi dari `6px` menjadi `14px`, memberikan pemisah visual yang lega dan nyaman dibaca.
+  - Memberikan padding kartu yang lebih seimbang (`padding: 12px 10px 10px`).
+- **Validasi**:
+  - `bun x tsc --noEmit` lolos 100% tanpa error (`strict: true`).
+  - Unit test `tests/*.test.ts` (65/65 pengujian di 9 suite test) lolos 100%.
+  - `bun run build` sukses membangun bundel produksi `app.js` (547,1 kB) dan `app.css` (66,3 kB).
+
+## 14 November 2026 — Penggabungan chart angin ke dalam satu panel container tunggal (Tab 4)
+
+- **Unifikasi Panel Dinamika Angin (`dashboard/src/features/drivers/view.ts`, `dashboard/styles.css`)**:
+  - Menggabungkan *Arah Angin & Polusi* (Mawar Polusi) dan *Kecepatan Angin & Dispersi per Zonasi* ke dalam satu panel tunggal terpadu (`Arah Angin & Dispersi Polutan`) dengan satu header utama dan kontainer grid 2-kolom (`.wind-dynamics-grid`).
+  - Menghilangkan nesting dua kartu `.panel` terpisah yang sebelumnya memicu duplikasi border, header, dan background.
+  - Menyelaraskan struktur internal kedua kolom (`.wind-col`): judul sub-seksi (`h4`), toolbar kontrol (`min-height: 42px`), bodi chart (tinggi setara `280px`), dan catatan kaki ringkas yang otomatis terpasang rata di bagian bawah (`margin-top: auto`).
+- **Validasi**:
+  - `bun x tsc --noEmit` lolos 100% tanpa error (`strict: true`).
+  - Unit test `tests/*.test.ts` (65/65 pengujian di 9 suite test) lolos 100%.
+  - `bun run build` sukses membangun bundel produksi `app.js` (547,1 kB) dan `app.css` (66,3 kB).
+
+## 14 November 2026 — Pemadatan catatan kaki Tab 4 menjadi maksimal dua baris
+
+- **Penyederhanaan Catatan Kaki Panel Tab 4 (`dashboard/src/features/drivers/view.ts`)**:
+  - Memadatkan seluruh teks catatan kaki di bawah grafik pada Tab 4 (*Peringkat Faktor Pemicu*, *Arah Angin & Polusi*, *Angin & Konsentrasi Polutan*, *Lalu Lintas & Jarak Jalan*, dan *Jam Ekstrem*) agar ringkas, padat, dan pas dalam 2 baris teks tanpa mengurangi substansi metodologi atau interpretasi analitis.
+  - Khusus pada kontainer baris 50:50 panel angin, teks *Arah Angin & Polusi* dan *Angin & Konsentrasi Polutan* kini sangat ringkas dan simetris, mencegah pergeseran vertikal yang tidak serasi.
+- **Validasi**:
+  - `bun x tsc --noEmit` lolos 100% tanpa error (`strict: true`).
+  - Unit test `tests/*.test.ts` (65/65 pengujian di 9 suite test) lolos 100%.
+  - `bun run build` sukses membangun bundel produksi `app.js` (546,9 kB) dan `app.css` (66,3 kB).
+
+## 14 November 2026 — Pemadatan catatan kaki Tab 4 menjadi maksimal dua baris
+
+- **Penyederhanaan Catatan Kaki Panel Tab 4 (`dashboard/src/features/drivers/view.ts`)**:
+  - Memadatkan seluruh teks catatan kaki di bawah grafik pada Tab 4 (*Peringkat Faktor Pemicu*, *Arah Angin & Polusi*, *Angin & Konsentrasi Polutan*, *Lalu Lintas & Jarak Jalan*, dan *Jam Ekstrem*) agar ringkas, padat, dan pas dalam 2 baris teks tanpa mengurangi substansi metodologi atau interpretasi analitis.
+  - Khusus pada kontainer baris 50:50 panel angin, teks *Arah Angin & Polusi* dan *Angin & Konsentrasi Polutan* kini sangat ringkas dan simetris, mencegah pergeseran vertikal yang tidak serasi.
+- **Validasi**:
+  - `bun x tsc --noEmit` lolos 100% tanpa error (`strict: true`).
+  - Unit test `tests/*.test.ts` (65/65 pengujian di 9 suite test) lolos 100%.
+  - `bun run build` sukses membangun bundel produksi `app.js` (546,9 kB) dan `app.css` (66,3 kB).
+
+## 14 November 2026 — Penyetaraan tinggi kartu mawar polusi dan grafik garis angin dispersi (Tab 4)
+
+- **Penyelarasan Tinggi Kartu & Grafik Baris Angin (`dashboard/styles.css`, `dashboard/src/features/drivers/view.ts`)**:
+  - Menyamakan tinggi luar kartu sebaran arah angin (`.rose-card`) dengan grafik garis kecepatan angin zonasi (`.wind-bins-plot`) menjadi persis `280px`, selaras dengan tinggi grafik standar lainnya di Tab 4.
+  - Menerapkan `display: flex; flex-direction: column; height: 280px;` pada `.rose-card` dan `flex: 1; min-height: 0; height: auto;` pada `.rose-plot` agar kanvas diagram polar mengisi sisa ruang kartu secara fleksibel dan proporsional.
+  - Menyamakan `min-height: 42px;` pada toolbar mawar polusi (`.rose-toolbar`) dan margin bawah kontrol mode angin (`windModeGroup` diubah ke `mb-4`) agar titik awal (Y-coordinate) kedua chart sejajar sempurna.
+- **Validasi**:
+  - `bun x tsc --noEmit` lolos 100% tanpa error (`strict: true`).
+  - Unit test `tests/*.test.ts` (65/65 pengujian di 9 suite test) lolos 100%.
+  - `bun run build` sukses membangun bundel produksi `app.js` (547,5 kB) dan `app.css` (66,3 kB).
+
+## 14 November 2026 — Penghapusan subjudul jam observasi mawar polusi Tab 4
+
+- **Pembersihan Subjudul Kartu Mawar Polusi (`dashboard/src/features/drivers/charts.ts`, `dashboard/styles.css`)**:
+  - Menghapus teks subjudul panjang di bawah judul kode stasiun pada kartu mawar polusi (`<p class="rose-subtitle">... jam observasi angin ≥0,5 m/s</p>`).
+  - Nama stasiun lengkap tetap tersimpan secara semantik pada atribut `title` judul stasiun (`heading.title = stationName`) sehingga dapat dibaca saat kursor diarahkan (*hover tooltip*) tanpa mengotori ruang visual kartu.
+  - Menghilangkan aturan CSS `.rose-subtitle` dan merapikan margin judul kartu mawar polusi menjadi `margin-bottom: 6px` agar kanvas grafik mawar polusi langsung terpasang rapi, kompak, dan proporsional.
+- **Validasi**:
+  - `bun x tsc --noEmit` lolos 100% tanpa error (`strict: true`).
+  - Unit test `tests/*.test.ts` (65/65 pengujian di 9 suite test) lolos 100%.
+  - `bun run build` sukses membangun bundel produksi `app.js` (547,5 kB) dan `app.css` (66,1 kB).
+
+## 14 November 2026 — Penyederhanaan tampilan Arah Angin & Polusi menjadi 2 stasiun default (Tab 4)
+
+- **Default 2 Stasiun Mawar Polusi (`dashboard/src/features/drivers/view.ts`, `dashboard/styles.css`)**:
+  - Mengubah jumlah stasiun yang ditampilkan secara bawaan pada panel *Arah Angin & Polusi* dari 3 stasiun menjadi 2 stasiun (stasiun dengan rata-rata konsentrasi tertinggi).
+  - Menghapus kontrol dropdown stasiun ketiga (`select3`), menyisakan 2 dropdown pemilihan stasiun (`Stasiun 1` dan `Stasiun 2`) di dalam filter collapsible.
+  - Memperbarui subjudul panel menjadi `"Komparasi arah angin pada dua stasiun pilihan · angin ≥0,5 m/s"` dan catatan kaki menjadi `"menyamakan batas radius maksimum kedua grafik"`.
+  - Memperbarui grid CSS `.analysis-dashboard .rose-small-multiples` menjadi `grid-template-columns: repeat(2, minmax(0, 1fr))` dengan penyesuaian tinggi plot mawar polusi ke `230px`, menghasilkan tampilan diagram polar yang bulat proporsional dan pas berdampingan dengan panel *Angin & Konsentrasi Polutan* dalam kontainer baris 50:50.
+- **Validasi**:
+  - `bun x tsc --noEmit` lolos 100% tanpa error (`strict: true`).
+  - Unit test `tests/*.test.ts` (65/65 pengujian di 9 suite test) lolos 100%.
+  - `bun run build` sukses membangun bundel produksi `app.js` (547,7 kB) dan `app.css` (66,2 kB).
+
+## 14 November 2026 — Penyatuan panel angin Tab 4 dalam satu baris kontainer 50:50
+
+- **Penyatuan Baris Panel Angin (`dashboard/src/features/drivers/view.ts`, `dashboard/styles.css`)**:
+  - Menggabungkan panel **Arah Angin & Polusi** dan panel **Angin & Konsentrasi Polutan** ke dalam satu kontainer baris 50:50 (`.drivers-wind-pair` dengan `grid grid-cols-1 lg:grid-cols-2 gap-5`).
+  - Menghilangkan kesan panel yang terlalu lebar dan renggang, menciptakan ritme visual yang seimbang: kedua analisis terkait angin (*arah datangnya angin* dan *kecepatan dispersi zonasi*) kini bersanding berdampingan secara tematik.
+  - Menyelaraskan proporsi kartu mawar polusi (*small multiples*) dengan ukuran yang lebih proporsional (`grid-template-columns: repeat(auto-fit, minmax(min(100%, 170px), 1fr))`, tinggi plot 210px) dan kurva dispersi angin (tinggi 260px).
+  - Menggunakan tata letak `flex flex-col` dengan `margin-top: auto` pada catatan kaki agar tinggi kedua panel simetris dan rapi di desktop serta bertumpuk otomatis pada layar mobile/tablet.
+- **Validasi**:
+  - `bun x tsc --noEmit` lolos 100% tanpa error (`strict: true`).
+  - Unit test `tests/*.test.ts` (65/65 pengujian di 9 suite test) lolos 100%.
+  - `bun run build` sukses membangun bundel produksi `app.js` (547,9 kB) dan `app.css` (66,1 kB).
+
+## 14 November 2026 — Penggantian tabel meteorologi dengan grouped bar chart komparatif (Tab 4)
+
+- **Grouped Bar Chart Meteorologi Jam Ekstrem (`dashboard/src/features/drivers/charts.ts`, `dashboard/src/features/drivers/view.ts`, `dashboard/styles.css`)**:
+  - Mengganti tabel 5-kolom meteorologi yang kaku dan padat teks pada panel *Karakteristik & Waktu Jam Ekstrem* dengan grafik batang komparasi visual (*grouped bar chart*).
+  - Grafik batang membandingkan median parameter meteorologi utama antara **Jam Ekstrem (>P95)** (merah `#ef4444`) dan **Jam Normal (≤P95)** (biru `#0284c7`) untuk tiga parameter kunci: *Kecepatan Angin (m/s)*, *Suhu Udara (°C)*, dan *Kelembapan Relatif (%)*.
+  - Menghubungkan grafik secara reaktif ke selektor musim (`Musim Karhutla (Agu–Okt)`, `Luar Karhutla (Nov–Jul)`, dan `Semua Periode`) serta mode ambang P95 global/lokal.
+  - Tooltip interaktif menampilkan nilai terukur lengkap dengan satuan serta menghitung otomatis nilai selisih ($\Delta = \text{Ekstrem} - \text{Normal}$) untuk mempertegas fenomena fisik stagnasi angin dan lonjakan kelembapan.
+  - Menjadikan tata letak subpanel seimbang dan simetris secara visual (kedua grafik kiri dan kanan memiliki tinggi yang serasi 280px).
+- **Validasi**:
+  - `bun x tsc --noEmit` lolos 100% tanpa error (`strict: true`).
+  - Unit test `tests/*.test.ts` (65/65 pengujian di 9 suite test) lolos 100%.
+  - `bun run build` sukses membangun bundel produksi `app.js` (547,8 kB) dan `app.css` (65,8 kB).
+
+## 14 November 2026 — Filter stasiun mawar polusi dibuat collapsible & label kode stasiun disederhanakan
+
+- **Penyederhanaan & Collapsible Filter Mawar Polusi (`dashboard/src/features/drivers/view.ts`)**:
+  - Mengubah kontrol pemilihan 3 stasiun mawar polusi (*Arah Angin & Polusi*) menjadi elemen collapsible `<details class="data-disclosure">` dengan ringkasan (*summary*) yang menampilkan kode stasiun yang sedang terpilih (`Pilih stasiun: AQMS-...`).
+  - Sesuai kaidah desain repository pada `AGENTS.md`, filter terlipat secara bawaan (*collapsed by default*) dan tetap mempertahankan pilihan saat dibuka/ditutup.
+  - Menyederhanakan label pilihan pada ketiga dropdown (`select1`, `select2`, `select3`): hanya menampilkan kode stasiun murni (`opt.textContent = code`, contoh `AQMS-BJB-01`), menghilangkan teks nama panjang dan angka rata-rata yang sebelumnya membuat dropdown terlalu lebar.
+  - Mempertahankan tombol toggle *Skala Sama* di samping kanan baris toolbar mawar polusi.
+- **Validasi**:
+  - `bun x tsc --noEmit` lolos 100% tanpa error (`strict: true`).
+  - Unit test `tests/*.test.ts` (65/65 pengujian di 9 suite test) lolos 100%.
+  - `bun run build` sukses membangun bundel produksi `app.js` dan `app.css`.
+
+## 14 November 2026 — Catatan kaki Tab 4 (Faktor Pemicu) ditampilkan langsung tanpa details tersembunyi
+
+- **Penyelarasan Tampilan Catatan Kaki Tab 4 (`dashboard/src/features/drivers/view.ts`)**:
+  - Mengubah cara membaca pada seluruh panel Tab 4 (Peringkat Faktor Pemicu, Arah Angin & Polusi, Angin & Konsentrasi Polutan, Lalu Lintas & Jarak Jalan, Karakteristik & Waktu Jam Ekstrem) dari elemen disclosure terlipat (`analysisDetails` dengan `<details><summary>Cara membaca</summary>...`) menjadi teks catatan kaki langsung (`element('p', 'panel-footnote', ...)`), menyelaraskan pola desain dengan Tab 3 (Pola Waktu).
+  - Teks interpretasi dan penjelasan analitis kini langsung terlihat di bagian bawah tiap panel tanpa memerlukan klik pengguna.
+  - Menghapus impor `analysisDetails` yang sudah tidak digunakan di `dashboard/src/features/drivers/view.ts`.
+- **Validasi**:
+  - `bun x tsc --noEmit` lolos 100% tanpa error (`strict: true`).
+  - Unit test `tests/*.test.ts` (65/65 pengujian di 9 suite test) lolos 100%.
+  - `bun run build` sukses membangun bundel produksi `app.js` dan `app.css`.
+
 ## 13 November 2026 — Penyatuan filter admisi & KPI cards Tab 5 (Dampak Kesehatan)
 
 - **Penyatuan Kontainer Ringkasan Kesehatan (`dashboard/src/features/health/view.ts`, `dashboard/styles.css`)**:

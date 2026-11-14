@@ -15,7 +15,6 @@ import type { PolicyData } from './types';
 export function mountPolicyView(host: HTMLElement, data: PolicyData, initial: FilterState): { update: (filters: FilterState) => void; destroy: () => void } {
   const controller = new AbortController();
   const root = element('div', 'policy-dashboard');
-  const scope = element('p', 'policy-scope'); scope.setAttribute('role', 'status');
   const priorities = panel('Prioritas Tindakan', 'Usulan tindak lanjut berdasarkan kondisi pemantauan dan catatan layanan.');
   const actions = element('div', 'policy-actions'); priorities.body.append(actions);
   const response = panel('Matriks Respons Kesehatan', 'Sintesis pola historis PM2.5 dan kelompok usia · bukan ambang peringatan klinis');
@@ -46,7 +45,7 @@ export function mountPolicyView(host: HTMLElement, data: PolicyData, initial: Fi
   tableDisclosure.append(tableSummary, tableBody);
   network.body.append(networkLegend, coverageControl, mapHost, tableDisclosure,
     element('p', 'panel-footnote', 'Jarak antarstasiun bukan radius cakupan atau bukti populasi tidak terlayani. Penempatan baru memerlukan survei lokasi; tidak ada koordinat baru yang diasumsikan.'));
-  root.append(scope, response.root, simulator.root, rankPanel.root, network.root, priorities.root); host.replaceChildren(root);
+  root.append(response.root, simulator.root, rankPanel.root, network.root, priorities.root); host.replaceChildren(root);
   const simulation = mountSimulation(simulator.body);
   const responseMatrix = mountResponseMatrix(response.body);
   const ranking = mountNetworkRank(rankPanel.body, data.stations.map(station => station.code));
@@ -111,7 +110,6 @@ export function mountPolicyView(host: HTMLElement, data: PolicyData, initial: Fi
   function render(): void {
     summary = summarizePolicy(data, state);
     const start = summary.dates[0], end = summary.dates.at(-1);
-    scope.textContent = `${summary.rows.length} stasiun · ${start && end ? period(start, end) : 'Periode tidak tersedia'} · ${summary.exposureLabel} · Minimal 18 jam per hari, dengan satuan terverifikasi.`;
     simulatorScope.textContent = `${summary.rows.length} faskes · ${start && end ? period(start, end) : 'Periode tidak tersedia'} · Pernapasan umum · Kapasitas tercatat`;
     simulation.update(admissionBaseline(summary));
     responseMatrix.update(summary, state); ranking.update(summary);

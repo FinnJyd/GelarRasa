@@ -20,16 +20,16 @@ export function getDiurnalSeries(data: TemporalData, group: string, mode: 'all' 
   });
 }
 
-export function getTopEpisodes(data: TemporalData, limit = 15): readonly EpisodeWithStation[] {
+export function getTopEpisodes(data: TemporalData, limit = 10): readonly EpisodeWithStation[] {
   return Object.entries(data.episodes).flatMap(([station, episodes]) => episodes.map(episode => ({ station, ...episode })))
     .sort((a, b) => b.duration_days - a.duration_days).slice(0, limit);
 }
 
-export function getLongestEpisodePerStation(data: TemporalData): readonly EpisodeWithStation[] {
+export function getLongestEpisodePerStation(data: TemporalData, limit = 10): readonly EpisodeWithStation[] {
   return Object.entries(data.episodes).flatMap(([station, episodes]) => {
     const longest = [...episodes].sort((a, b) => b.duration_days - a.duration_days)[0];
     return longest ? [{ station, ...longest }] : [];
-  }).sort((a, b) => b.duration_days - a.duration_days);
+  }).sort((a, b) => b.duration_days - a.duration_days).slice(0, limit);
 }
 
 export interface DailyAggregatePoint {
@@ -80,5 +80,90 @@ export function computeDailyStationAggregate(
       stationCount: vals.length,
     };
   });
+}
+
+export interface MonthSummary {
+  readonly monthIndex: number;
+  readonly monthLabel: string;
+  readonly y2024: number | null;
+  readonly y2025: number | null;
+  readonly y2026: number | null;
+  readonly combinedMedian: number | null;
+  readonly combinedP25: number | null;
+  readonly combinedP75: number | null;
+}
+
+const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'] as const;
+
+export function getMonthlySeasonality(data: TemporalData): readonly MonthSummary[] {
+  const daily = computeDailyStationAggregate(data.timeseries.dates, data.timeseries.stations);
+  const buckets: { '2024': number[]; '2025': number[]; '2026': number[]; all: number[] }[] = Array.from(
+    { length: 12 },
+    () => ({ '2024': [], '2025': [], '2026': [], all: [] })
+  );
+
+  for (const pt of daily) {
+    if (pt.median === null) continue;
+    const year = pt.date.slice(0, 4);
+    const m = parseInt(pt.date.slice(5, 7), 10) - 1;
+    if (m >= 0 && m < 12) {
+      const b = buckets[m];
+      if (b) {
+        b.all.push(pt.median);
+        if (year === '2024') b['2024'].push(pt.median);
+        else if (year === '2025') b['2025'].push(pt.median);
+        else if (year === '2026') b['2026'].push(pt.median);
+      }
+    }
+  }
+
+  const medianOf = (arr: number[]): number | null => {
+    if (arr.length === 0) return null;
+    arr.sort((a, b) => a - b);
+    return Math.round(quantile(arr, 0.5) * 10) / 10;
+  };
+
+  return MONTH_NAMES.map((name, m) => {
+    const b = buckets[m]!;
+    b.all.sort((a, b) => a - b);
+    const combinedMedian = b.all.length ? Math.round(quantile(b.all, 0.5) * 10) / 10 : null;
+    const combinedP25 = b.all.length ? Math.round(quantile(b.all, 0.25) * 10) / 10 : null;
+    const combinedP75 = b.all.length ? Math.round(quantile(b.all, 0.75) * 10) / 10 : null;
+
+    return {
+      monthIndex: m,
+      monthLabel: name,
+      y2024: medianOf(b['2024']),
+      y2025: medianOf(b['2025']),
+      y2026: medianOf(b['2026']),
+      combinedMedian,
+      combinedP25,
+      combinedP75,
+    };
+  });
+}
+
+export interface EpisodeScatterPoint {
+  readonly x: number;
+  readonly y: number;
+  readonly station: string;
+  readonly start: string;
+  readonly end: string;
+  readonly mean: number;
+}
+
+export function getEpisodeScatterPoints(data: TemporalData): readonly EpisodeScatterPoint[] {
+  return Object.entries(data.episodes)
+    .flatMap(([station, episodes]) =>
+      episodes.map(ep => ({
+        x: ep.duration_days,
+        y: Math.round(ep.peak_concentration * 10) / 10,
+        station,
+        start: ep.start,
+        end: ep.end,
+        mean: Math.round(ep.mean_concentration * 10) / 10,
+      }))
+    )
+    .sort((a, b) => a.x - b.x);
 }
 

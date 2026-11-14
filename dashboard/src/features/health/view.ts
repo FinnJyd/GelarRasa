@@ -47,27 +47,72 @@ export function mountHealthView(host: HTMLElement, data: HealthData, catalog: re
   const outcomeHost = element('div');
   trends.body.append(exposureTitle, exposureHost, outcomeTitle, outcomeHost,
     element('p', 'panel-footnote', 'Konsentrasi: rata-rata stasiun tersedia per hari. Kasus: jumlah seluruh faskes pilihan; cakupan keduanya dapat berbeda.'));
-  const grid = element('div', 'health-analysis-grid');
-  const lagPanel = panel('Jeda Paparan & Kasus', 'Korelasi eksploratif · lag 0–7 hari');
+
+  // Kelompok 1: Hubungan Paparan & Respons Kasus (50:50 Baris Terpadu)
+  const doseLagPanel = panel('Hubungan Paparan & Respons Kasus', 'Korelasi jeda waktu (lag) dan variasi admisi menurut gradien konsentrasi polutan.');
+  const doseLagGrid = element('div', 'health-split-grid');
+
+  // Subkolom 1: Jeda Paparan & Kasus (Line Chart)
+  const lagCol = element('div', 'health-col');
+  const lagHeader = element('div', 'health-sub-header');
+  lagHeader.append(
+    element('h4', '', 'Jeda Paparan & Kasus'),
+    element('p', '', 'Korelasi Pearson eksploratif paparan t−k terhadap admisi hari t · lag 0–7 hari')
+  );
   const lagHost = element('div');
   const lagCaption = element('p', 'panel-footnote');
-  lagPanel.body.append(lagHost, lagCaption);
-  const responsePanel = panel('Kasus Menurut Tingkat Paparan', 'Perbandingan deskriptif · lima kuintil paparan');
+  lagCol.append(lagHeader, lagHost, lagCaption);
+
+  // Subkolom 2: Kasus Menurut Tingkat Paparan (Bar Chart)
+  const responseCol = element('div', 'health-col');
+  const responseHeader = element('div', 'health-sub-header');
+  const responseSubtitle = element('p', '', 'Kuintil pasangan paparan pada pilihan');
+  responseHeader.append(
+    element('h4', '', 'Kasus Menurut Tingkat Paparan'),
+    responseSubtitle
+  );
   const responseHost = element('div');
-  responsePanel.body.append(responseHost,
-    element('p', 'panel-footnote', 'Kuintil pasangan terpilih; rerata perubahan per faskes terhadap reratanya sendiri, bukan estimasi risiko.'));
-  grid.append(lagPanel.root, responsePanel.root);
-  const agePanel = panel('Perubahan Admisi Balita & Lansia', 'Admisi pernapasan · dibanding rata-rata periode masing-masing umur', 'health-age-comparison');
-  const ageScope = element('p', 'panel-footnote'); ageScope.id = 'health-age-scope'; ageScope.setAttribute('aria-live', 'polite');
+  const responseFootnote = element('p', 'panel-footnote', 'Kuintil pasangan terpilih; rerata perubahan per faskes terhadap reratanya sendiri, bukan estimasi risiko.');
+  responseCol.append(responseHeader, responseHost, responseFootnote);
+
+  doseLagGrid.append(lagCol, responseCol);
+  doseLagPanel.body.append(doseLagGrid);
+
+  // Kelompok 2: Episode Ekstrem & Kelompok Rentan (50:50 Baris Terpadu)
+  // Ditukar: Chart 1 = Perubahan Admisi Balita & Lansia (Bar), Chart 2 = Kasus di Sekitar Episode Paparan (Line)
+  const vulnerabilityPanel = panel('Episode Ekstrem & Stratifikasi Kelompok Rentan', 'Diferensiasi dampak pada balita vs lansia serta dinamika kasus di sekitar episode polusi puncak.');
+  const vulnerabilityGrid = element('div', 'health-split-grid');
+
+  // Subkolom 1: Perubahan Admisi Balita & Lansia (Bar Chart)
+  const ageCol = element('div', 'health-col');
+  const ageHeader = element('div', 'health-sub-header');
+  const ageScope = element('p', ''); ageScope.id = 'health-age-scope'; ageScope.setAttribute('aria-live', 'polite');
+  ageHeader.append(
+    element('h4', '', 'Perubahan Admisi Balita & Lansia'),
+    ageScope
+  );
   const ageHost = element('div');
-  agePanel.body.append(ageScope, ageHost, element('p', 'panel-footnote', 'P1 = paparan relatif terendah; P5 = tertinggi di tiap faskes. 0% = rata-rata periode; nilai negatif = lebih rendah. Deskriptif, belum disesuaikan cuaca/musim atau populasi; bukan kesimpulan kerentanan. Selalu memakai admisi pernapasan kedua umur, terpisah dari pemilih indikator kesehatan.'));
-  const eventPanel = panel('Kasus di Sekitar Episode Paparan', 'Perubahan terhadap baseline hari −3…−1 · awal episode di atas P90 historis 2024');
-  const eventHost = element('div'), eventCaption = element('p', 'panel-footnote'); eventPanel.body.append(eventHost, eventCaption);
-  const more = element('div', 'health-analysis-grid'); more.append(agePanel.root, eventPanel.root);
+  const ageFootnote = element('p', 'panel-footnote', 'P1–P5: paparan relatif per faskes (0% = rerata periode). Admisi pernapasan kedua umur; deskriptif tanpa penyesuaian cuaca/populasi.');
+  ageCol.append(ageHeader, ageHost, ageFootnote);
+
+  // Subkolom 2: Kasus di Sekitar Episode Paparan (Line Chart)
+  const eventCol = element('div', 'health-col');
+  const eventHeader = element('div', 'health-sub-header');
+  eventHeader.append(
+    element('h4', '', 'Kasus di Sekitar Episode Paparan'),
+    element('p', '', 'Perubahan terhadap baseline hari −3…−1 · awal episode di atas P90 historis 2024')
+  );
+  const eventHost = element('div');
+  const eventCaption = element('p', 'panel-footnote');
+  eventCol.append(eventHeader, eventHost, eventCaption);
+
+  vulnerabilityGrid.append(ageCol, eventCol);
+  vulnerabilityPanel.body.append(vulnerabilityGrid);
+
   const strainPanel = panel('Tekanan Admisi Pernapasan dan CVD', 'Jumlah catatan admisi per 100 tempat tidur tercatat · bukan keterisian');
   const strainHost = element('div'), strainCaption = element('p', 'panel-footnote'); strainPanel.body.append(strainHost, strainCaption);
   const warning = element('p', 'health-quality');
-  root.append(summaryPanel, warning, trends.root, grid, more, strainPanel.root);
+  root.append(summaryPanel, warning, trends.root, doseLagPanel.root, vulnerabilityPanel.root, strainPanel.root);
   host.replaceChildren(root);
   const exposureChart = healthPlot(exposureHost, 'health-exposure', 'line', 'µg/m³');
   const admissionsChart = healthPlot(outcomeHost, 'health-admissions', 'line', 'Kasus / hari');
@@ -109,7 +154,7 @@ export function mountHealthView(host: HTMLElement, data: HealthData, catalog: re
     const peak = availableLags.reduce<typeof availableLags[number] | null>((best, item) => best === null || (item.correlation ?? -2) > (best.correlation ?? -2) ? item : best, null);
     const ageResult = compareAgeGroups(data, catalog, filters);
     ageChart.update(ageResult);
-    ageScope.textContent = `${pollutant} · ${ageResult.facilities}/${ageResult.selectedFacilities} faskes memenuhi syarat · baseline ${number(ageResult.baselineDays)} faskes-hari pada seluruh periode pilihan. Baseline balita: ${display(ageResult.baselineUnder5)}; lansia: ${display(ageResult.baselineOver60)} admisi/faskes/hari.`;
+    ageScope.textContent = `${pollutant} · ${ageResult.facilities}/${ageResult.selectedFacilities} faskes · baseline balita ${display(ageResult.baselineUnder5)}, lansia ${display(ageResult.baselineOver60)} admisi/faskes/hari.`;
     const eventValues = result.episodes.changes.filter((value): value is number => value !== null);
     const eventLow = eventValues.length ? Math.min(0, ...eventValues) : 0;
     const eventHigh = eventValues.length ? Math.max(0, ...eventValues) : 1;
@@ -120,8 +165,8 @@ export function mountHealthView(host: HTMLElement, data: HealthData, catalog: re
     eventCaption.textContent = `${number(result.episodes.events)} episode dari ${number(result.episodes.hospitals)} faskes · rerata perubahan terhadap baseline hari −3…−1 · deskriptif, bukan kausal.`;
     strainChart.update(dailyLabels, result.strain, 'Catatan pernapasan + CVD /100 tempat tidur/hari', result.dates.map(date));
     strainCaption.textContent = `Puncak ${display(result.strainPeak)} catatan/100 tempat tidur/hari. Jumlah pernapasan + CVD belum dideduplikasi antar-diagnosis; bukan jumlah pasien unik, BOR, atau kebutuhan tempat tidur.`;
-    lagCaption.textContent = `${peak ? `Korelasi tertinggi pada jeda ${peak.lag} hari (r=${number(peak.correlation ?? 0)}). ` : ''}Paparan pada t−k dibandingkan dengan kasus pada t. Rata-rata Pearson per faskes dengan ≥30 pasangan. Belum disesuaikan terhadap cuaca atau musim; bukan efek kausal.`;
-    responsePanel.root.querySelector('.panel-header p')?.replaceChildren(document.createTextNode(`${pollutant} (µg/m³) · kuintil pasangan paparan pada pilihan`));
+    lagCaption.textContent = `${peak ? `Korelasi tertinggi pada jeda ${peak.lag} hari (r=${number(peak.correlation ?? 0)}). ` : ''}Rata-rata Pearson per faskes (≥30 pasangan). Eksploratif tanpa penyesuaian cuaca/musim; bukan kausal.`;
+    responseSubtitle.textContent = `${pollutant} (µg/m³) · kuintil pasangan paparan pada pilihan`;
   }
   update(initial);
   return { update, destroy: () => {

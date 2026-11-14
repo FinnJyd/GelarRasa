@@ -1,11 +1,11 @@
 import { element, emptyState } from '../../shared/dom';
-import { analysisDetails, choiceButton, choiceGroup, setSelected } from '../../shared/analysis-controls';
+import { choiceButton, choiceGroup, setSelected } from '../../shared/analysis-controls';
 import { metric, panel } from '../../shared/panel';
 import { number, period } from '../../shared/format';
 import {
   createCorrelationHeatmap,
   createDriverRankingsChart,
-  createExtremeConditionView,
+  createExtremeComparisonBarChart,
   createExtremeDiurnalChart,
   createPollutionRose,
   createTrafficDualScatter,
@@ -61,43 +61,72 @@ export function mountDriversView(
   rankingPanel.body.append(
     rankingHost,
     corrDetails,
-    analysisDetails(element('p', 'panel-footnote', 'Varians dijelaskan dihitung dari rata-rata harian (≥18 jam valid per hari) untuk stasiun, tipe lokasi, musim karhutla, dan cuaca (R² linear). Faktor jam hari (η²) dihitung dari siklus diurnal 00–23 WIB. Matriks Spearman dihitung gabungan dari pasangan jam valid.')),
+    element('p', 'panel-footnote', 'Varians dijelaskan (η² kategorik dan R² linear cuaca) dihitung dari rata-rata harian valid (≥18 jam/hari). Faktor jam hari memakai siklus diurnal 00–23 WIB.'),
   );
 
-  // --- 3. Pollution Rose Panel ---
-  const rosePanel = panel('Arah Angin & Polusi', 'Komparasi arah angin pada tiga stasiun pilihan · angin ≥0,5 m/s');
-  const roseControls = element('div', 'rose-controls-row flex flex-wrap items-center gap-3 mb-4');
+  // --- 3. Combined Wind Dynamics & Dispersion Panel ---
+  const windDynamicsPanel = panel(
+    'Arah Angin & Dispersi Polutan',
+    'Komparasi arah angin mawar polusi dan dispersi polutan menurut kecepatan angin per tipe zonasi',
+  );
+
+  const windGrid = element('div', 'wind-dynamics-grid grid grid-cols-1 lg:grid-cols-2 gap-6');
+
+  // Left column: Arah Angin & Polusi
+  const roseCol = element('div', 'wind-col flex flex-col');
+  const roseHeader = element('h4', 'text-sm font-semibold mb-2', 'Arah Angin & Polusi');
+  const roseToolbar = element('div', 'rose-toolbar flex flex-wrap items-center justify-between gap-3 mb-3');
+
+  const roseDetails = element('details', 'data-disclosure rose-filter-disclosure');
+  const roseSummary = element('summary', 'cursor-pointer text-xs font-semibold text-accent');
+  const roseSummaryLabel = element('span', '', 'Pilih stasiun: ');
+  const roseSummaryCodes = element('strong', 'font-semibold text-text', '');
+  roseSummary.append(roseSummaryLabel, roseSummaryCodes);
+
+  const roseFilterBody = element('div', 'rose-filter-body flex flex-wrap items-center gap-3 pt-2');
   const select1 = element('select', 'rose-station-select filter-select');
   select1.setAttribute('aria-label', 'Pilih Stasiun 1');
   const select2 = element('select', 'rose-station-select filter-select');
   select2.setAttribute('aria-label', 'Pilih Stasiun 2');
-  const select3 = element('select', 'rose-station-select filter-select');
-  select3.setAttribute('aria-label', 'Pilih Stasiun 3');
+
+  const field1 = element('label', 'flex items-center gap-1.5 text-xs text-muted');
+  field1.append('Stasiun 1:', select1);
+  const field2 = element('label', 'flex items-center gap-1.5 text-xs text-muted');
+  field2.append('Stasiun 2:', select2);
+
+  roseFilterBody.append(field1, field2);
+  roseDetails.append(roseSummary, roseFilterBody);
+
   const roseScaleBtn = choiceButton('Skala Sama', false);
-  roseControls.append(
-    element('span', 'text-xs text-muted font-medium', 'Stasiun:'),
-    select1, select2, select3,
-    roseScaleBtn,
-  );
+  roseToolbar.append(roseDetails, roseScaleBtn);
+
   const roseHost = element('div', 'rose-small-multiples');
-  rosePanel.body.append(
-    roseControls,
+  roseCol.append(
+    roseHeader,
+    roseToolbar,
     roseHost,
-    analysisDetails(element('p', 'panel-footnote', 'Setiap sektor adalah rata-rata konsentrasi per arah datangnya angin. Sektor dengan kurang dari 5 jam pengamatan disembunyikan. Jam tenang (<0,5 m/s) tidak dihitung pada diagram polar. Aktifkan "Skala Sama" untuk menyamakan batas radius maksimum ketiga grafik.')),
+    element('p', 'panel-footnote', 'Rerata konsentrasi polutan per arah datangnya angin (kecepatan ≥0,5 m/s, min. 5 jam per sektor). Aktifkan "Skala Sama" untuk menyelaraskan batas radius kedua grafik.'),
   );
 
-  // --- 4. Wind Bins by Site Type Panel ---
-  const windPanel = panel('Angin & Konsentrasi Polutan', 'Dispersi polutan menurut kecepatan angin per tipe zonasi lokasi');
+  // Right column: Kecepatan Angin & Dispersi per Zonasi
+  const windCol = element('div', 'wind-col flex flex-col');
+  const windHeader = element('h4', 'text-sm font-semibold mb-2', 'Kecepatan Angin & Dispersi per Zonasi');
+  const windToolbar = element('div', 'wind-toolbar flex items-center gap-3 mb-3');
   const windNormBtn = choiceButton('Ternormalisasi (Rasio)', true);
   const windAbsBtn = choiceButton('Konsentrasi Absolut', false);
   const windModeGroup = choiceGroup('Skala angin', [windNormBtn, windAbsBtn]);
-  windModeGroup.classList.add('mb-3');
+  windToolbar.append(windModeGroup);
+
   const windHost = element('div');
-  windPanel.body.append(
-    windModeGroup,
+  windCol.append(
+    windHeader,
+    windToolbar,
     windHost,
-    analysisDetails(element('p', 'panel-footnote', 'Garis menunjukkan kecenderungan dispersi per zonasi. Mode ternormalisasi membagi konsentrasi tiap kelompok kecepatan angin terhadap median tipe lokasi tersebut (1,0 = median normal), memungkinkan perbandingan laju penurunan konsentrasi lintas baseline yang berbeda.')),
+    element('p', 'panel-footnote', 'Tren dispersi polutan per kecepatan angin menurut zonasi lokasi. Mode rasio menormalisasi konsentrasi terhadap median zonasi untuk membandingkan laju penurunan lintas baseline.'),
   );
+
+  windGrid.append(roseCol, windCol);
+  windDynamicsPanel.body.append(windGrid);
 
   // --- 5. Traffic & Road Distance Panel ---
   const trafficPanel = panel('Lalu Lintas, Jarak Jalan & Konsentrasi', 'Sensitivitas konsentrasi gas primer terhadap volume kendaraan dan jarak ke tepi jalan');
@@ -114,7 +143,7 @@ export function mountDriversView(
   trafficPanel.body.append(
     trafficToolbar,
     trafficHost,
-    analysisDetails(element('p', 'panel-footnote', 'Grafik kiri menunjukkan korelasi volume kendaraan per jam terhadap konsentrasi. Grafik kanan menunjukkan efek pengenceran berdasarkan jarak stasiun ke jalan raya terdekat. Gas NO2 dan CO mencerminkan emisi langsung kendaraan lebih bersih dibanding PM2.5 yang dipengaruhi asap karhutla regional.')),
+    element('p', 'panel-footnote', 'Korelasi volume kendaraan per jam dan efek pengenceran jarak tepi jalan ke stasiun. Emisi NO2 dan CO mencerminkan emisi langsung lalu lintas lebih bersih dibanding PM2.5.'),
   );
 
   // --- 6. Extreme Conditions & Diurnal Panel ---
@@ -125,11 +154,11 @@ export function mountDriversView(
   const extremeSeasonGroup = choiceGroup('Musim kondisi ekstrem', [extremeSeasonHaze, extremeSeasonNonhaze, extremeSeasonAll]);
   extremeSeasonGroup.classList.add('mb-3');
 
-  const extremeGrid = element('div', 'extreme-comparison-container grid grid-cols-1 lg:grid-cols-2 gap-5');
-  const extremeLeftBox = element('div', 'extreme-table-box');
-  const extremeLeftTitle = element('h4', 'text-sm font-semibold mb-2', 'Kondisi Meteorologi: Jam Ekstrem vs Jam Normal');
-  const extremeTableHost = element('div', 'extreme-table-container');
-  extremeLeftBox.append(extremeLeftTitle, extremeTableHost);
+  const extremeGrid = element('div', 'extreme-comparison-container grid grid-cols-1 lg:grid-cols-2 gap-6');
+  const extremeLeftBox = element('div', 'extreme-bar-box');
+  const extremeLeftTitle = element('h4', 'text-sm font-semibold mb-2', 'Parameter Meteorologi: Jam Ekstrem vs Jam Normal');
+  const extremeBarHost = element('div', 'extreme-bar-container');
+  extremeLeftBox.append(extremeLeftTitle, extremeBarHost);
 
   const extremeRightBox = element('div', 'extreme-hour-box');
   const extremeRightTitle = element('h4', 'text-sm font-semibold mb-2', 'Probabilitas Terjadinya Jam Ekstrem per Jam Hari (WIB)');
@@ -140,10 +169,10 @@ export function mountDriversView(
   extremePanel.body.append(
     extremeSeasonGroup,
     extremeGrid,
-    analysisDetails(element('p', 'panel-footnote', 'Ambang ekstrem P95 dapat dialihkan antara gabungan seluruh stasiun atau per stasiun melalui tombol di ringkasan atas. Tabel menunjukkan perubahan median kecepatan angin, kelembapan, suhu, dan jam kejadian. Grafik garis menunjukkan probabilitas jam ekstrem P(Ekstrem|Jam) per jam 00–23 WIB.')),
+    element('p', 'panel-footnote', 'Perbandingan median meteorologi saat jam ekstrem (>P95) vs normal (≤P95) serta kurva probabilitas terjadinya jam ekstrem menurut siklus 24 jam (00–23 WIB).'),
   );
 
-  root.append(summary.root, empty, rankingPanel.root, rosePanel.root, windPanel.root, trafficPanel.root, extremePanel.root);
+  root.append(summary.root, empty, rankingPanel.root, windDynamicsPanel.root, trafficPanel.root, extremePanel.root);
   host.replaceChildren(root);
 
   // Initialize Charts
@@ -151,7 +180,7 @@ export function mountDriversView(
   const correlation = createCorrelationHeatmap(corrHost);
   const windChart = createWindBinsChart(windHost, () => data.meta.pollutant);
   const trafficChart = createTrafficDualScatter(trafficHost);
-  const extremeConditionView = createExtremeConditionView(extremeTableHost);
+  const extremeComparisonChart = createExtremeComparisonBarChart(extremeBarHost);
   const extremeDiurnalChart = createExtremeDiurnalChart(extremeDiurnalHost);
 
   let roses: Array<{ code: string; chart: ReturnType<typeof createPollutionRose> }> = [];
@@ -167,7 +196,7 @@ export function mountDriversView(
 
   const updateExtremeView = (): void => {
     const stats = data.extreme_modes[thresholdMode];
-    extremeConditionView.update(stats.conditions, extremeSeasonMode);
+    extremeComparisonChart.update(stats.conditions, extremeSeasonMode);
     extremeDiurnalChart.update(stats.diurnal);
   };
 
@@ -218,16 +247,16 @@ export function mountDriversView(
       return;
     }
 
-    // Default to 3 highest mean stations if user hasn't explicitly customized or invalid
+    // Default to 2 highest mean stations if user hasn't explicitly customized or invalid
     const sortedByMean = [...codes].sort((a, b) => {
       const mA = data.pollution_rose_meta[a]?.meanConcentration ?? 0;
       const mB = data.pollution_rose_meta[b]?.meanConcentration ?? 0;
       return mB - mA;
     });
 
-    if (userSelectedStations.length !== 3 || !userSelectedStations.every(c => codes.includes(c))) {
-      userSelectedStations = sortedByMean.slice(0, 3);
-      while (userSelectedStations.length < 3 && sortedByMean[0]) {
+    if (userSelectedStations.length !== 2 || !userSelectedStations.every(c => codes.includes(c))) {
+      userSelectedStations = sortedByMean.slice(0, 2);
+      while (userSelectedStations.length < 2 && sortedByMean[0]) {
         userSelectedStations.push(sortedByMean[0]);
       }
     }
@@ -238,20 +267,16 @@ export function mountDriversView(
       for (const code of sortedByMean) {
         const opt = document.createElement('option');
         opt.value = code;
-        const info = data.pollution_rose_meta[code];
-        const meanText = info?.meanConcentration !== null && info?.meanConcentration !== undefined
-          ? ` (${info.meanConcentration.toFixed(1)} µg/m³)`
-          : '';
-        opt.textContent = `${code} - ${info?.name ?? ''}${meanText}`;
+        opt.textContent = code;
         if (code === selectedVal) opt.selected = true;
         sel.append(opt);
       }
     };
     updateSelect(select1, userSelectedStations[0] ?? '');
     updateSelect(select2, userSelectedStations[1] ?? '');
-    updateSelect(select3, userSelectedStations[2] ?? '');
+    roseSummaryCodes.textContent = userSelectedStations.filter(Boolean).join(', ');
 
-    // Max scale across the 3 selected stations
+    // Max scale across the 2 selected stations
     let maxScale: number | null = null;
     if (roseUniformScale) {
       let maxVal = 0;
@@ -313,11 +338,11 @@ export function mountDriversView(
 
   const onSelectRose = (idx: number, sel: HTMLSelectElement) => {
     userSelectedStations[idx] = sel.value;
+    roseSummaryCodes.textContent = userSelectedStations.filter(Boolean).join(', ');
     updateRoses();
   };
   select1.addEventListener('change', () => onSelectRose(0, select1), { signal: controller.signal });
   select2.addEventListener('change', () => onSelectRose(1, select2), { signal: controller.signal });
-  select3.addEventListener('change', () => onSelectRose(2, select3), { signal: controller.signal });
 
   roseScaleBtn.addEventListener('click', () => {
     roseUniformScale = !roseUniformScale;
@@ -382,7 +407,7 @@ export function mountDriversView(
     data = next;
     const available = data.extreme_modes.global.threshold !== null;
     empty.hidden = available;
-    for (const p of [rankingPanel.root, rosePanel.root, windPanel.root, trafficPanel.root, extremePanel.root]) {
+    for (const p of [rankingPanel.root, windDynamicsPanel.root, trafficPanel.root, extremePanel.root]) {
       p.hidden = !available;
     }
 
@@ -408,7 +433,7 @@ export function mountDriversView(
       correlation.destroy();
       windChart.destroy();
       trafficChart.destroy();
-      extremeConditionView.destroy();
+      extremeComparisonChart.destroy();
       extremeDiurnalChart.destroy();
       root.remove();
     },

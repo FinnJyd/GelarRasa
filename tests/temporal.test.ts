@@ -5,7 +5,12 @@ import { hourlyFixture } from './hourly-fixture';
 import { aggregateTemporal } from '../dashboard/src/features/temporal/aggregate';
 import { parseCompliance } from '../dashboard/src/features/compliance/load';
 import { HOURLY_POLLUTANTS } from '../dashboard/src/data/hourly';
-import { computeDailyStationAggregate, episodeIndicators } from '../dashboard/src/features/temporal/model';
+import {
+  computeDailyStationAggregate,
+  episodeIndicators,
+  getEpisodeScatterPoints,
+  getMonthlySeasonality,
+} from '../dashboard/src/features/temporal/model';
 
 const raw:unknown=JSON.parse(readFileSync(new URL('../dashboard/data/compliance_daily.json',import.meta.url),'utf8'));
 const compliance=parseCompliance(raw);
@@ -119,4 +124,30 @@ test('computeDailyStationAggregate calculates accurate quantiles and handles mis
   assert.equal(partial[0]?.p75, 15);
   assert.equal(partial[0]?.mean, 15);
 });
+
+test('getMonthlySeasonality computes 12 months with correct year breakdowns and combined quantiles', () => {
+  const source = hourlyFixture('AQMS-JKT-01', 'PM2.5', 'v', 0, 1018);
+  const data = aggregateTemporal(source);
+  const monthly = getMonthlySeasonality(data);
+  assert.equal(monthly.length, 12);
+  assert.equal(monthly[0]?.monthLabel, 'Jan');
+  assert.equal(monthly[11]?.monthLabel, 'Des');
+  // Check that available months have numeric values
+  const hasValues = monthly.some(m => m.combinedMedian !== null && m.combinedMedian > 0);
+  assert.ok(hasValues);
+});
+
+test('getEpisodeScatterPoints extracts duration and peak concentrations for all episodes', () => {
+  const source = hourlyFixture('AQMS-JKT-02', 'PM2.5', 'v', 0, 1018);
+  const data = aggregateTemporal(source);
+  const points = getEpisodeScatterPoints(data);
+  assert.ok(Array.isArray(points));
+  for (const pt of points) {
+    assert.ok(pt.x >= 1);
+    assert.ok(pt.y >= 0);
+    assert.ok(pt.station.length > 0);
+    assert.ok(pt.start.length > 0);
+  }
+});
+
 

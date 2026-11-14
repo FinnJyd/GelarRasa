@@ -92,7 +92,7 @@ export function createShell(features: readonly Feature[], onNavigate: (feature: 
   const ticker = createFactTicker();
   tickerHost.append(ticker.root);
   const titleArea = element('div', 'topbar-title');
-  titleArea.append(element('p', 'eyebrow', 'PRANA: SISTEM PEMANTAUAN KUALITAS UDARA NASIONAL'), element('h1', 'application-title', APPLICATION_TITLE));
+  titleArea.append(element('p', 'eyebrow', 'PRANA: Pollution, Respiratory & Atmospheric Network Analytics'), element('h1', 'application-title', APPLICATION_TITLE));
   const actions = element('div', 'topbar-actions');
   const theme = createThemeControl();
   const methodology = button('', 'button methodology-button');

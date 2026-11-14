@@ -9,6 +9,7 @@ export function seriesLegend(host: HTMLElement, toggle: (index: number) => boole
   const controller = new AbortController();
   const list = element('div', 'analysis-legend analysis-chart-legend');
   const disclosure = analysisDetails(list, 'Legenda seri');
+  disclosure.classList.add('series-legend-disclosure');
   host.append(disclosure);
   list.addEventListener('click', event => {
     const target = event.target instanceof Element ? event.target.closest('button[data-series]') : null;

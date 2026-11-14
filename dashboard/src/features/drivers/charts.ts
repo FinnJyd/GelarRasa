@@ -69,14 +69,13 @@ export function createPollutionRose(host: HTMLElement, stationCode: string, poll
 } {
   const card = element('div', 'rose-card');
   const heading = element('h4', 'rose-title', stationCode);
-  const subtitle = element('p', 'rose-subtitle text-xs text-muted', '');
   const frame = element('div', 'rose-plot analysis-plot');
   const canvas = element('canvas');
   canvas.setAttribute('role', 'img');
   canvas.dataset['chart'] = 'pollution-rose';
 
   frame.append(canvas);
-  card.append(heading, subtitle, frame);
+  card.append(heading, frame);
   host.append(card);
 
   let currentSectors: readonly DirectionSector[] = [];
@@ -149,13 +148,11 @@ export function createPollutionRose(host: HTMLElement, stationCode: string, poll
   };
 
   return {
-    update: (sectors, stationName, nHours, scaleMax) => {
+    update: (sectors, stationName, _nHours, scaleMax) => {
       canvas.setAttribute('aria-label', `Mawar polusi ${pollutant()} · ${stationCode}`);
       currentSectors = sectors;
-      if (stationName || nHours !== undefined) {
-        subtitle.textContent = stationName
-          ? (nHours !== undefined ? `${stationName} · ${number(nHours)} jam observasi angin ≥0,5 m/s` : stationName)
-          : (nHours !== undefined ? `${number(nHours)} jam observasi angin ≥0,5 m/s` : '');
+      if (stationName) {
+        heading.title = stationName;
       }
       const sectorMap = new Map<string, DirectionSector>();
       sectors.forEach(s => sectorMap.set(s.direction_label, s));
@@ -381,7 +378,6 @@ export function createWindBinsChart(host: HTMLElement, pollutant: () => Pollutan
 
   const binLabels = ['0–0.5', '0.5–1', '1–2', '2–3', '3–5', '5+'];
   let currentNormalized = true;
-  let currentData: Record<string, WindSiteTypeData> = {};
 
   const chart = new Chart<'line', (number | null)[], string>(canvas, {
     type: 'line',
@@ -390,20 +386,22 @@ export function createWindBinsChart(host: HTMLElement, pollutant: () => Pollutan
       responsive: true,
       maintainAspectRatio: false,
       animation: matchMedia('(prefers-reduced-motion: reduce)').matches ? false : { duration: 600 },
-      interaction: { intersect: false, mode: 'index' },
+      interaction: { mode: 'nearest', intersect: true },
       plugins: {
         legend: { display: false },
         tooltip: {
+          displayColors: false,
           callbacks: {
-            title: items => `Kecepatan Angin: ${items[0]?.label ?? ''} m/s`,
+            title: items => {
+              const item = items[0];
+              const st = item?.dataset.label ?? '';
+              const speed = item?.label ?? '';
+              return `${st} · Angin ${speed} m/s`;
+            },
             label: item => {
-              const st = item.dataset.label ?? '';
-              const stData = currentData[st];
-              const bin = stData?.bins.find(b => b.label === item.label);
-              if (!bin || bin.median_concentration === null) return `${st}: Tidak cukup jam pengamatan`;
-              const conc = `${number(bin.median_concentration)} µg/m³`;
-              const ratio = bin.normalized_ratio !== null ? `${bin.normalized_ratio.toFixed(2)}× median` : '—';
-              return `${st}: ${currentNormalized ? ratio + ' (' + conc + ')' : conc} · n = ${number(bin.count)} jam`;
+              const val = item.parsed.y;
+              if (val === null || val === undefined) return '—';
+              return currentNormalized ? `Rasio: ${val.toFixed(2)}× median` : `Konsentrasi: ${number(val)} µg/m³`;
             },
           },
         },
@@ -441,7 +439,6 @@ export function createWindBinsChart(host: HTMLElement, pollutant: () => Pollutan
 
   return {
     update: (data, normalized) => {
-      currentData = data;
       currentNormalized = normalized;
       const yTitle = normalized ? 'Rasio terhadap Median Zonasi (1.0 = Normal)' : `Median ${pollutant()} (µg/m³)`;
       if (chart.options.scales?.['y']?.title) chart.options.scales['y'].title.text = yTitle;
@@ -459,7 +456,9 @@ export function createWindBinsChart(host: HTMLElement, pollutant: () => Pollutan
           borderColor: color,
           backgroundColor: color,
           borderWidth: 2.5,
-          pointRadius: 4.5,
+          pointRadius: 4,
+          pointHoverRadius: 6,
+          pointHitRadius: 12,
           tension: 0.15,
         };
       });
@@ -506,7 +505,7 @@ export function createTrafficDualScatter(host: HTMLElement): {
 
   const controller = new AbortController();
 
-  const makeScatterChart = (canvas: HTMLCanvasElement, xTitle: string) =>
+  const makeScatterChart = (canvas: HTMLCanvasElement, xTitle: string, xDesc: string, xUnit: string) =>
     new Chart<'scatter', Array<{ x: number; y: number }>, string>(canvas, {
       type: 'scatter',
       data: { datasets: [] },
@@ -518,11 +517,21 @@ export function createTrafficDualScatter(host: HTMLElement): {
           legend: { display: false },
           tooltip: {
             callbacks: {
+              title: items => {
+                const pt = items[0]?.raw as { station?: string; siteType?: string } | undefined;
+                return pt?.station ? `${pt.station} · ${pt.siteType ?? ''}` : 'Garis Tren Regresi';
+              },
               label: item => {
-                const pt = (item.raw as { x: number; y: number; station?: string; siteType?: string });
+                const pt = item.raw as { station?: string } | undefined;
+                if (!pt?.station) {
+                  return `Tren: ${item.parsed.y !== null ? number(item.parsed.y) : '—'} µg/m³`;
+                }
                 const xVal = item.parsed.x !== null ? number(item.parsed.x) : '—';
                 const yVal = item.parsed.y !== null ? number(item.parsed.y) : '—';
-                return `${pt.station ?? ''} (${pt.siteType ?? ''}): x=${xVal} → y=${yVal} µg/m³`;
+                return [
+                  `${xDesc}: ${xVal} ${xUnit}`,
+                  `Konsentrasi: ${yVal} µg/m³`,
+                ];
               },
             },
           },
@@ -534,8 +543,8 @@ export function createTrafficDualScatter(host: HTMLElement): {
       },
     });
 
-  const chartTraffic = makeScatterChart(canvasTraffic, 'Lalu lintas (kendaraan/jam)');
-  const chartRoad = makeScatterChart(canvasRoad, 'Jarak ke jalan (meter)');
+  const chartTraffic = makeScatterChart(canvasTraffic, 'Lalu lintas (kendaraan/jam)', 'Lalu lintas', 'kend/jam');
+  const chartRoad = makeScatterChart(canvasRoad, 'Jarak ke jalan (meter)', 'Jarak ke jalan', 'm');
 
   const applyColors = (): void => {
     const theme = chartTheme();
@@ -668,93 +677,151 @@ export function createTrafficDualScatter(host: HTMLElement): {
   };
 }
 
-// --- 6. Extreme Conditions Comparison Table ---
-export function createExtremeConditionView(host: HTMLElement): {
+// --- 6. Extreme Conditions Comparison Bar Chart ---
+export function createExtremeComparisonBarChart(host: HTMLElement): {
   update: (conditions: ExtremeStatsByThresholdMode['conditions'], mode: 'all' | 'haze' | 'nonhaze') => void;
   destroy: () => void;
 } {
-  const container = element('div', 'extreme-condition-view');
-  const table = element('table', 'data-table extreme-table');
-  table.setAttribute('aria-label', 'Perbandingan parameter meteorologi saat jam ekstrem versus normal');
+  const frame = element('div', 'extreme-bar-plot analysis-plot');
+  const canvas = element('canvas');
+  canvas.setAttribute('role', 'img');
+  canvas.dataset['chart'] = 'extreme-comparison';
+  frame.append(canvas);
+  host.append(frame);
 
-  const thead = element('thead');
-  thead.innerHTML = `
-    <tr>
-      <th scope="col">Parameter</th>
-      <th scope="col" class="text-right">Jam Ekstrem (&gt;P95)</th>
-      <th scope="col" class="text-right">Jam Normal (≤P95)</th>
-      <th scope="col" class="text-right">Selisih (Δ)</th>
-      <th scope="col">Indikasi Fisik</th>
-    </tr>
-  `;
+  const metrics = [
+    { label: 'Kecepatan Angin', unit: 'm/s', key: 'median_wind_speed' as const },
+    { label: 'Suhu Udara', unit: '°C', key: 'median_temperature' as const },
+    { label: 'Kelembapan Relatif', unit: '%', key: 'median_humidity' as const },
+  ];
 
-  const tbody = element('tbody');
-  table.append(thead, tbody);
-  container.append(table);
-  host.append(container);
+  let currentConditions: ExtremeStatsByThresholdMode['conditions'] | null = null;
+  let currentMode: 'all' | 'haze' | 'nonhaze' = 'haze';
+
+  const chart = new Chart<'bar', (number | null)[], string>(canvas, {
+    type: 'bar',
+    data: {
+      labels: metrics.map(m => `${m.label} (${m.unit})`),
+      datasets: [
+        {
+          label: 'Jam Ekstrem (>P95)',
+          data: [],
+          backgroundColor: '#ef4444',
+          hoverBackgroundColor: '#dc2626',
+          borderRadius: 4,
+          borderWidth: 0,
+        },
+        {
+          label: 'Jam Normal (≤P95)',
+          data: [],
+          backgroundColor: '#0284c7',
+          hoverBackgroundColor: '#0369a1',
+          borderRadius: 4,
+          borderWidth: 0,
+        },
+      ],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      animation: matchMedia('(prefers-reduced-motion: reduce)').matches ? false : { duration: 600 },
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: {
+          display: true,
+          position: 'top',
+          align: 'end',
+          labels: {
+            boxWidth: 12,
+            boxHeight: 12,
+            padding: 10,
+            font: { family: 'Inter', size: 11 },
+          },
+        },
+        tooltip: {
+          callbacks: {
+            label: item => {
+              const m = metrics[item.dataIndex];
+              const unit = m ? ` ${m.unit}` : '';
+              const val = item.raw !== null && item.raw !== undefined ? `${Number(item.raw).toFixed(1)}${unit}` : '—';
+              return `${item.dataset.label}: ${val}`;
+            },
+            afterBody: items => {
+              const idx = items[0]?.dataIndex ?? 0;
+              const m = metrics[idx];
+              if (!m || !currentConditions) return '';
+              const comp = currentConditions[currentMode];
+              const extVal = comp.extreme[m.key];
+              const normVal = comp.normal[m.key];
+              if (extVal !== null && normVal !== null) {
+                const diff = extVal - normVal;
+                const sign = diff > 0 ? '+' : '';
+                return `Selisih (Δ): ${sign}${diff.toFixed(1)} ${m.unit}`;
+              }
+              return '';
+            },
+          },
+        },
+      },
+      scales: {
+        x: {
+          grid: { display: false },
+          ticks: {
+            font: { family: 'Inter', size: 11 },
+          },
+        },
+        y: {
+          beginAtZero: true,
+          ticks: {
+            maxTicksLimit: 6,
+            font: { family: 'Inter', size: 11 },
+          },
+        },
+      },
+    },
+  });
+
+  const applyColors = (): void => {
+    const theme = chartTheme();
+    if (chart.options.scales?.['x']?.ticks) chart.options.scales['x'].ticks.color = theme.text;
+    if (chart.options.scales?.['y']?.ticks) chart.options.scales['y'].ticks.color = theme.text;
+    if (chart.options.scales?.['y']?.grid) chart.options.scales['y'].grid.color = theme.grid;
+    if (chart.options.plugins?.legend?.labels) chart.options.plugins.legend.labels.color = theme.text;
+  };
+
+  const lifecycle = manageChart(chart, applyColors);
 
   return {
     update: (conditions, mode) => {
+      currentConditions = conditions;
+      currentMode = mode;
       const comp = conditions[mode];
       const ext = comp.extreme;
       const norm = comp.normal;
 
-      const formatVal = (v: number | null, unit: string) => v !== null ? `${v.toFixed(1)} ${unit}` : '—';
-      const deltaVal = (e: number | null, n: number | null, unit: string) => {
-        if (e === null || n === null) return '—';
-        const d = e - n;
-        const sign = d > 0 ? '+' : '';
-        const color = Math.abs(d) < 0.05 ? '' : d > 0 ? 'text-amber-600 font-semibold' : 'text-blue-600 font-semibold';
-        return `<span class="${color}">${sign}${d.toFixed(1)} ${unit}</span>`;
-      };
+      canvas.setAttribute('aria-label', `Perbandingan parameter cuaca saat jam ekstrem versus normal (${mode})`);
 
-      const rows = [
-        {
-          label: 'Kecepatan Angin',
-          unit: 'm/s',
-          ext: ext.median_wind_speed,
-          norm: norm.median_wind_speed,
-          note: ext.median_wind_speed !== null && norm.median_wind_speed !== null && ext.median_wind_speed < norm.median_wind_speed
-            ? 'Stagnasi atmosfer: kecepatan angin melemah saat polusi memuncak'
-            : 'Ventilasi udara',
-        },
-        {
-          label: 'Kelembapan Relatif',
-          unit: '%',
-          ext: ext.median_humidity,
-          norm: norm.median_humidity,
-          note: mode === 'nonhaze'
-            ? 'Pertumbuhan higroskopis partikel dan pembentukan kabut basah'
-            : 'Kondisi kelembapan udara saat akumulasi polutan',
-        },
-        {
-          label: 'Suhu Udara',
-          unit: '°C',
-          ext: ext.median_temperature,
-          norm: norm.median_temperature,
-          note: 'Inversi permukaan dan kestabilan lapisan batas',
-        },
-        {
-          label: 'Median Jam Kejadian',
-          unit: 'WIB',
-          ext: ext.median_hour,
-          norm: norm.median_hour,
-          note: ext.median_hour !== null ? `Puncak kejadian terdistribusi sekitar jam ${Math.round(ext.median_hour)}:00 WIB` : '—',
-        },
-      ];
-
-      tbody.innerHTML = rows.map(r => `
-        <tr>
-          <td class="font-medium">${r.label}</td>
-          <td class="text-right">${formatVal(r.ext, r.unit)}</td>
-          <td class="text-right">${formatVal(r.norm, r.unit)}</td>
-          <td class="text-right">${deltaVal(r.ext, r.norm, r.unit)}</td>
-          <td class="text-xs text-muted">${r.note}</td>
-        </tr>
-      `).join('');
+      const extDataset = chart.data.datasets[0];
+      const normDataset = chart.data.datasets[1];
+      if (extDataset) {
+        extDataset.data = [
+          ext.median_wind_speed,
+          ext.median_temperature,
+          ext.median_humidity,
+        ];
+      }
+      if (normDataset) {
+        normDataset.data = [
+          norm.median_wind_speed,
+          norm.median_temperature,
+          norm.median_humidity,
+        ];
+      }
+      lifecycle.refresh();
     },
     destroy: () => {
-      container.remove();
+      lifecycle.destroy();
+      frame.remove();
     },
   };
 }
