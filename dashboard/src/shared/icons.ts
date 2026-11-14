@@ -15,6 +15,14 @@ const paths: Record<string, string> = {
   moon: 'M20.5 13A8.5 8.5 0 0 1 11 3.5 8.5 8.5 0 1 0 20.5 13z',
   desktop: 'M3 4h18v13H3z M12 17v4 M8 21h8',
   info: 'M12 11v6 M12 7h.01 M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0',
+  chat: 'M21 11.5a8.5 8.5 0 0 1-8.5 8.5 8.4 8.4 0 0 1-3.8-.9L3 21l1.9-5.7A8.5 8.5 0 1 1 21 11.5z',
+  pen: 'M12 20h9 M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z',
+  check: 'm5 13 4 4L19 7',
+  plus: 'M12 5v14 M5 12h14',
+  trash: 'M4 7h16 M9 7V5.5A1.5 1.5 0 0 0 7.5 4h-1A1.5 1.5 0 0 0 5 5.5V7 M6.5 7l1 12.5A1.5 1.5 0 0 0 9 21h6a1.5 1.5 0 0 0 1.5-1.5L17.5 7',
+  resume: 'm8 5 11 7-11 7z',
+  expand: 'M21 3l-7 7 M21 3h-6 M21 3v6 M3 21l7-7 M3 21h6 M3 21v-6',
+  compress: 'M4 14h6v6 M20 10h-6V4 M14 10l6-6 M4 20l6-6',
 };
 
 export function icon(name: string): SVGSVGElement {

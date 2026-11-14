@@ -4,6 +4,7 @@ import type { DashboardData, StationObservation } from '../data/types';
 import { hasMeasurements } from '../data/observations';
 import { button, element } from '../shared/dom';
 import { number } from '../shared/format';
+import { layoutFollowActive, onLayoutFollowEnd } from '../shared/layout-follow';
 import { categoryColors, unavailableColor } from '../shared/palette';
 import { referenceMarker } from './station-map-model';
 import type { MapMode } from './station-map-model';
@@ -66,7 +67,9 @@ export function createStationMap(host: HTMLElement, reference: DashboardData['re
   const fit = (): void => {
     if (bounds) map.fitBounds(bounds, { padding: [24, 24], maxZoom: 9, animate: false });
   };
-  const observer = new ResizeObserver(() => { map.invalidateSize({ pan: false }); });
+  const invalidate = (): void => { map.invalidateSize({ pan: false }); };
+  const observer = new ResizeObserver(() => { if (!layoutFollowActive()) invalidate(); });
+  const releaseFollow = onLayoutFollowEnd(invalidate);
   observer.observe(viewport);
 
   const render = (): void => {
@@ -155,6 +158,7 @@ export function createStationMap(host: HTMLElement, reference: DashboardData['re
   return {
     update: stations => { selected = stations; render(); },
     destroy: () => {
+      releaseFollow();
       controller.abort();
       observer.disconnect();
       tiles.off('tileerror', failure);

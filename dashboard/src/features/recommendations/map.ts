@@ -1,6 +1,7 @@
 import * as L from 'leaflet';
 import { element } from '../../shared/dom';
 import { number } from '../../shared/format';
+import { layoutFollowActive, onLayoutFollowEnd } from '../../shared/layout-follow';
 import type { PolicyData, PolicyStation, StationEvidence } from './types';
 
 const colors = { Active: '#087f8c', Intermittent: '#bf7b0a', Defective: '#ef4444' };
@@ -49,11 +50,13 @@ export function policyMap(host: HTMLElement, data: PolicyData): { update: (rows:
       markers.set(station.code, marker);
       coverage.set(station.code, L.circle([station.latitude, station.longitude], { radius: 0, interactive: false, weight: 1, color: '#087f8c', fillOpacity: .05 }));
     }
-    const observer = new ResizeObserver(() => {
+    const invalidate = (): void => {
       map.invalidateSize({ pan: false });
       // Leaflet may cache the new size first; refresh vector bounds without moving the view.
       map.fire('moveend');
-    });
+    };
+    const observer = new ResizeObserver(() => { if (!layoutFollowActive()) invalidate(); });
+    const releaseFollow = onLayoutFollowEnd(invalidate);
     observer.observe(frame); ownedObserver = observer;
     motion.addEventListener('change', () => {
       map.options.zoomAnimation = map.options.fadeAnimation = map.options.markerZoomAnimation = !motion.matches;
@@ -77,7 +80,7 @@ export function policyMap(host: HTMLElement, data: PolicyData): { update: (rows:
       },
       coverage: value => { radius = value; refreshCoverage(); },
       focus: code => { const marker = markers.get(code); if (marker) { map.panTo(marker.getLatLng(), { animate: !motion.matches }); marker.openPopup(); frame.focus(); } },
-      destroy: () => { controller.abort(); observer.disconnect(); tiles.off(); map.off(); map.remove(); host.replaceChildren(); },
+      destroy: () => { releaseFollow(); controller.abort(); observer.disconnect(); tiles.off(); map.off(); map.remove(); host.replaceChildren(); },
     };
   } catch (error: unknown) {
     controller.abort(); ownedObserver?.disconnect(); map.off(); map.remove(); host.replaceChildren();

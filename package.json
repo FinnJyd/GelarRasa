@@ -17,6 +17,7 @@
     "data:compliance": "python3 scripts/export-compliance.py",
     "data:hourly": "python3 scripts/export-hourly.py",
     "data:policy": "python3 scripts/export-policy.py",
+    "data:chat-index": "python3 scripts/export-chat-index.py",
     "preview": "vite preview"
   },
   "dependencies": {

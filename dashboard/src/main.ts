@@ -5,6 +5,7 @@ import type { DashboardData, Feature } from './data/types';
 import { createFilters } from './components/filters';
 import { createMethodology } from './components/methodology';
 import { createOpening } from './components/opening';
+import { createChat } from './features/chat';
 import { createShell } from './components/shell';
 import { mountCompliance, loadCompliance } from './features/compliance';
 import { mountTemporal } from './features/temporal';
@@ -32,6 +33,7 @@ let disposeFeature: (() => void) | null = null;
 let request: AbortController | null = null;
 let active: Feature | null = null;
 const methodology = createMethodology(() => data);
+const chat = createChat();
 const overviewFeature: Feature = {
   id: 'overview', title: 'Ikhtisar Nasional', icon: 'overview',
   question: "Bagaimana status kualitas udara nasional dan seberapa parah krisis polusi terhadap beban kesehatan masyarakat di 27 stasiun pemantau Indonesia?",
@@ -197,6 +199,7 @@ function destroy(): void {
   analysisCache?.destroy();
   filters?.destroy();
   methodology.destroy();
+  chat.destroy();
   shell.destroy();
   lifetime.abort();
 }
