@@ -74,6 +74,9 @@ These instructions apply to all work in this repository.
 
 ## Performance and lifecycle
 
+- **Standing rule (user instruction): all tab data must load inside the opening/loading screen, never lazily on tab click.** Keep every export and the hourly analysis behind the single load barrier in `main.ts`; per-tab loaders must not appear during normal navigation. Make that screen itself fast: parallel fetches, single-flight loaders, Cache Storage reuse, background cache writes, and the elapsed-based opening reveal (no fixed sleeps).
+
+
 - Destroy chart and map instances when their owning components are removed or replaced. Reuse instances when updating them where the library supports it.
 - Remove event listeners, observers, subscriptions, and timers on teardown; cancel pending requests when their results are no longer needed.
 - Avoid duplicate initialization, unbounded caches, retained DOM references, and repeated allocations during rendering.

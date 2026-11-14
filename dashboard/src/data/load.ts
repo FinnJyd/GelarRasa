@@ -5,7 +5,7 @@ const CACHE_NAME = 'prana-data-v1';
 
 // Serve from Cache Storage if available; falls through to network on miss.
 // Clones the response before caching so the stream can be read once more.
-async function json(path: string, signal: AbortSignal): Promise<unknown> {
+export async function json(path: string, signal: AbortSignal): Promise<unknown> {
   if ('caches' in self) {
     try {
       const cache = await caches.open(CACHE_NAME);
@@ -13,7 +13,8 @@ async function json(path: string, signal: AbortSignal): Promise<unknown> {
       if (hit) return hit.json();
       const response = await fetch(path, { signal });
       if (!response.ok) throw new Error(`Data gagal dimuat (${response.status}).`);
-      await cache.put(path, response.clone());
+      // Write in the background: awaiting a multi-MB put serializes download→write→parse.
+      void cache.put(path, response.clone()).catch(() => undefined);
       return response.json();
     } catch (err) {
       // Cache unavailable or aborted — fall through to plain fetch.

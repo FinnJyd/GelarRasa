@@ -1,6 +1,7 @@
 import { POLLUTANTS } from './types';
 import type { Mode, PolicyData, PolicyStation, Pollutant, Series, Status } from './types';
 import { distanceKm } from './model';
+import { json as cachedJson } from '../../data/load';
 
 function object(value: unknown): Record<string, unknown> {
   if (!value || typeof value !== 'object' || Array.isArray(value)) throw new Error('Struktur ekspor kebijakan tidak valid.');
@@ -97,17 +98,9 @@ export async function loadPolicy(signal: AbortSignal): Promise<PolicyData> {
   try { return await flight; } finally { flight = null; }
 }
 async function loadOnce(signal: AbortSignal): Promise<PolicyData> {
-  const controller = new AbortController();
-  const combined = AbortSignal.any([signal, controller.signal]);
-  const get = async (file: string): Promise<unknown> => {
-    const response = await fetch(`./data/${file}`, { signal: combined });
-    if (!response.ok) throw new Error(`Ekspor kebijakan gagal dimuat (${response.status}).`);
-    return response.json();
-  };
-  try {
-    const [context, exposure] = await Promise.all([get('policy_context.json'), get('health_exposure.json')]);
-    if (signal.aborted) throw new DOMException('Aborted', 'AbortError');
-    cache = parsePolicy(context, exposure);
-    return cache;
-  } finally { controller.abort(); }
+  const get = (file: string): Promise<unknown> => cachedJson(`./data/${file}`, signal);
+  const [context, exposure] = await Promise.all([get('policy_context.json'), get('health_exposure.json')]);
+  if (signal.aborted) throw new DOMException('Aborted', 'AbortError');
+  cache = parsePolicy(context, exposure);
+  return cache;
 }

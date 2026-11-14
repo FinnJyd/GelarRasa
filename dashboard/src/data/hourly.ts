@@ -21,7 +21,7 @@ async function fetchCached(url: string, signal: AbortSignal): Promise<Response> 
       const hit = await cache.match(url);
       if (hit) return hit;
       const response = await fetch(url, { signal });
-      if (response.ok) await cache.put(url, response.clone());
+      if (response.ok) void cache.put(url, response.clone()).catch(() => undefined);
       return response;
     } catch (err) {
       if ((err as { name?: string }).name === 'AbortError') throw err;

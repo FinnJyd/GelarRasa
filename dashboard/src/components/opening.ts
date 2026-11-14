@@ -15,6 +15,7 @@ export function createOpening(): {
 
   const controller = new AbortController();
   const motion = matchMedia('(prefers-reduced-motion: reduce)');
+  const started = performance.now();
   let leaving = false;
   let disposed = false;
   let finishTimer: ReturnType<typeof setTimeout> | undefined;
@@ -54,10 +55,11 @@ export function createOpening(): {
   return {
     ready,
     finish: () => {
-      // When the session already seen, loading is fast (from cache) — no extra delay.
+      // Reveal as soon as data is ready; keep only a short minimum animation when loading was fast.
       if (!leaving && !disposed) {
         clearTimeout(finishTimer);
-        finishTimer = setTimeout(reveal, motion.matches || alreadySeen ? 0 : 1500);
+        const remaining = Math.max(0, 850 - (performance.now() - started));
+        finishTimer = setTimeout(reveal, motion.matches || alreadySeen ? 0 : remaining);
       }
       return ready;
     },

@@ -159,20 +159,18 @@ async function load(): Promise<void> {
   const currentRequest = new AbortController();
   request = currentRequest;
   if (active && active.id !== 'recommendations') renderLoading();
-  // Warm every tab export in parallel, but only the dashboard export gates the opening —
-  // first paint waits on tab1 instead of ~8MB of fetch+parse; loaders are single-flight so
-  // an early tab click joins the warm request instead of duplicating it.
-  const warmup = Promise.allSettled([
+  // RULE: every tab's data loads here, inside the loading screen — never lazily on tab click.
+  // Warm fetches start first; the setup + hourly analysis chain starts the moment tab1 lands
+  // so it overlaps them; one barrier releases the opening only when everything is ready.
+  const dashboardTask = loadDashboard(currentRequest.signal);
+  const warmups = [
     loadCompliance(currentRequest.signal),
     loadHealthEvidence(currentRequest.signal),
     loadPolicy(currentRequest.signal),
     preloadNetwork(currentRequest.signal),
-  ]);
-  try {
-    const [dashboard] = await Promise.allSettled([loadDashboard(currentRequest.signal)]);
+  ];
+  const analysisTask = dashboardTask.then(async loaded => {
     if (currentRequest.signal.aborted) return;
-    if (dashboard.status !== 'fulfilled') throw dashboard.reason;
-    const loaded = dashboard.value;
     data = loaded;
     analysisCache?.destroy();
     analysisCache = createAnalysisCache(loaded.stations, { start: loaded.start, end: loaded.end });
@@ -195,11 +193,19 @@ async function load(): Promise<void> {
     } catch (error) {
       console.warn('Initial analysis computation warming:', error);
     }
+  }, () => undefined);
+  try {
+    const results = await Promise.allSettled([dashboardTask, ...warmups, analysisTask]);
+    if (currentRequest.signal.aborted) return;
+    const analysis = results[results.length - 1];
+    if (analysis?.status === 'rejected') throw analysis.reason;
+    const dashboard = results[0];
+    if (dashboard?.status === 'rejected') throw dashboard.reason;
+    if (dashboard?.status !== 'fulfilled') throw new Error('Data ringkasan tidak tersedia.');
     request = null;
     await opening.finish();
     if (lifetime.signal.aborted) return;
     if (active && active.id !== 'recommendations') navigate(active);
-    void warmup;
   } catch (error: unknown) {
     if (currentRequest.signal.aborted) return;
     request = null;
