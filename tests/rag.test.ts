@@ -90,3 +90,25 @@ test('how-to questions retrieve usage chunks alongside the core scope', () => {
   const filters = retrieveChunks('cara pakai filter global wilayah dan polutan', index);
   assert.ok(filters.some(chunk => chunk.id === 'howto-filters'));
 });
+
+test('yearly recaps are retrieved for year-insight questions', () => {
+  const chunks = retrieveChunks('jelaskan data di 2024 apa insight yang menarik', index);
+  assert.ok(chunks.some(chunk => chunk.id === 'yearly-air'));
+  assert.ok(chunks.some(chunk => chunk.id === 'yearly-health'));
+});
+
+test('chat action directives parse, alias, and strip from display text', async () => {
+  const { extractChatActions, hasActions } = await import('../dashboard/src/features/chat/actions');
+  const { text, patch } = extractChatActions('Baik.\n[[FILTER: region=Jakarta; pollutant=NO2; includeSuspect=true]]\n[[NAVIGASI: dampak kesehatan]]');
+  assert.ok(!text.includes('[['));
+  assert.ok(text.startsWith('Baik.'));
+  assert.equal(patch.navigation, 'health');
+  assert.deepEqual(patch.filterPatch, { region: 'Jakarta', pollutant: 'NO2', includeSuspect: true });
+  assert.ok(hasActions(patch));
+  const plain = extractChatActions('Berapa rata-rata PM2.5?');
+  assert.equal(plain.text, 'Berapa rata-rata PM2.5?');
+  assert.ok(!hasActions(plain.patch));
+  assert.equal(extractChatActions('hi [[NAVIGASI: moonbase]]').patch.navigation, undefined);
+  const aliased = extractChatActions('x [[FILTER: wilayah=Jakarta; polutan=PM10; tanggal mulai=2024-01-01]]');
+  assert.deepEqual(aliased.patch.filterPatch, { region: 'Jakarta', pollutant: 'PM10', startDate: '2024-01-01' });
+});

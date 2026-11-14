@@ -89,7 +89,10 @@ test.describe('Vite live updates', () => {
   test('route-registry edits restart Vite automatically and restore the same deep link', async ({ page }) => {
     await page.evaluate(() => { document.documentElement.dataset['routeProbe'] = 'old'; });
     await temporaryEdit('dashboard/routes.json', source => `${source}\n`, async () => {
-      await expect(page.locator('html')).not.toHaveAttribute('data-route-probe');
+      // Config reload (loadEnv + api import) made restarts a touch slower than the default 5s window.
+      await expect(async () => {
+        await expect(page.locator('html')).not.toHaveAttribute('data-route-probe');
+      }).toPass({ timeout: 15000 });
       await expect(page.locator('.health-dashboard')).toBeVisible();
       await expect(page).toHaveURL(/\/dashboard\/dampak-kesehatan$/);
     });

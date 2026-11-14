@@ -107,7 +107,13 @@ def build():
     beds = sum(station['beds'] for station in health['stations'].values())
     health_summary = ' '.join(
         f"rata-rata {outcome_labels[key]} {fmt(mean(totals[key]), 2)} kasus/faskes/hari;" for key in outcome_fields)
-    burden = (mean(totals['resp']) / beds * 100) if beds and totals['resp'] else None
+    station_list = list(health['stations'].values())
+    complete_daily = []
+    for i in range(len(dates)):
+        values = [station['outcomes']['resp'][i] for station in station_list]
+        if values and all(value is not None for value in values):
+            complete_daily.append(sum(values))
+    burden = (sum(complete_daily) / len(complete_daily) / beds * 100) if complete_daily and beds else None
     chunks.append({'id': 'health', 'topic': 'Ringkasan kesehatan faskes', 'text':
                    f"Kesehatan {len(health['stations'])} faskes anonim, {len(dates)} hari, total {int(beds)} tempat tidur: "
                    f"{health_summary} beban admisi pernapasan {fmt(burden, 2)} per 100 tempat tidur per hari (bukan keterisian). "
@@ -197,6 +203,9 @@ def build():
          'text': (
              'Panduan filter global: filter awalnya terlipat; klik Edit filter pada baris ringkasan di bawah header. '
              'Kontrol: Wilayah (dropdown), Tipe lokasi, Stasiun (pencarian), Tanggal mulai dan akhir, enam tombol polutan PM2.5, PM10, SO2, NO2, CO, O3, '
+             'Nilai filter yang valid dari data — Wilayah: ' + ', '.join(sorted({c['region'] for c in catalog})) + '. '
+             'Tipe lokasi: ' + ', '.join(sorted({c['siteType'] for c in catalog})) + '. '
+             'Stasiun: kode AQMS-XXX-00 pada daftar stasiun; Polutan: PM2.5, PM10, SO2, NO2, CO, O3. '
              'dan checkbox SUSPECT untuk mode VALID + SUSPECT (default hanya VALID). Pilihan tersimpan saat berpindah tab; ringkasan selalu terlihat; '
              'menutup panel tidak menghapus pilihan; tombol reset mengembalikan seluruh pilihan awal. '
              'Efek per tab: Ikhtisar dan Kepatuhan memakai seluruh kontrol (ringkasan, distribusi, peta, tabel, peryear). '
@@ -228,6 +237,73 @@ def build():
              'Asumsi Kapasitas Manual dan Matriks Respons Kesehatan juga mengikuti filter global.'
          )},
     ])
+
+
+    def yearly_air_chunks():
+        dates = compliance['dates']
+        kota = {row['station_code']: row['kota'] for row in tab1['map_stations']}
+        parts = []
+        for year in ('2024', '2025', '2026'):
+            idx = [i for i, day in enumerate(dates) if day[:4] == year and '01-01' <= day[5:] <= '10-14']
+            if not idx:
+                continue
+            means, pooled_exceed, pooled_days = {}, 0, 0
+            for code, station in compliance['stations'].items():
+                series = station['pollutants']['PM2.5']['v']
+                values = [series[i] for i in idx if series[i] is not None]
+                if not values:
+                    continue
+                means[code] = sum(values) / len(values)
+                pooled_days += len(values)
+                pooled_exceed += sum(1 for value in values if value > 55)
+            if not means:
+                continue
+            national = sum(means.values()) / len(means)
+            critical = max(means, key=means.get)
+            lowest = min(means, key=means.get)
+            exceed_pct = pooled_exceed / pooled_days * 100 if pooled_days else 0
+            parts.append(
+                f'{year} (1 Jan-14 Okt): rata-rata PM2.5 {fmt(national, 2)} mikrogram/m3 dari {len(means)} stasiun terukur; '
+                f'{fmt(exceed_pct)}% stasiun-hari di atas acuan harian 55; paling kritis {critical} ({kota.get(critical, "")}) '
+                f'{fmt(means[critical], 2)}; paling rendah {lowest} ({kota.get(lowest, "")}) {fmt(means[lowest], 2)} mikrogram/m3.')
+        return [{'id': 'yearly-air', 'topic': 'Insight rekap tahunan 2024 2025 2026 udara pelampauan',
+                 'text': ('Rekap per tahun memakai jendela perbandingan resmi 1 Januari-14 Okt, sama seperti panel '
+                          'Perbandingan Pelampauan Antar-Tahun di Tab Kepatuhan Regulasi. ' + ' '.join(parts) +
+                          ' Tahun 2026 berakhir 14 Oktober. Angka Ikhtisar nasional (rata-rata 43,25 mikrogram/m3, 17,7% hari '
+                          'di atas acuan) memakai seluruh 1.018 hari periode penuh, bukan per tahun. Persentase tahunan adalah '
+                          'gabungan stasiun-hari terukur.')}]
+
+    def yearly_health_chunks():
+        hdates = health['dates']
+        beds_total = sum(station['beds'] for station in health['stations'].values())
+        parts = []
+        for year in ('2024', '2025', '2026'):
+            idx = [i for i, day in enumerate(hdates) if day[:4] == year]
+            if not idx:
+                continue
+            values_by = {}
+            for key in ('resp', 'resp_admissions_under5', 'resp_admissions_over60'):
+                values = [station['outcomes'][key][i] for station in health['stations'].values() for i in idx
+                          if station['outcomes'][key][i] is not None]
+                values_by[key] = sum(values) / len(values) if values else None
+            if values_by['resp'] is None:
+                continue
+            daily_totals = []
+            for i in idx:
+                values = [station['outcomes']['resp'][i] for station in health['stations'].values()]
+                if values and all(value is not None for value in values):
+                    daily_totals.append(sum(values))
+            burden = (sum(daily_totals) / len(daily_totals) / beds_total * 100) if daily_totals and beds_total else 0
+            parts.append(
+                f'{year}: admisi pernapasan umum {fmt(values_by["resp"], 2)}, balita {fmt(values_by["resp_admissions_under5"], 2)}, '
+                f'lansia {fmt(values_by["resp_admissions_over60"], 2)} kasus/faskes/hari; beban {fmt(burden, 2)} per 100 tempat tidur/hari.')
+        return [{'id': 'yearly-health', 'topic': 'Insight rekap tahunan 2024 2025 2026 kesehatan admisi',
+                 'text': ('Rekap kesehatan per tahun kalender penuh dalam rentang data (2026 hanya s.d. 14 Oktober), rata-rata '
+                          'faskes-hari atas seluruh 27 faskes: ' + ' '.join(parts) +
+                          ' Rerata deskriptif faskes-hari, bukan per kapita dan bukan angka rumah sakit tertentu.')}]
+
+    chunks.extend(yearly_air_chunks())
+    chunks.extend(yearly_health_chunks())
 
     index = {'version': 1, 'generated': datetime.now(timezone.utc).isoformat(timespec='seconds'), 'chunks': chunks}
     out = ROOT / 'api' / 'rag-index.json'

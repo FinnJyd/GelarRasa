@@ -1,3 +1,4 @@
+import { POLLUTANTS } from '../data/types';
 import type { DashboardData, Feature, FilterState, Station } from '../data/types';
 import { defaultFilters, filterStations } from '../features/overview/model';
 import { button, element } from '../shared/dom';
@@ -34,6 +35,7 @@ export function createFilters(data: DashboardData, onChange: (state: FilterState
   state: () => FilterState;
   close: () => void;
   setScope: (feature: Feature['id']) => void;
+  apply: (partial: Partial<FilterState>) => string[];
   destroy: () => void;
 } {
   const controller = new AbortController();
@@ -258,8 +260,64 @@ export function createFilters(data: DashboardData, onChange: (state: FilterState
   const close = (): void => { region.close(); site.close(); station.close(); };
   root.addEventListener('toggle', () => { if (!root.open) close(); }, { signal: controller.signal });
   synchronize();
+
+  // Applies a validated filter patch (e.g. from a chat action). Every value is checked against
+  // the catalog; invalid keys are silently skipped and the returned list reports what changed.
+  const apply = (partial: Partial<FilterState>): string[] => {
+    const applied: string[] = [];
+    const regions = new Set<string>(['all', ...data.stations.map(item => item.region)]);
+    const siteTypes = new Set<string>(['all', ...data.stations.map(item => item.siteType)]);
+    const codes = new Set<string>(['all', ...data.stations.map(item => item.code)]);
+    const pollutants = new Set<string>(POLLUTANTS);
+    const presets = new Set(['all', '2024', '2025', '2026']);
+    const isoOk = (value: string): boolean => /^\d{4}-\d{2}-\d{2}$/.test(value) && !Number.isNaN(Date.parse(value));
+    const next: FilterState = { ...state };
+    if (typeof partial.region === 'string' && regions.has(partial.region)) { next.region = partial.region; applied.push('region'); }
+    if (typeof partial.siteType === 'string' && siteTypes.has(partial.siteType)) { next.siteType = partial.siteType; applied.push('siteType'); }
+    if (typeof partial.station === 'string' && codes.has(partial.station)) { next.station = partial.station; applied.push('station'); }
+    if (typeof partial.pollutant === 'string' && pollutants.has(partial.pollutant)) { next.pollutant = partial.pollutant; applied.push('pollutant'); }
+    if (typeof partial.includeSuspect === 'boolean') { next.includeSuspect = partial.includeSuspect; applied.push('includeSuspect'); }
+    if (typeof partial.periodPreset === 'string' && presets.has(partial.periodPreset)) {
+      next.periodPreset = partial.periodPreset;
+      if (partial.periodPreset === '2024') { next.startDate = '2024-01-01'; next.endDate = '2024-12-31'; }
+      else if (partial.periodPreset === '2025') { next.startDate = '2025-01-01'; next.endDate = '2025-12-31'; }
+      else if (partial.periodPreset === '2026') { next.startDate = '2026-01-01'; next.endDate = '2026-10-14'; }
+      else if (partial.periodPreset === 'all') { next.startDate = data.start; next.endDate = data.end; }
+      applied.push('periodPreset');
+    }
+    if ((partial.startDate !== undefined && isoOk(partial.startDate)) || (partial.endDate !== undefined && isoOk(partial.endDate))) {
+      const start = partial.startDate !== undefined && isoOk(partial.startDate) ? partial.startDate : next.startDate ?? data.start;
+      const end = partial.endDate !== undefined && isoOk(partial.endDate) ? partial.endDate : next.endDate ?? data.end;
+      const clampedStart = start < data.start ? data.start : start > data.end ? data.end : start;
+      const clampedEnd = end < data.start ? data.start : end > data.end ? data.end : end;
+      if (clampedStart <= clampedEnd) {
+        next.startDate = clampedStart;
+        next.endDate = clampedEnd;
+        next.periodPreset = 'custom';
+        if (partial.startDate !== undefined && isoOk(partial.startDate)) applied.push('startDate');
+        if (partial.endDate !== undefined && isoOk(partial.endDate)) applied.push('endDate');
+      }
+    }
+    if (!applied.length) return applied;
+    state = next;
+    // synchronize() covers site/station/badges; the remaining controls are synced here.
+    region.setOptions([['all', 'Semua wilayah'], ...distinct(data.stations, 'region').map(value => [value, value] satisfies [string, string])], next.region ?? 'all');
+    startInput.value = next.startDate ?? data.start;
+    endInput.value = next.endDate ?? data.end;
+    preset.select.value = next.periodPreset ?? 'all';
+    suspectInput.checked = Boolean(next.includeSuspect);
+    const active = next.pollutant ?? 'PM2.5';
+    for (const btn of choices.querySelectorAll<HTMLButtonElement>('.pollutant')) {
+      const isActive = btn.textContent === active;
+      btn.classList.toggle('active', isActive);
+      btn.setAttribute('aria-pressed', String(isActive));
+    }
+    publish();
+    return applied;
+  };
+
   return {
-    root, state: effectiveState, close,
+    root, state: effectiveState, close, apply,
     setScope: feature => {
       close();
       scopeStatus.hidden = feature !== 'recommendations';

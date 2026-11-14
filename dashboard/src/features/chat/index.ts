@@ -1,9 +1,10 @@
 import { button, element } from '../../shared/dom';
 import { icon } from '../../shared/icons';
 import { cancelLayoutFollow, followLayout } from '../../shared/layout-follow';
+import type { ChatApplyActions } from './actions';
 import { createChatView } from './view';
 
-export function createChat(): { destroy: () => void } {
+export function createChat(options: { applyActions?: ChatApplyActions | undefined } = {}): { destroy: () => void } {
   const launcher = button('', 'chat-launcher');
   launcher.type = 'button';
   launcher.setAttribute('aria-label', 'Buka percakapan asisten data');
@@ -17,7 +18,7 @@ export function createChat(): { destroy: () => void } {
   const drawer = element('aside', 'chat-drawer');
   drawer.setAttribute('aria-label', 'Percakapan asisten data');
   drawer.setAttribute('aria-hidden', 'true');
-  const controls = { requestClose: () => undefined as void };
+  const controls = { requestClose: () => undefined as void, applyActions: options.applyActions };
   const view = createChatView(drawer, controls);
   let hasOpened = false;
   let hideTimer = 0;

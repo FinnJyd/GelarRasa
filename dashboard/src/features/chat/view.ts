@@ -2,13 +2,18 @@ import { button, element, image } from '../../shared/dom';
 import { date } from '../../shared/format';
 import { icon } from '../../shared/icons';
 import { beginLayoutFollow, endLayoutFollow } from '../../shared/layout-follow';
+import { extractChatActions, FILTER_LABELS, hasActions } from './actions';
+import type { ChatApplyActions } from './actions';
 import { sendChat } from './client';
 import { autoTitle, deleteConversation, listConversations, loadActiveId, putConversation, saveActiveId } from './store';
 import type { ChatMessage, Conversation } from './types';
 
 const MAX_OUTBOUND = 16;
 
-export function createChatView(drawer: HTMLElement, controls: { requestClose: () => void }): { destroy: () => void } {
+export function createChatView(drawer: HTMLElement, controls: {
+  requestClose: () => void;
+  applyActions?: ChatApplyActions | undefined;
+}): { destroy: () => void } {
   const controller = new AbortController();
   const newConversation = (): Conversation => ({ id: crypto.randomUUID(), title: '', messages: [], updatedAt: Date.now() });
   let conversations: Conversation[] = [];
@@ -363,8 +368,10 @@ export function createChatView(drawer: HTMLElement, controls: { requestClose: ()
         item.append(editor, actions);
       } else {
         const bubble = element('div', 'chat-bubble');
+        // Strip action directives while streaming so [[FILTER: …]] never flashes on screen.
+        const shown = extractChatActions(message.content).text || message.content;
         // Model replies use **bold** markers; render them as elements without touching innerHTML.
-        message.content.split(/\*\*(.+?)\*\*/g).forEach((part, index) => {
+        shown.split(/\*\*(.+?)\*\*/g).forEach((part, index) => {
           if (!part) return;
           if (index % 2 === 1) bubble.append(element('strong', '', part));
           else bubble.append(document.createTextNode(part));
@@ -431,8 +438,23 @@ export function createChatView(drawer: HTMLElement, controls: { requestClose: ()
         reply.content += delta;
         scheduleRender();
       });
-      if (!reply.content) reply.content = full;
+      const extracted = extractChatActions(full);
+      reply.content = extracted.text || (hasActions(extracted.patch) ? 'Baik, permintaan saya terapkan.' : full);
       await persist();
+      if (hasActions(extracted.patch)) {
+        const result = controls.applyActions?.(extracted.patch);
+        const applied = result?.applied ?? [];
+        const navigated = Boolean(result?.navigated);
+        if (applied.length || navigated) {
+          const notes: string[] = [];
+          if (applied.length) notes.push(`Filter diperbarui: ${applied.map(key => FILTER_LABELS[key] ?? key).join(', ')}`);
+          if (navigated) notes.push('Membuka tab tujuan');
+          setStatus(notes.join(' · '));
+          if (navigated) controls.requestClose();
+        } else {
+          setStatus('Aksi dari asisten tidak dapat diterapkan: nilai di luar data dashboard.');
+        }
+      }
     } catch (error: unknown) {
       if (error instanceof DOMException && error.name === 'AbortError') return;
       if (!reply.content) current.messages = current.messages.filter(message => message.id !== reply.id);

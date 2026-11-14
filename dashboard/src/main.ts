@@ -33,7 +33,16 @@ let disposeFeature: (() => void) | null = null;
 let request: AbortController | null = null;
 let active: Feature | null = null;
 const methodology = createMethodology(() => data);
-const chat = createChat();
+const chat = createChat({
+  // The model proposes actions as [[FILTER: …]] / [[NAVIGASI: …]] directives; validate here
+  // (filters.apply checks every value against the catalog) then jump to the requested tab.
+  applyActions: patch => {
+    const applied = patch.filterPatch && filters ? filters.apply(patch.filterPatch) : [];
+    let navigated = false;
+    if (patch.navigation) { router.go(patch.navigation); navigated = true; }
+    return { applied, navigated };
+  },
+});
 const overviewFeature: Feature = {
   id: 'overview', title: 'Ikhtisar Nasional', icon: 'overview',
   question: "Bagaimana status kualitas udara nasional dan seberapa parah krisis polusi terhadap beban kesehatan masyarakat di 27 stasiun pemantau Indonesia?",
