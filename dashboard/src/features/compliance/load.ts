@@ -46,11 +46,16 @@ export function parseCompliance(value: unknown): ComplianceData {
   return { dates, stations, method: root['method'] };
 }
 let cached: ComplianceData | null = null;
+let flight: Promise<ComplianceData> | null = null;
 export async function loadCompliance(signal: AbortSignal): Promise<ComplianceData> {
   if (cached) return cached;
-  const response = await fetch('./data/compliance_daily.json', { signal });
-  if (!response.ok) throw new Error(`Ekspor kepatuhan tidak tersedia (${response.status}).`);
-  const parsed = parseCompliance(await response.json());
-  cached = parsed;
-  return cached;
+  if (flight) return flight;
+  flight = (async () => {
+    const response = await fetch('./data/compliance_daily.json', { signal });
+    if (!response.ok) throw new Error(`Ekspor kepatuhan tidak tersedia (${response.status}).`);
+    const parsed = parseCompliance(await response.json());
+    cached = parsed;
+    return parsed;
+  })();
+  try { return await flight; } finally { flight = null; }
 }

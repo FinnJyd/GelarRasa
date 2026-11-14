@@ -89,8 +89,14 @@ export function parsePolicy(rawContext: unknown, rawExposure: unknown): PolicyDa
   return { dates, stations };
 }
 let cache: PolicyData | null = null;
+let flight: Promise<PolicyData> | null = null;
 export async function loadPolicy(signal: AbortSignal): Promise<PolicyData> {
   if (cache) return cache;
+  if (flight) return flight;
+  flight = loadOnce(signal);
+  try { return await flight; } finally { flight = null; }
+}
+async function loadOnce(signal: AbortSignal): Promise<PolicyData> {
   const controller = new AbortController();
   const combined = AbortSignal.any([signal, controller.signal]);
   const get = async (file: string): Promise<unknown> => {

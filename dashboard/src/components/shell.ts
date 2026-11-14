@@ -24,7 +24,7 @@ export function createShell(features: readonly Feature[], onNavigate: (feature: 
   const brand = element('div', 'sidebar-brand');
   brand.setAttribute('role', 'img');
   brand.setAttribute('aria-label', 'PRANA');
-  brand.append(image('../assets/Prana Textual.png', '', 'brand-wordmark'));
+  brand.append(image('../assets/Prana Textual.avif', '', 'brand-wordmark'));
   const collapse = button('', 'icon-button sidebar-collapse');
   collapse.setAttribute('aria-label', 'Perkecil navigasi');
   collapse.setAttribute('aria-expanded', 'true');
@@ -82,7 +82,7 @@ export function createShell(features: readonly Feature[], onNavigate: (feature: 
     navigation.append(item);
   }
   const logo = element('div', 'competition-brand');
-  logo.append(image('../assets/Logo GELAR RASA Open.png', 'Gelar Rasa 2026', 'competition-logo'), image('../assets/Logo GELAR RASA Closed.png', 'Gelar Rasa 2026', 'competition-logo-compact'));
+  logo.append(image('../assets/Logo GELAR RASA Open.avif', 'Gelar Rasa 2026', 'competition-logo'), image('../assets/Logo GELAR RASA Closed.avif', 'Gelar Rasa 2026', 'competition-logo-compact'));
   const jargon = element('div', 'sidebar-jargon');
   const jargonText = element('p', 'jargon-text');
   const line1 = element('span', 'jargon-line');

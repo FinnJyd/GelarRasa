@@ -7,8 +7,14 @@ import type { NetworkSite } from './network';
 import type { PolicySummary } from './types';
 Chart.register(BarController, BarElement, CategoryScale, LinearScale, Tooltip);
 let cache: readonly NetworkSite[] | null = null;
+let flight: Promise<readonly NetworkSite[]> | null = null;
 async function fetchNetwork(signal: AbortSignal): Promise<readonly NetworkSite[]> {
   if (cache) return cache;
+  if (flight) return flight;
+  flight = fetchOnce(signal);
+  try { return await flight; } finally { flight = null; }
+}
+async function fetchOnce(signal: AbortSignal): Promise<readonly NetworkSite[]> {
   const response = await fetch('./data/network_rank.json', { signal });
   if (!response.ok) throw new Error('Ekspor jaringan tidak tersedia.');
   const parsed = parseNetwork(await response.json());

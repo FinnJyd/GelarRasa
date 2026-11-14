@@ -159,15 +159,17 @@ async function load(): Promise<void> {
   const currentRequest = new AbortController();
   request = currentRequest;
   if (active && active.id !== 'recommendations') renderLoading();
+  // Warm every tab export in parallel, but only the dashboard export gates the opening —
+  // first paint waits on tab1 instead of ~8MB of fetch+parse; loaders are single-flight so
+  // an early tab click joins the warm request instead of duplicating it.
+  const warmup = Promise.allSettled([
+    loadCompliance(currentRequest.signal),
+    loadHealthEvidence(currentRequest.signal),
+    loadPolicy(currentRequest.signal),
+    preloadNetwork(currentRequest.signal),
+  ]);
   try {
-    // The opening screen owns first-load: warm every tab export before it lifts, so no tab shows its own loader later.
-    const [dashboard] = await Promise.allSettled([
-      loadDashboard(currentRequest.signal),
-      loadCompliance(currentRequest.signal),
-      loadHealthEvidence(currentRequest.signal),
-      loadPolicy(currentRequest.signal),
-      preloadNetwork(currentRequest.signal),
-    ]);
+    const [dashboard] = await Promise.allSettled([loadDashboard(currentRequest.signal)]);
     if (currentRequest.signal.aborted) return;
     if (dashboard.status !== 'fulfilled') throw dashboard.reason;
     const loaded = dashboard.value;
@@ -197,6 +199,7 @@ async function load(): Promise<void> {
     await opening.finish();
     if (lifetime.signal.aborted) return;
     if (active && active.id !== 'recommendations') navigate(active);
+    void warmup;
   } catch (error: unknown) {
     if (currentRequest.signal.aborted) return;
     request = null;

@@ -69,7 +69,7 @@ export function createChatView(drawer: HTMLElement, controls: {
   const empty = element('p', 'chat-empty', 'Tanyakan angka, stasiun, periode, fungsi visualisasi, atau aturan analisis dari dashboard. Jawaban dibuat dari data ekspor, bukan tebakan.');
   // Prana emblem stands in as the assistant's "thinking" avatar while a reply is pending.
   const typing = element('p', 'chat-typing');
-  typing.append(image('../assets/Prana Emblem.png', '', 'chat-typing-emblem'), element('span', '', 'Asisten mengetik…'));
+  typing.append(image('../assets/Prana Emblem.avif', '', 'chat-typing-emblem'), element('span', '', 'Asisten mengetik…'));
   typing.hidden = true;
   list.append(empty, typing);
 

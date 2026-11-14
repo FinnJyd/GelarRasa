@@ -81,8 +81,14 @@ export function parseHealth(rawOutcomes: unknown, rawExposure: unknown): HealthD
   return { dates, stations, discrepancies: numeric(outcomes['resp_discrepancies']) };
 }
 let cached: HealthData | null = null;
+let flight: Promise<HealthData> | null = null;
 export async function loadHealth(signal: AbortSignal): Promise<HealthData> {
   if (cached) return cached;
+  if (flight) return flight;
+  flight = loadOnce(signal);
+  try { return await flight; } finally { flight = null; }
+}
+async function loadOnce(signal: AbortSignal): Promise<HealthData> {
   const request = new AbortController();
   const combined = AbortSignal.any([signal, request.signal]);
   const get = async (file: string): Promise<unknown> => {
