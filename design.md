@@ -160,12 +160,12 @@ Every JavaScript animation must also honor `prefers-reduced-motion`, including c
 Before the first overview load, show a short air-themed opening using the existing PRANA emblem and wordmark. Render drifting haze with lightweight CSS gradients and transforms. The atmosphere clears to reveal the dashboard; do not use new bitmap imagery or imply that a decorative animation is a measured air-quality reading.
 
 - Place the emblem and wordmark in the center with one short line of product copy and a subtle breathing light strip.
-- Offer `Lihat dashboard` as a keyboard-operable skip action from the start.
+- Offer `Lihat dashboard` as a keyboard-operable skip action from the start. It skips the decorative minimum only: activated before the data is ready, the dashboard reveals the moment loading completes.
 - A normal fast load may show the opening for roughly one second, followed by a short fade.
-- Never delay access indefinitely for an animation or a network request. Start revealing by 2.2 seconds, then show the actual loading/error state if data remains unavailable.
+- Standing user rule (14 November 2026): the opening stays until every tab's data, including the hourly Tab 3/4 analysis, has loaded; there is no timed reveal and no tab shows its own loader during normal navigation. It still cannot hang on a failure: any load error dismisses it and shows the explicit error/retry state.
 - Mount the initial charts after the reveal so their entrance does not finish unseen behind the opening.
 - Keep the background application inert while the opening covers it; release it on dismissal and restore focus when the skip action had focus.
-- For reduced motion, skip the decorative delay and haze/transition effects.
+- For reduced motion, skip the decorative delay and haze/transition effects; the screen still waits for the data.
 - Clear all opening timers and listeners on removal, errors, or page teardown. Retries do not replay the opening.
 
 The opening adds personality, but it must not conceal errors, loop forever, or prevent navigation.
@@ -837,3 +837,7 @@ User review: the assistant could not answer "data di 2024" (the index held only 
 ### First-load performance: AVIF assets and a single-file opening gate — 14 November 2026
 
 User direction: make the first load fast — convert images to AVIF with their `convert-files` command and speed up data loading. Assets: the four referenced PNGs converted at q80 (emblem 727KB→67.9KB, wordmark 824KB→118KB, both Gelar logos →160KB/90.5KB; opening visuals 1.55MB→186KB, quality verified) and the favicon — which previously downloaded the full emblem — became a dedicated 96px 11.8KB PNG; entry.html references the AVIFs and preloads them with fetchpriority=high; runtime-string references (shell brand, Gelar logos, chat emblem) point at the root AVIF copies that build.mjs ships. Data: the opening now awaits only the dashboard export (1.8MB) instead of allSettled across every export (~8.2MB); compliance/health/policy/network warm behind the opening animation, and all four loaders became single-flight so an early tab click joins the warm request rather than duplicating it. Measured dev: opening gone at 1943ms with content painted in the same tick; full browser suite unchanged (84 passed, same 4 pre-existing failures). Original PNGs retained as sources.
+
+### Opening waits for every tab; transparent AVIF assets — 14 November 2026
+
+Standing user rule: all tab data, including the hourly Tab 3/4 analysis, loads inside the opening screen and no tab shows its own loader during normal navigation. This supersedes the earlier "start revealing by 2.2 seconds" and "normal opening deadline" wording: there is no timed reveal; the `main.ts` barrier releases the opening on success or on error (error shows the explicit retry state, so the screen cannot hang on a failure). `Lihat dashboard` and reduced motion only skip the decorative minimum. Hourly aggregation keeps identical outputs but uses native typed-array sorts so the barrier is shorter. Logo/emblem/wordmark AVIFs must keep their alpha channel (encode with `avifenc`, verify 4 channels).

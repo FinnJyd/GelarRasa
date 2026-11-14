@@ -83,6 +83,7 @@ export function parseHealth(rawOutcomes: unknown, rawExposure: unknown): HealthD
 }
 let cached: HealthData | null = null;
 let flight: Promise<HealthData> | null = null;
+export function cachedHealth(): HealthData | null { return cached; }
 export async function loadHealth(signal: AbortSignal): Promise<HealthData> {
   if (cached) return cached;
   if (flight) return flight;

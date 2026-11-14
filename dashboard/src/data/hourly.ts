@@ -87,10 +87,17 @@ export async function loadHourly(request: AnalysisRequest, signal: AbortSignal):
 }
 
 export function quantile(values: readonly number[], fraction: number): number | null {
-  if (!values.length) return null;
-  const sorted = [...values].sort((a, b) => a-b), position = (sorted.length-1)*fraction;
-  const low = sorted[Math.floor(position)], high = sorted[Math.ceil(position)];
-  return low === undefined || high === undefined ? null : low+(high-low)*(position-Math.floor(position));
+  return quantiles(values, [fraction])[0] ?? null;
+}
+// Sort once for several percentiles of the same values; native typed-array sort keeps the opening fast.
+export function quantiles(values: readonly number[], fractions: readonly number[]): (number | null)[] {
+  if (!values.length) return fractions.map(() => null);
+  const sorted = Float64Array.from(values).sort();
+  return fractions.map(fraction => {
+    const position = (sorted.length-1)*fraction;
+    const low = sorted[Math.floor(position)], high = sorted[Math.ceil(position)];
+    return low === undefined || high === undefined ? null : low+(high-low)*(position-Math.floor(position));
+  });
 }
 export function mean(values: readonly number[]): number | null { return values.length ? values.reduce((a, b) => a+b, 0)/values.length : null; }
 export function at(station: HourStation, hour: number, column: number): number | null {

@@ -1,4 +1,4 @@
-import { at, calendar, HOURLY_POLLUTANTS, mean, quantile } from '../../data/hourly';
+import { at, calendar, HOURLY_POLLUTANTS, mean, quantile, quantiles } from '../../data/hourly';
 import type { HourlySelection } from '../../data/hourly';
 import { STATION_ROAD_DISTANCE } from './model';
 import type {
@@ -14,19 +14,26 @@ import type {
   WindSiteTypeData,
 } from './types';
 
+// Average (tie-corrected) ranks; a native typed-array sort plus binary search avoids sorting ~10^5 objects.
+// Hoisted per-hour constants: the hourly loop runs ~10^6 times at full network scope.
+const WIND_BIN_EDGES = [0.5, 1, 2, 3, 5, Infinity];
+const HOUR_LABELS = Array.from({ length: 24 }, (_, hour) => String(hour));
+const HAZE_MODES = ['all', 'haze'] as const;
+const NONHAZE_MODES = ['all', 'nonhaze'] as const;
+
 function ranks(values: readonly number[]): number[] {
-  const sorted = values.map((value, index) => ({ value, index })).sort((a, b) => a.value - b.value);
-  const output = Array<number>(values.length);
-  for (let i = 0; i < sorted.length;) {
-    let end = i + 1;
-    while (end < sorted.length && sorted[end]?.value === sorted[i]?.value) end++;
-    for (let j = i; j < end; j++) {
-      const item = sorted[j];
-      if (item) output[item.index] = (i + end + 1) / 2;
+  const sorted = Float64Array.from(values).sort(), n = sorted.length;
+  // runEnd[i] is the exclusive end of the tie run starting at i, so each value needs one lower-bound search.
+  const runEnd = new Uint32Array(n);
+  for (let i = n - 1; i >= 0; i--) runEnd[i] = i + 1 < n && sorted[i + 1] === sorted[i] ? runEnd[i + 1] ?? n : i + 1;
+  return values.map(value => {
+    let low = 0, high = n;
+    while (low < high) {
+      const middle = (low + high) >>> 1;
+      if ((sorted[middle] ?? 0) < value) low = middle + 1; else high = middle;
     }
-    i = end;
-  }
-  return output;
+    return (low + (runEnd[low] ?? n) + 1) / 2;
+  });
 }
 
 export function spearman(x: readonly number[], y: readonly number[]): number | null {
@@ -218,7 +225,7 @@ export function aggregateDrivers(selection: HourlySelection): DriversData {
           pm25All.push(pm25Val);
           if (!isHaze) pm25Nonhaze.push(pm25Val);
           hourlyPm25.push(pm25Val);
-          hourlyHour.push(String(h));
+          hourlyHour.push(HOUR_LABELS[h] ?? String(h));
         }
 
         const no2Val = at(station, hourIdx, no2Col);
@@ -246,12 +253,13 @@ export function aggregateDrivers(selection: HourlySelection): DriversData {
         }
 
         if (speed !== null && speed >= 0) {
-          const binIdx = [0.5, 1, 2, 3, 5, Infinity].findIndex(edge => speed < edge);
+          let binIdx = 0;
+          while (binIdx < WIND_BIN_EDGES.length && !(speed < (WIND_BIN_EDGES[binIdx] ?? Infinity))) binIdx++;
           siteTypeEntry.bins[binIdx]?.push(value);
           siteTypeEntry.allValues.push(value);
         }
 
-        for (const mode of ['all', isHaze ? 'haze' : 'nonhaze']) {
+        for (const mode of isHaze ? HAZE_MODES : NONHAZE_MODES) {
           const pairs = seasonPairs[mode];
           if (!pairs) continue;
           for (let m = 0; m < 3; m++) {
@@ -283,7 +291,7 @@ export function aggregateDrivers(selection: HourlySelection): DriversData {
           if (hum !== null) grp.humidity.push(hum);
           if (temp !== null) grp.temperature.push(temp);
 
-          for (const m of ['all', isHaze ? 'haze' : 'nonhaze'] as const) {
+          for (const m of isHaze ? HAZE_MODES : NONHAZE_MODES) {
             const c = isGlobalExt ? globalSplit[m].ext : globalSplit[m].norm;
             c.count++;
             c.hour.push(h);
@@ -307,7 +315,7 @@ export function aggregateDrivers(selection: HourlySelection): DriversData {
           if (hum !== null) grp.humidity.push(hum);
           if (temp !== null) grp.temperature.push(temp);
 
-          for (const m of ['all', isHaze ? 'haze' : 'nonhaze'] as const) {
+          for (const m of isHaze ? HAZE_MODES : NONHAZE_MODES) {
             const c = isStExt ? stationSplit[m].ext : stationSplit[m].norm;
             c.count++;
             c.hour.push(h);
@@ -378,7 +386,7 @@ export function aggregateDrivers(selection: HourlySelection): DriversData {
     const overallMedian = quantile(entry.allValues, 0.5);
     const bins: WindBin[] = entry.bins.map((bucket, index) => {
       const count = bucket.length;
-      const binMedian = count >= 5 ? quantile(bucket, 0.5) : null;
+      const [binMedian = null, p25 = null, p75 = null] = count >= 5 ? quantiles(bucket, [0.5, 0.25, 0.75]) : [];
       const ratio = binMedian !== null && overallMedian !== null && overallMedian > 0
         ? binMedian / overallMedian
         : null;
@@ -386,8 +394,8 @@ export function aggregateDrivers(selection: HourlySelection): DriversData {
         label: binLabels[index] ?? '',
         median_concentration: binMedian,
         normalized_ratio: ratio,
-        p25: count >= 5 ? quantile(bucket, 0.25) : null,
-        p75: count >= 5 ? quantile(bucket, 0.75) : null,
+        p25,
+        p75,
         count,
       };
     });

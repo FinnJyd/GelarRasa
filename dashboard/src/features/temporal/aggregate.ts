@@ -1,4 +1,4 @@
-import { at, calendar, HOURLY_POLLUTANTS, mean, quantile } from '../../data/hourly';
+import { at, calendar, HOURLY_POLLUTANTS, mean, quantile, quantiles } from '../../data/hourly';
 import type { HourlySelection } from '../../data/hourly';
 import { REFERENCES } from '../../shared/pollutants';
 import type { DiurnalBySiteType, Episode, TemporalData } from './types';
@@ -66,7 +66,7 @@ export function aggregateTemporal(selection: HourlySelection): TemporalData {
   heatmap['Pilihan'] = Object.fromEntries(Array.from({length:7},(_,dow)=>[String(dow),Object.fromEntries(Array.from({length:24},(_,hour)=>{const v=allCells[dow*24+hour]??[];return [String(hour),v.length>=5?quantile(v,.5):null];}))]));
   function profile(mode: string): DiurnalBySiteType {
     return Object.fromEntries(Object.entries(profiles).map(([site, modes]) => [site, Object.fromEntries(Array.from({ length:24 }, (_, hour) => {
-      const values = modes[mode]?.[hour] ?? [], median = quantile(values,.5), p25 = quantile(values,.25), p75 = quantile(values,.75);
+      const values = modes[mode]?.[hour] ?? [], [median = null, p25 = null, p75 = null] = quantiles(values,[.5,.25,.75]);
       return [String(hour), values.length >= 10 && median !== null && p25 !== null && p75 !== null ? {median,p25,p75} : null];
     }))]));
   }

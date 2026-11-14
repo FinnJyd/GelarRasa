@@ -1,6 +1,6 @@
 import type { FilterState, Station } from '../../data/types';
 import { button, emptyState } from '../../shared/dom';
-import { loadHealth } from './load';
+import { cachedHealth, loadHealth } from './load';
 import { mountHealthView } from './view';
 
 export function mountHealth(host: HTMLElement, catalog: readonly Station[], initial: FilterState): {
@@ -10,11 +10,15 @@ export function mountHealth(host: HTMLElement, catalog: readonly Station[], init
   let state = initial;
   let view: ReturnType<typeof mountHealthView> | null = null;
   const load = async (): Promise<void> => {
-    const status = emptyState('Memuat data kesehatan…', 'Menyiapkan kasus harian dan paparan berpasangan.');
-    status.setAttribute('role', 'status');
-    host.replaceChildren(status);
+    // Data is preloaded behind the opening screen; only a retry after failure should show a loader.
+    const ready = cachedHealth();
+    if (!ready) {
+      const status = emptyState('Memuat data kesehatan…', 'Menyiapkan kasus harian dan paparan berpasangan.');
+      status.setAttribute('role', 'status');
+      host.replaceChildren(status);
+    }
     try {
-      const data = await loadHealth(controller.signal);
+      const data = ready ?? await loadHealth(controller.signal);
       if (controller.signal.aborted) return;
       if (catalog.some(station => !data.stations[station.code])) throw new Error('Relasi stasiun tidak tersedia.');
       view = mountHealthView(host, data, catalog, state);

@@ -1,6 +1,6 @@
 import type { FilterState, Station } from '../../data/types';
 import { button, emptyState } from '../../shared/dom';
-import { loadCompliance } from './load';
+import { cachedCompliance, loadCompliance } from './load';
 import { mountComplianceView } from './view';
 
 export { loadCompliance } from './load';
@@ -10,10 +10,14 @@ export function mountCompliance(host: HTMLElement, catalog: readonly Station[], 
   let state = initial;
   let view: ReturnType<typeof mountComplianceView> | null = null;
   const load = async (): Promise<void> => {
-    const status = emptyState('Memuat data kepatuhan…', 'Menyiapkan agregasi enam polutan dan estimasi IKU.');
-    status.setAttribute('role', 'status'); host.replaceChildren(status);
+    // Data is preloaded behind the opening screen; only a retry after failure should show a loader.
+    const ready = cachedCompliance();
+    if (!ready) {
+      const status = emptyState('Memuat data kepatuhan…', 'Menyiapkan agregasi enam polutan dan estimasi IKU.');
+      status.setAttribute('role', 'status'); host.replaceChildren(status);
+    }
     try {
-      const data = await loadCompliance(controller.signal);
+      const data = ready ?? await loadCompliance(controller.signal);
       if (controller.signal.aborted) return;
       if (catalog.some(station => !data.stations[station.code])) throw new Error('Katalog dan ekspor kepatuhan tidak cocok.');
       view = mountComplianceView(host, data, catalog, state);

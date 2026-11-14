@@ -48,6 +48,7 @@ export function parseCompliance(value: unknown): ComplianceData {
 }
 let cached: ComplianceData | null = null;
 let flight: Promise<ComplianceData> | null = null;
+export function cachedCompliance(): ComplianceData | null { return cached; }
 export async function loadCompliance(signal: AbortSignal): Promise<ComplianceData> {
   if (cached) return cached;
   if (flight) return flight;

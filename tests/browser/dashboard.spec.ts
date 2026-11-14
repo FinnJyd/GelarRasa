@@ -20,7 +20,7 @@ test.beforeEach(async ({ page }) => {
   await page.route('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/**', route => route.abort());
   await page.route('https://fonts.googleapis.com/**', route => route.abort());
   await page.goto('/dashboard/', { waitUntil: 'domcontentloaded' });
-  await expect(page.locator('.doughnut-center strong')).toHaveText('26');
+  await expect(page.locator('.doughnut-center strong')).toHaveText('26', { timeout: 20000 });
 });
 
 test('required identity, collapsed filters, synchronized selections, and reset', async ({ page }) => {
@@ -265,7 +265,7 @@ test('sidebar width transitions smoothly and dropdown icons are centered', async
   expect(disclosureOffset).toBeLessThan(1);
 });
 
-test('haze opening is branded, skippable, and releases delayed data access', async ({ page }) => {
+test('haze opening is branded and skip waits for data instead of showing a tab loader', async ({ page }) => {
   let release: () => void = () => undefined;
   const ready = new Promise<void>(resolve => { release = resolve; });
   await page.route('**/tab1_ikhtisar.json', async route => { await ready; await route.continue(); });
@@ -276,23 +276,50 @@ test('haze opening is branded, skippable, and releases delayed data access', asy
     await expect(page.locator('.opening-brand')).toHaveCSS('filter', 'blur(0px)');
     await page.screenshot({ path: '/tmp/prana-opening.png' });
     await page.getByRole('button', { name: 'Lihat dashboard' }).click();
-    await expect(page.locator('#opening-screen')).toHaveCount(0);
-    expect(await page.locator('#app').evaluate(node => node instanceof HTMLElement && node.inert)).toBe(false);
-    await expect(page.getByRole('heading', { name: 'Memuat ringkasan stasiun…' })).toBeVisible();
+    await page.waitForTimeout(500);
+    await expect(page.locator('#opening-screen')).toBeVisible();
   } finally { release(); }
+  await expect(page.locator('#opening-screen')).toHaveCount(0);
+  expect(await page.locator('#app').evaluate(node => node instanceof HTMLElement && node.inert)).toBe(false);
+  await expect(page.getByRole('heading', { name: 'Memuat ringkasan stasiun…' })).toHaveCount(0);
   await expect(page.locator('.doughnut-center strong')).toHaveText('26');
   await expect(page.locator('canvas[data-chart]')).toHaveCount(1);
 });
 
-test('opening never traps slow loading and reduced motion disables all chart transitions', async ({ page }) => {
+test('every tab renders from data loaded behind the opening, with no per-tab loader', async ({ page }) => {
+  // Record any loader that paints, even for a single frame, while navigating tabs.
+  await page.addInitScript(() => {
+    const seen: string[] = [];
+    Object.assign(window, { __loaders: seen });
+    new MutationObserver(() => {
+      for (const node of document.querySelectorAll('#app h2, #app h3, #app p')) {
+        const text = node.textContent ?? '';
+        if (text.startsWith('Memuat')) seen.push(text);
+      }
+    }).observe(document.documentElement, { childList: true, subtree: true });
+  });
+  await page.reload({ waitUntil: 'domcontentloaded' });
+  await expect(page.locator('#opening-screen')).toHaveCount(0, { timeout: 20000 });
+  await expect(page.locator('.doughnut-center strong')).toHaveText('26');
+  await page.evaluate(() => { (window as unknown as { __loaders: string[] }).__loaders.length = 0; });
+  for (const name of ['Kepatuhan Regulasi', 'Pola Waktu', 'Faktor Pemicu', 'Dampak Kesehatan', 'Rekomendasi Kebijakan', 'Ikhtisar Nasional']) {
+    await page.locator('nav').getByRole('link', { name, exact: true }).first().click();
+    await page.waitForTimeout(400);
+  }
+  expect(await page.evaluate(() => (window as unknown as { __loaders: string[] }).__loaders)).toEqual([]);
+});
+
+test('opening stays until slow data loads and reduced motion disables all chart transitions', async ({ page }) => {
   let release: () => void = () => undefined;
   const ready = new Promise<void>(resolve => { release = resolve; });
   await page.route('**/tab1_ikhtisar.json', async route => { await ready; await route.continue(); });
   try {
     await page.reload({ waitUntil: 'domcontentloaded' });
-    await expect(page.locator('#opening-screen')).toHaveCount(0, { timeout: 3500 });
-    expect(await page.locator('#app').evaluate(node => node instanceof HTMLElement && node.inert)).toBe(false);
+    await page.waitForTimeout(3500);
+    await expect(page.locator('#opening-screen')).toBeVisible();
   } finally { release(); }
+  await expect(page.locator('#opening-screen')).toHaveCount(0);
+  expect(await page.locator('#app').evaluate(node => node instanceof HTMLElement && node.inert)).toBe(false);
   await expect(page.locator('.doughnut-center strong')).toHaveText('26');
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.reload({ waitUntil: 'domcontentloaded' });

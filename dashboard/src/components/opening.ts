@@ -18,6 +18,8 @@ export function createOpening(): {
   const started = performance.now();
   let leaving = false;
   let disposed = false;
+  let loaded = false;
+  let skipped = false;
   let finishTimer: ReturnType<typeof setTimeout> | undefined;
   let exitTimer: ReturnType<typeof setTimeout> | undefined;
   let resolveReady: () => void = () => undefined;
@@ -27,7 +29,6 @@ export function createOpening(): {
   const remove = (): void => {
     if (disposed) return;
     disposed = true;
-    clearTimeout(deadline);
     clearTimeout(finishTimer);
     clearTimeout(exitTimer);
     controller.abort();
@@ -47,19 +48,20 @@ export function createOpening(): {
     screen.dataset['state'] = 'leaving';
     exitTimer = setTimeout(remove, motion.matches ? 0 : 380);
   };
-  // Fallback deadline: force-reveal if data never finishes loading (e.g. network error).
-  // alreadySeen shortens it to 3 s since cache loads are fast; first visit allows full 10 s.
-  const deadline = setTimeout(reveal, motion.matches ? 0 : alreadySeen ? 3000 : 10000);
-  skip.addEventListener('click', reveal, { signal: controller.signal });
-  motion.addEventListener('change', () => { if (motion.matches) reveal(); }, { signal: controller.signal });
+  // No timed reveal: every tab's data must be ready before the dashboard shows (finish() also runs on load errors).
+  // Skip and reduced motion only drop the decorative minimum; they never reveal before the data has loaded.
+  const revealIfLoaded = (): void => { if (loaded) reveal(); };
+  skip.addEventListener('click', () => { skipped = true; revealIfLoaded(); }, { signal: controller.signal });
+  motion.addEventListener('change', () => { if (motion.matches) revealIfLoaded(); }, { signal: controller.signal });
   return {
     ready,
     finish: () => {
       // Reveal as soon as data is ready; keep only a short minimum animation when loading was fast.
+      loaded = true;
       if (!leaving && !disposed) {
         clearTimeout(finishTimer);
         const remaining = Math.max(0, 850 - (performance.now() - started));
-        finishTimer = setTimeout(reveal, motion.matches || alreadySeen ? 0 : remaining);
+        finishTimer = setTimeout(reveal, motion.matches || alreadySeen || skipped ? 0 : remaining);
       }
       return ready;
     },
