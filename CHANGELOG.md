@@ -2,6 +2,146 @@
 
 Record completed changes chronologically with dates in WIB. Each entry states the scope, reason, validation, and remaining limitations. Planned work belongs in the design audit or feature plan, not among completed changes.
 
+## 14 November 2026 — Perbaikan: opening screen saat refresh tetap menunggu data selesai
+
+- **Masalah**: Implementasi Option 3 sebelumnya memakai `setTimeout(reveal, 0)` saat `alreadySeen = true`, sehingga opening langsung dismiss sebelum `finish()` dipanggil — data belum tentu selesai dimuat dari cache.
+- **Perbaikan (`dashboard/src/components/opening.ts`)**: Deadline `alreadySeen` diubah ke 3000 ms (bukan 0); `finish()` tetap mengontrol kapan `reveal()` dipanggil. Saat refresh, data cache cepat sehingga `finish()` terpanggil jauh sebelum 3 detik, lalu reveal segera (tanpa jeda 1.5 detik ekstra). Jika cache gagal, fallback 3 detik masih mencegah layar pembuka macet.
+- **Validasi**: `bun run build` sukses.
+
+## 14 November 2026 — Opening screen versi light mode (bone/krem)
+
+- **Alasan**: Layar pembuka sebelumnya selalu gelap (`#0b242e`) tanpa adaptasi mode terang, sehingga tampak kontras janggal di light mode.
+- **Perubahan (`dashboard/styles.css`)**: Menambahkan override `:root:not([data-theme='dark']) .opening-*` yang mengadaptasi warna ke palet bone/krem — `background: #d8cdbb`, teks `#1a3038`, progress bar hijau teal gelap, orbit/haze lebih terang, tombol skip transparan krem. Dark mode tidak berubah.
+- **Validasi**: `bun run build` sukses; TypeScript bersih.
+
+## 14 November 2026 — Cache browser + lewati layar pembuka saat refresh (Option 3)
+
+- **Alasan**: Setiap refresh halaman memuat ulang semua data dari jaringan (~30 MB berkas `.bin` per stasiun) dan menampilkan layar pembuka kembali. Dengan cache browser dan penanda sesi, refresh melayani data dari *Cache Storage* lokal dan langsung membuka dashboard.
+- **Cache API JSON (`dashboard/src/data/load.ts`)**:
+  - `json()` mencoba membuka `'prana-data-v1'` di `caches` sebelum `fetch`; menyimpan respons ke cache pada hit pertama; melanjutkan ke jaringan biasa jika Cache API tidak tersedia atau dioperasikan dalam mode privat.
+  - Berlaku untuk `tab1_ikhtisar.json` dan `data/station_catalog.json`.
+- **Cache API binary/manifest (`dashboard/src/data/hourly.ts`)**:
+  - Fungsi `fetchCached()` menggantikan `fetch()` langsung pada `manifest.json` dan setiap berkas `{station}-{mode}.bin`; tersedia di Web Worker karena Cache API didukung di worker context.
+  - SHA-256 integrity check tetap berjalan terhadap byte yang didekompresi — cache hanya menyimpan blob terkompresi asli, sehingga hash tetap valid.
+- **sessionStorage skip layar pembuka (`dashboard/src/components/opening.ts`)**:
+  - `SESSION_KEY = 'prana_session_seen'` dibaca sebelum menampilkan layar pembuka.
+  - Jika sudah `'1'`, `deadline` di-set ke `setTimeout(reveal, 0)` — layar pembuka langsung dilewati.
+  - `reveal()` menyetel flag sesaat sebelum animasi keluar; pengguna yang buka tab baru atau membuka di sesi berbeda tetap melihat layar pembuka.
+  - Saat `alreadySeen`, `finish()` juga tidak menambah jeda 1,5 detik — data sudah cepat dari cache.
+- **Validasi**:
+  - `bun x tsc --noEmit` lolos 100% tanpa error.
+  - Unit test `tests/*.test.ts` (89/89 pengujian) lolos 100%.
+  - `bun run build` sukses (bundel produksi teregenerasi).
+
+## 14 November 2026 — Penambahan jeda 1,5 detik pada layar pembuka setelah proses selesai
+
+- **Durasi Layar Pembuka (`dashboard/src/components/opening.ts`)**:
+  - Mengubah logika timer penyelesaian pada `createOpening().finish()` agar memberikan jeda transisi tepat 1,5 detik (1.500 ms) setelah seluruh proses pemuatan dan pra-komputasi selesai.
+  - Memperpanjang batas waktu pengaman cadangan (*fallback deadline*) menjadi 10 detik agar transisi tidak terpotong saat memuat di jaringan lambat, sementara tombol "Lewati" tetap dapat ditekan pengguna kapan saja untuk langsung membuka dashboard.
+- **Validasi**:
+  - `bun x tsc --noEmit` lolos 100% tanpa error (`strict: true`).
+  - Unit test `tests/*.test.ts` (89/89 pengujian) lolos 100%.
+  - `bun run build` sukses meregenerasi bundel produksi `app.js` (568,7 kB) dan `app.css` (81,8 kB).
+
+## 14 November 2026 — Penuntasan pemanasan komputasi Tab 3 & 4 pada layar pembuka (opening screen)
+
+- **Sinkronisasi Pra-Komputasi Tab 3 & 4 (`dashboard/src/main.ts`, `dashboard/src/components/opening.ts`)**:
+  - Menyelaraskan eksekusi `analysisCache.prepare(filters.state())` di `dashboard/src/main.ts` agar di-`await` secara tuntas sebelum layar pembuka diangkat (`opening.finish()`).
+  - Sebelumnya, komputasi analisis dijalankan tanpa `await` (`void`), sehingga layar pembuka terangkat lebih awal sebelum Web Worker selesai memproses agregasi data per jam untuk Tab 3 (Pola Waktu) dan Tab 4 (Faktor Pemicu).
+  - Menyesuaikan batas waktu pengaman (*fallback deadline*) pada `createOpening()` menjadi 6 detik agar komputasi berat tidak terpotong prematur pada perangkat atau koneksi lambat.
+  - Hasilnya: saat pertama kali pengguna membuka Tab 3 atau Tab 4, seluruh metrik, grafik diurnal, deret waktu, dan matriks ekstrem langsung tersaji seketika (0 ms) dari cache tanpa menampilkan status "Memuat analisis pilihan…".
+- **Validasi**:
+  - `bun x tsc --noEmit` lolos 100% tanpa error (`strict: true`).
+  - Unit test `tests/*.test.ts` (89/89 pengujian) lolos 100%.
+  - `bun run build` sukses meregenerasi bundel produksi `app.js` (568,8 kB) dan `app.css` (81,8 kB).
+
+## 14 November 2026 — Penyelarasan warna latar kontainer logo Gelar Rasa dengan kartu jargon
+
+- **Harmonisasi Warna Latar Sidebar (`dashboard/styles.css`)**:
+  - Mengubah warna latar kontainer logo Gelar Rasa (`.competition-brand`) dari `var(--surface)` menjadi `var(--surface-secondary)` (`#d6cab8` pada mode terang / Bone), menyamakan persis dengan warna latar kartu jargon di atasnya.
+  - Mempertahankan aturan latar kontras tinggi (cyan `var(--accent)`) pada mode gelap (`:root[data-theme='dark']`) agar teks dan elemen logo gelap tetap terbaca optimal.
+- **Validasi**:
+  - `bun x tsc --noEmit` lolos 100% tanpa error (`strict: true`).
+  - Unit test `tests/*.test.ts` (89/89 pengujian) lolos 100%.
+  - `bun run build` sukses meregenerasi bundel produksi `app.js` (568,7 kB) dan `app.css` (81,8 kB).
+
+## 14 November 2026 — Penghapusan ikon petir pada kartu jargon sidebar
+
+- **Penyempurnaan Kartu Jargon (`dashboard/src/components/shell.ts`, `dashboard/styles.css`)**:
+  - Menghapus ikon petir (*spark*) dari kartu slogan sidebar.
+  - Menjadikan kartu tampil murni tipografis berbingkai aksen kiri (`border-left: 3px solid var(--accent)`), padding `10px 14px`, dengan dua baris sajak jargon dalam font `'Space Grotesk'` serta penekanan aksen tebal pada kata **Udara** dan **Raga**.
+- **Validasi**:
+  - `bun x tsc --noEmit` lolos 100% tanpa error (`strict: true`).
+  - Unit test `tests/*.test.ts` (89/89 pengujian) lolos 100%.
+  - `bun run build` sukses meregenerasi bundel produksi `app.js` (568,7 kB) dan `app.css` (81,8 kB).
+
+## 14 November 2026 — Penyederhanaan kartu jargon sidebar (menghapus label "Jargon PRANA")
+
+- **Tipografi & Tata Letak Kartu Jargon (`dashboard/src/components/shell.ts`, `dashboard/styles.css`)**:
+  - Menghapus teks judul meta `"Jargon PRANA"` dari kartu slogan sidebar agar tampil lebih bersih (*clean*), lugas, dan elegan tanpa label teks redundan.
+  - Menata kartu jargon menjadi tata letak baris horizontal terpadu (*flex row*): ikon badge *spark* di sisi kiri berdampingan langsung dengan dua baris sajak jargon berbobot aksen pada kata **Udara** dan **Raga**.
+- **Validasi**:
+  - `bun x tsc --noEmit` lolos 100% tanpa error (`strict: true`).
+  - Unit test `tests/*.test.ts` (89/89 pengujian) lolos 100%.
+  - `bun run build` sukses meregenerasi bundel produksi `app.js` (568,8 kB) dan `app.css` (82,1 kB).
+
+## 14 November 2026 — Penambahan frasa "baku mutu" pada pertanyaan riset Tab 2
+
+- **Penyelarasan Pertanyaan Riset Tab 2 (`dashboard/src/main.ts`)**:
+  - Menambahkan 2 kata ("baku mutu") pada teks `question` di `complianceFeature`:
+    *"Sejauh mana stasiun memenuhi acuan baku mutu kualitas udara, seberapa sering terjadi pelampauan, dan bagaimana perubahan kepatuhannya antar-tahun?"*
+  - Menyelaraskan istilah normatif sesuai regulasi lingkungan hidup Indonesia (PP 22/2021 tentang Baku Mutu Udara Ambien).
+- **Validasi**:
+  - `bun x tsc --noEmit` lolos 100% tanpa error (`strict: true`).
+  - Unit test `tests/*.test.ts` (89/89 pengujian) lolos 100%.
+  - `bun run build` sukses meregenerasi bundel produksi `app.js` (568,9 kB) dan `app.css` (82,3 kB).
+
+## 14 November 2026 — Desain kartu visual Jargon PRANA di sidebar
+
+- **Transformasi Visual Jargon Sidebar (`dashboard/src/components/shell.ts`, `dashboard/styles.css`)**:
+  - Mengubah teks polos jargon `"Cerdas Membaca Udara,\nBijak Menjaga Raga."` menjadi komponen kartu visual (`.sidebar-jargon`):
+    - Dilengkapi header badge bertuliskan **Jargon PRANA** dengan ikon petir/spark (`icon('spark')`) beraksen warna teal/cyan.
+    - Tipografi menggunakan font *display* `'Space Grotesk'` dengan penekanan aksen tebal pada kata kunci **Udara** dan **Raga**.
+    - Menggunakan kontainer kartu dengan latar `var(--surface-secondary)`, garis batas halus (`border`), sudut melengkung `10px`, dan garis aksen vertikal di sebelah kiri (`border-left: 3px solid var(--accent)`).
+    - Memiliki efek interaktif hover lembut yang berpadu selaras dengan tema Bone (light mode) maupun dark mode.
+  - Tetap tersembunyi secara rapi saat navigasi rail / collapsed (`.rail-navigation`) dan tampil penuh pada mode expanded serta mobile drawer.
+- **Validasi**:
+  - `bun x tsc --noEmit` lolos 100% tanpa error (`strict: true`).
+  - Unit test `tests/*.test.ts` (89/89 pengujian) lolos 100%.
+  - `bun run build` sukses meregenerasi bundel produksi `app.js` (568,9 kB) dan `app.css` (82,3 kB).
+
+## 14 November 2026 — Penghapusan accordion Metodologi & cakupan data pada Tab 2
+
+- **Pembersihan Konten Tab 2 (`dashboard/src/features/compliance/view.ts`, `dashboard/styles.css`)**:
+  - Menghapus komponen accordion `<details class="data-disclosure compliance-methodology">` bertuliskan "Metodologi & cakupan data" beserta teks penjelasannya dari bagian bawah tampilan Tab 2 (Kepatuhan Regulasi).
+  - Menghapus aturan CSS `.compliance-methodology` yang sudah tidak terpakai dari `dashboard/styles.css`.
+  - Penjelasan metodologi lengkap tetap dapat diakses pengguna melalui tombol dialog global "Metodologi" di header aplikasi (`topbar`).
+- **Validasi**:
+  - `bun x tsc --noEmit` lolos 100% tanpa error (`strict: true`).
+  - Unit test `tests/*.test.ts` (89/89 pengujian) lolos 100%.
+  - `bun run build` sukses meregenerasi bundel produksi `app.js` (568,4 kB) dan `app.css` (81,0 kB).
+
+## 14 November 2026 — Penambahan garis pembatas (divider) antara logo PRANA dan menu navigasi sidebar
+
+- **Divider Navigasi Sidebar (`dashboard/src/components/shell.ts`, `dashboard/styles.css`)**:
+  - Menambahkan elemen pembatas semantik `<hr class="sidebar-divider" />` di antara header brand (`.sidebar-brand-row`) dan daftar menu (`.navigation`).
+  - Menyelaraskan koordinat vertikal (Y pixel) garis pembatas secara presisi pada Y = 104px, sejajar tepat di tengah garis pita fact-ticker (Y = 88px s.d. 120px) di sebelah kanannya.
+  - Menjamin garis pembatas tetap tampil secara konsisten baik pada saat sidebar dibuka (`open`) maupun ditutup (`close` / `rail-navigation`).
+- **Validasi**:
+  - `bun x tsc --noEmit` lolos 100% tanpa error (`strict: true`).
+  - Unit test `tests/*.test.ts` (89/89 pengujian) lolos 100%.
+  - `bun run build` sukses meregenerasi bundel produksi `app.js` (573,1 kB) dan `app.css` (81,1 kB).
+
+## 14 November 2026 — Penyesuaian ukuran font kartu KPI Stasiun Paling Kritis Tab 1 menjadi 28px
+
+- **Tipografi KPI Stasiun Paling Kritis (`dashboard/styles.css`)**:
+  - Menetapkan ukuran font `.metric-station .metric-value strong` langsung ke `font-size: 28px;` pada desktop.
+  - Memastikan ukuran kode stasiun 11 karakter (`AQMS-BJB-01`) tampil konsisten, stabil di ukuran 28px tanpa scaling fluktuatif, serta pas dan seimbang dengan 3 kartu KPI lainnya.
+- **Validasi**:
+  - `bun x tsc --noEmit` lolos 100% tanpa error (`strict: true`).
+  - Unit test `tests/*.test.ts` (89/89 pengujian) lolos 100%.
+  - `bun run build` sukses meregenerasi bundel produksi `app.js` (573,1 kB) dan `app.css` (81,0 kB).
+
 ## 14 November 2026 — Penyelarasan warna menu aktif sidebar dengan tema Bone
 
 - **Penyelarasan Item Navigasi Sidebar Aktif (`dashboard/styles.css`)**:
@@ -21,17 +161,6 @@ Record completed changes chronologically with dates in WIB. Each entry states th
 - **Latar Logo Gelar Rasa (`dashboard/styles.css`)**:
   - Mengembalikan warna latar `.competition-brand` di mode terang (Light Mode) ke permukaan sidebar semula: `background: var(--surface); border: 1px solid var(--border);`.
   - Mengubah warna latar `.competition-brand` di mode gelap (Dark Mode) menjadi warna Cyan cerah (`background: var(--accent); border-color: var(--accent);`), memberikan kontras tinggi bagi elemen logo gelap sekaligus menyatu serasi dengan aksen tema dark mode.
-- **Validasi**:
-  - `bun x tsc --noEmit` lolos 100% tanpa error (`strict: true`).
-  - Unit test `tests/*.test.ts` (89/89 pengujian) lolos 100%.
-  - `bun run build` sukses meregenerasi bundel produksi `app.js` (573,1 kB) dan `app.css` (81,0 kB).
-
-## 14 November 2026 — Penyelarasan posisi vertikal menu sidebar open/close dan penghapusan teks ANALISIS
-
-- **Penyelarasan Vertikal Navigasi Sidebar (`dashboard/src/components/shell.ts`, `dashboard/styles.css`)**:
-  - Menghapus elemen teks caption `ANALISIS` (`<p class="nav-caption">`) di atas daftar menu sidebar sehingga posisi vertikal setiap menu tidak lagi bergeser/meloncat saat sidebar diekspansi (open) maupun di-collapse (close).
-  - Menyelaraskan tinggi kartu item navigasi `.nav-item` pada saat open menjadi `height: 44px; min-height: 44px; padding: 10px 14px;`, menyamakan persis dengan tinggi 44px saat mode rail collapsed (`.rail-navigation .nav-item`).
-  - Hasilnya: seluruh 6 ikon menu tetap berada pada koordinat vertikal (Y pixel) yang identik saat transisi buka-tutup sidebar.
 - **Validasi**:
   - `bun x tsc --noEmit` lolos 100% tanpa error (`strict: true`).
   - Unit test `tests/*.test.ts` (89/89 pengujian) lolos 100%.

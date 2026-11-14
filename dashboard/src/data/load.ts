@@ -1,7 +1,25 @@
 import { parseDashboard } from './validate';
 import type { DashboardData } from './types';
 
+const CACHE_NAME = 'prana-data-v1';
+
+// Serve from Cache Storage if available; falls through to network on miss.
+// Clones the response before caching so the stream can be read once more.
 async function json(path: string, signal: AbortSignal): Promise<unknown> {
+  if ('caches' in self) {
+    try {
+      const cache = await caches.open(CACHE_NAME);
+      const hit = await cache.match(path);
+      if (hit) return hit.json();
+      const response = await fetch(path, { signal });
+      if (!response.ok) throw new Error(`Data gagal dimuat (${response.status}).`);
+      await cache.put(path, response.clone());
+      return response.json();
+    } catch (err) {
+      // Cache unavailable or aborted — fall through to plain fetch.
+      if ((err as { name?: string }).name === 'AbortError') throw err;
+    }
+  }
   const response = await fetch(path, { signal });
   if (!response.ok) throw new Error(`Data gagal dimuat (${response.status}).`);
   return response.json();

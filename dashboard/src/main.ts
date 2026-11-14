@@ -63,7 +63,7 @@ const healthFeature: Feature = {
 };
 const complianceFeature: Feature = {
   id: 'compliance', title: 'Kepatuhan Regulasi', icon: 'shield',
-  question: 'Sejauh mana stasiun memenuhi acuan kualitas udara, seberapa sering terjadi pelampauan, dan bagaimana perubahan kepatuhannya antar-tahun?',
+  question: 'Sejauh mana stasiun memenuhi acuan baku mutu kualitas udara, seberapa sering terjadi pelampauan, dan bagaimana perubahan kepatuhannya antar-tahun?',
   mount: host => {
     if (!data) return () => undefined;
     complianceView = mountCompliance(host, data.stations, filters?.state() ?? defaultFilters());
@@ -188,7 +188,11 @@ async function load(): Promise<void> {
     });
     shell.filterHost.replaceChildren(filters.root);
     if (active) filters.setScope(active.id);
-    void analysisCache.prepare(filters.state()).catch(() => undefined);
+    try {
+      await analysisCache.prepare(filters.state());
+    } catch (error) {
+      console.warn('Initial analysis computation warming:', error);
+    }
     request = null;
     await opening.finish();
     if (lifetime.signal.aborted) return;

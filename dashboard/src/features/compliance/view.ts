@@ -5,7 +5,6 @@ import { number, period } from '../../shared/format';
 import { metric, panel } from '../../shared/panel';
 import { categoryColors } from '../../shared/palette';
 import { searchableSelect } from '../../components/search-select';
-import { aqmsFilteringMethodology } from '../../components/aqms-filtering-methodology';
 import { annualChart, barChart } from './charts';
 import { annualAssessment, annualDisplayRows, calendarDaysInYear, defaultComparisonCodes, distributionRows, selectRows, splitRankings, stationComparisons } from './model';
 import { REFERENCES, selectedPollutant } from '../../shared/pollutants';
@@ -137,27 +136,7 @@ export function mountComplianceView(host: HTMLElement, data: ComplianceData, cat
   const tableHost = element('div');
   const empty = emptyState('Tidak ada pengamatan', 'Ubah pilihan stasiun/tanggal/polutan atau lihat keterangan satuan pada metodologi.');
   empty.hidden = true;
-  const methodology = element('details', 'data-disclosure compliance-methodology');
-  methodology.append(element('summary', '', 'Metodologi & cakupan data'));
-  methodology.append(aqmsFilteringMethodology());
-  methodology.append(element('p', '', 'Sumber: AQMS → sensors.csv → sites.csv. Pada BJB-01, MDN-01, dan PSW-01, PM2.5/PM10 berlabel ppm diasumsikan mg/m³ lalu dikalikan 1.000; gas berlabel ppm diasumsikan ppmv lalu dikalikan massa molekul/24,45 × 1.000 ke µg/m³ pada 25°C dan 1 atm. Massa molekul (g/mol): SO2 64,066; CO 28,010; O3 48,000; NO2 46,006. Kondisi referensi ini asumsi analisis yang disetujui pengguna, belum dikonfirmasi panitia; bukan suhu cuaca per baris. Data hilang, negatif, nonfinite, duplikat timestamp, dan QC di luar pilihan dikeluarkan. Rata-rata per jam dihitung sebelum agregasi harian, dengan minimal 18 jam berbeda. Hari tanpa kelengkapan cukup tidak masuk penyebut. Tidak ada imputasi.'));
-  methodology.append(element('p', '', 'Kategori memakai rata-rata harian polutan terpilih dan batas konsentrasi 24 jam Permen LHK 14/2020, bukan ISPU maksimum enam polutan. Peringkat memakai rata-rata hari terukur periode terpilih; warna menunjukkan tipe lokasi. Pelampauan PP 22/2021 memakai rata-rata 24 jam untuk PM2.5/PM10/SO2/NO2; CO/O3 memakai maksimum rata-rata delapan jam. Untuk CO/O3, jendela bergeser di dalam hari (00–08 hingga 16–24), masing-masing harus memiliki delapan jam lengkap, dan minimal 13 dari 17 jendela tersedia per hari. Ini aturan kelengkapan analisis, bukan jaminan kepatuhan hukum. Penyebut pelampauan dapat berbeda dari jumlah hari rata-rata 24 jam. Kolom Hari pembanding hanya ditampilkan jika setidaknya satu stasiun memiliki jumlah berbeda dari Hari terukur; jika semua sama, satu kolom sudah mewakili keduanya.'));
-  methodology.append(element('p', '', 'Evaluasi tahunan memilih tahun secara terpisah dari tanggal global. Grafik dimulai dari sepuluh rata-rata konsentrasi tertinggi dan dapat diperluas ke seluruh stasiun yang memenuhi pilihan cakupan; tabel lengkap tidak berubah. Opsi Sertakan data parsial awalnya nonaktif: kalender belum selesai atau hari terukur <75% dari 365/366 hari dikecualikan sebelum pemeringkatan. Ini kriteria analisis, bukan ketentuan kepatuhan hukum. Saat disertakan, data parsial memakai titik netral. Tooltip menunjukkan hari terukur, jumlah hari kalender setahun dan persentase cakupan. Acuan tahunan PP/WHO mengikuti polutan; CO tidak memiliki acuan tahunan PP, sehingga grafik dan kontrolnya dinonaktifkan. WHO tahunan ditampilkan untuk PM2.5/PM10/NO2 saja. Perbandingan pelampauan antar-tahun memakai 1 Januari–14 Oktober, termasuk 29 Februari pada tahun kabisat. Heatmap masih menunggu keputusan penempatan.'));
-  methodology.append(element('p', '', 'Estimasi IKU: IEU = (NO2/40 + SO2/20)/2; IKU = 100 − (50/0,9) × (IEU − 0,1), mengacu Permen LHK 27/2021 Lampiran II. Ambil pasangan harian NO2/SO2 pada tanggal dan QC terpilih, rata-ratakan per stasiun dan terapkan rumus pada lokasi tersebut; tidak ada penggabungan antarstasiun. Ini estimasi lokasi dari AQMS yang tersedia; tidak mewakili IKU administratif resmi atau keterwakilan empat tipe lokasi. Rentang tanggal dapat parsial atau lintas tahun, sehingga hasil selalu estimasi periode. Gas logger memakai asumsi konversi di atas; data hilang tidak dianggap nol. Skor rumus di luar 0–100 ditampilkan apa adanya dengan keterangan, tanpa dipaksa masuk kategori.'));
-  methodology.append(element('p', '', 'Perbandingan stasiun memakai 1 Januari sampai 14 Oktober pada 2024/2025/2026, terpisah dari tanggal global. Pengguna memilih hingga empat stasiun melalui empat pemilih yang dapat dicari; tidak ada duplikasi dan setiap pilihan dapat dikosongkan. Awalnya SM2-01, KTG-01, PLB-01 dan BJB-01 jika termasuk cakupan filter. Wilayah, tipe lokasi dan stasiun global membatasi daftar; pilihan yang masih sesuai dipertahankan. Jika tidak ada yang tersisa setelah cakupan berubah, pilihan awal diambil dari stasiun dalam cakupan baru. Polutan dan QC memperbarui angka tanpa mengganti pilihan. Pemilih lokal hanya mengubah grafik ini; tabel tetap memuat semua stasiun dalam filter global. Pola tetap, berfluktuasi atau tahun tidak lengkap boleh dipilih; data hilang tetap kosong. Selisih dinyatakan dalam poin persentase, bukan uji signifikansi atau efek kebijakan.'));
-  const referenceLinks = element('p');
-  for (const [label, href] of [
-    ['PP 22/2021', 'https://peraturan.bpk.go.id/Details/161852/pp-no-22-tahun-2021'],
-    ['Permen LHK 14/2020', 'https://jdih.menlhk.go.id/new2/uploads/files/P_14_2020_ISPU_menlhk_07302020074834.pdf'],
-    ['WHO 2021', 'https://www.who.int/publications/i/item/9789240034228'],
-    ['Permen LHK 27/2021', 'https://peraturan.bpk.go.id/Details/235366/permen-lhk-no-27-tahun-2021'],
-    ['Konversi gas CCOHS', 'https://www.ccohs.ca/oshanswers/chemicals/convert.html'],
-  ]) {
-    const link = element('a', '', label); link.href = href ?? ''; link.target = '_blank'; link.rel = 'noopener noreferrer';
-    referenceLinks.append(link, document.createTextNode(' · '));
-  }
-  methodology.append(referenceLinks);
-  root.append(summary.root, empty, comparison.root, distribution.root, lower, annual.root, tableHost, methodology);
+  root.append(summary.root, empty, comparison.root, distribution.root, lower, annual.root, tableHost);
   host.replaceChildren(root);
   const highChart = barChart(highHost, 'Stasiun dengan konsentrasi tertinggi', false, true);
   const lowChart = barChart(lowHost, 'Stasiun dengan konsentrasi terendah', false, true);

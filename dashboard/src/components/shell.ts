@@ -32,6 +32,7 @@ export function createShell(features: readonly Feature[], onNavigate: (feature: 
   collapse.append(icon('chevron'));
   const brandRow = element('div', 'sidebar-brand-row');
   brandRow.append(brand, collapse);
+  const sidebarDivider = element('hr', 'sidebar-divider');
   const navigation = element('nav', 'navigation');
   navigation.setAttribute('aria-label', 'Bagian dashboard');
   const navButtons = new Map<string, HTMLAnchorElement>();
@@ -82,9 +83,17 @@ export function createShell(features: readonly Feature[], onNavigate: (feature: 
   }
   const logo = element('div', 'competition-brand');
   logo.append(image('../assets/Logo GELAR RASA Open.png', 'Gelar Rasa 2026', 'competition-logo'), image('../assets/Logo GELAR RASA Closed.png', 'Gelar Rasa 2026', 'competition-logo-compact'));
+  const jargon = element('div', 'sidebar-jargon');
+  const jargonText = element('p', 'jargon-text');
+  const line1 = element('span', 'jargon-line');
+  line1.append(document.createTextNode('Cerdas Membaca '), element('strong', 'jargon-highlight', 'Udara'), document.createTextNode(','));
+  const line2 = element('span', 'jargon-line');
+  line2.append(document.createTextNode('Bijak Menjaga '), element('strong', 'jargon-highlight', 'Raga'), document.createTextNode('.'));
+  jargonText.append(line1, line2);
+  jargon.append(jargonText);
   const sidebarBottom = element('div', 'sidebar-bottom');
-  sidebarBottom.append(element('p', 'sidebar-context', 'Cerdas Membaca Udara,\nBijak Menjaga Raga.'), logo);
-  sidebar.append(brandRow, navigation, sidebarBottom);
+  sidebarBottom.append(jargon, logo);
+  sidebar.append(brandRow, sidebarDivider, navigation, sidebarBottom);
   const workspace = element('div', 'workspace');
   const appHeader = element('header', 'app-header');
   const topbar = element('div', 'topbar');

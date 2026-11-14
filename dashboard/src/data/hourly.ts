@@ -11,8 +11,27 @@ function record(value: unknown): Record<string, unknown> {
   return Object.fromEntries(Object.entries(value));
 }
 
+const HOURLY_CACHE = 'prana-data-v1';
+
+// Fetch a URL from Cache Storage (workers support Cache API); cache on miss.
+async function fetchCached(url: string, signal: AbortSignal): Promise<Response> {
+  if ('caches' in self) {
+    try {
+      const cache = await caches.open(HOURLY_CACHE);
+      const hit = await cache.match(url);
+      if (hit) return hit;
+      const response = await fetch(url, { signal });
+      if (response.ok) await cache.put(url, response.clone());
+      return response;
+    } catch (err) {
+      if ((err as { name?: string }).name === 'AbortError') throw err;
+    }
+  }
+  return fetch(url, { signal });
+}
+
 export async function loadHourly(request: AnalysisRequest, signal: AbortSignal): Promise<HourlySelection> {
-  const response = await fetch('/dashboard/data/hourly/manifest.json', { signal });
+  const response = await fetchCached('/dashboard/data/hourly/manifest.json', signal);
   if (!response.ok) throw new Error('Ekspor per jam belum tersedia.');
   const manifest = record(await response.json());
   if (manifest['version'] !== 1 || JSON.stringify(manifest['columns']) !== JSON.stringify(COLUMNS)) throw new Error('Skema per jam tidak didukung.');
@@ -45,7 +64,7 @@ export async function loadHourly(request: AnalysisRequest, signal: AbortSignal):
       const hashes = record(metadata['hashes']);
       const expectedHash = hashes[mode];
       if (typeof expectedHash !== 'string') throw new Error('Provenans per jam hilang.');
-      const loaded = await fetch(`/dashboard/data/hourly/${station.code}-${mode}.bin`, { signal });
+      const loaded = await fetchCached(`/dashboard/data/hourly/${station.code}-${mode}.bin`, signal);
       if (!loaded.ok) throw new Error(`Data ${station.code} belum dapat dimuat.`);
       const compressed = await loaded.arrayBuffer();
       const digest = await crypto.subtle.digest('SHA-256', compressed);
