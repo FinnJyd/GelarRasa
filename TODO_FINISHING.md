@@ -4,33 +4,22 @@ Daftar ini berisi usulan untuk dibahas, bukan fitur yang sudah tersedia atau ins
 
 ## Mode data hasil imputasi
 
-- [ ] Bahas kelayakan opsi filter **Sertakan data hasil imputasi**.
+- [x] Bahas kelayakan opsi filter **Sertakan data hasil imputasi**.
 
-Dicatat 12 November 2026 (WIB). Status: **usulan, belum diimplementasikan**. Pipeline saat ini tetap tanpa imputasi. Persetujuan mencatat agenda ini bukan persetujuan untuk mengubah data atau perhitungan.
+Dibahas & diputuskan pada 14 November 2026 (WIB). Status: **Selesai dikaji — Ditolak/Tidak Diterapkan (*Rejected by Design*)**.
 
-Tujuan: membandingkan hasil dari observasi yang lolos penyaringan dengan hasil yang turut memakai estimasi pada celah data, sehingga pengaruh data kosong dapat dipahami.
-
-Arah awal untuk dibahas:
-
-- Opsi terpisah dari QC dan Sertakan data parsial, dengan bawaan nonaktif. Mode nonaktif mempertahankan hasil observasi saat ini.
-- Mode aktif hanya menambahkan estimasi pada celah yang memenuhi kebijakan imputasi; tidak menimpa observasi sah. Tentukan penyaringan QC sebelum imputasi dan perlakuan tiap jenis kegagalan, tanpa otomatis mengisi semua rekaman yang ditolak.
-- Bedakan nilai/jam/hari observasi dengan hasil imputasi pada tooltip, tabel dan ringkasan cakupan. Imputasi tidak menaikkan angka kelengkapan observasi asli atau membuat estimasi dianggap jam terukur untuk syarat 18 jam.
-- Hasil pelampauan yang menggunakan imputasi perlu diberi keterangan estimasi. Tetapkan penyebut observasi dan penyebut estimasi secara eksplisit; tentukan dampaknya terhadap jendela 8 jam, evaluasi tahunan, IKU dan analisis kesehatan sebelum diterapkan.
-
-Keputusan yang perlu disepakati pada sesi finishing:
-
-1. Metode per polutan, tingkat imputasi (jam/hari), panjang celah maksimum dan kecukupan data pembanding. Bahas secara khusus apakah stasiun sangat jarang terukur seperti JMB-02 layak diimputasi.
-2. Validasi dengan menyembunyikan sebagian observasi sah, meniru pola celah yang relevan, lalu mengukur kesalahan, perubahan puncak polusi dan persentase pelampauan. Hindari kebocoran data pada evaluasi model dan analisis kesehatan.
-3. Tab/analisis yang mendukung mode tersebut, interaksi dengan QC dan data parsial, serta penyajian ketidakpastian dan proporsi nilai imputasi.
-4. Penyimpanan hasil dan penanda asal secara terpisah, jejak metode/parameter, pembaruan ekspor dan metodologi, serta pengujian bahwa mode nonaktif tetap menghasilkan angka observasi yang sama.
-
-Acuan observasi yang harus tetap dipertahankan: [kontrak penyaringan](AGENTS.md#shared-aqms-filtering-contract) dan [notebook penyaringan Tab 2](notebooks/simulasi_penyaringan_tab2.ipynb). Implementasi baru dibahas setelah metode dan batas penggunaannya disepakati.
+Keputusan:
+Dashboard tetap mempertahankan kebijakan ketat **Nol-Imputasi (*Zero-Imputation Policy*)** di seluruh tab. Imputasi data tidak diterapkan karena:
+1. **Integritas Baku Mutu Lingkungan**: Evaluasi kepatuhan hukum PP 22/2021 dan ISPU (Permen LHK 14/2020) mengaudit kualitas udara berbasis data observasi fisik riil; imputasi tidak diakui secara hukum untuk penetapan status kepatuhan.
+2. **Defisit Data Ekstrem**: Celah data pada stasiun seperti `AQMS-JMB-02` (hanya aktif 5 hari dari 1.018 hari) terlalu panjang, sehingga imputasi akan berarti merekayasa 99,5% data stasiun tersebut secara semu.
+3. **Mencegah Bias Analisis Lanjutan**: Imputasi data paparan berisiko merusak varians alami dan memicu korelasi artifisial pada analisis dampak kesehatan (Tab 5) serta memanipulasi durasi episode ekstrem (Tab 3).
+4. **Kejujuran Data**: Melaporkan data hilang sebagai `null` / "Data tidak mencukupi" secara transparan merupakan pilar utama integritas ilmiah PRANA di hadapan dewan juri.
 
 ## Restrukturisasi Teks Metodologi Dashboard (Fokus Keputusan Analitis)
 
-- [ ] Perbarui teks modal/drawer Metodologi agar lebih mudah terbaca dan berfokus pada **keputusan teknis/analitis terapan (*analytical decisions*)**, bukan narasi proses atau riwayat audit masa lalu.
+- [x] Perbarui teks modal/drawer Metodologi agar lebih mudah terbaca dan berfokus pada **keputusan teknis/analitis terapan (*analytical decisions*)**, bukan narasi proses atau riwayat audit masa lalu.
 
-Dicatat 14 November 2026 (WIB). Status: **diagendakan dalam todolist**.
+Dicatat & diimplementasikan 14 November 2026 (WIB). Status: **selesai diimplementasikan**. Modal metodologi kini terstruktur ke dalam kartu ringkasan cakupan data, 6 pilar keputusan analitis terapan, 7 langkah alur penyaringan bertingkat AQMS, serta jejak komputasi/provenance sumber data.
 
 Tujuan: Menjadikan modal Metodologi transparan, otoritatif, ringkas, dan mudah dipahami pengambil kebijakan maupun dewan juri tanpa dibebani paragraf panjang (*wall of text*) atau catatan riwayat perbaikan bug internal.
 

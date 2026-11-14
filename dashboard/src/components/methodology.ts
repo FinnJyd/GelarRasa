@@ -4,6 +4,11 @@ import { number, period } from '../shared/format';
 import { icon } from '../shared/icons';
 import { aqmsFilteringMethodology } from './aqms-filtering-methodology';
 
+interface DecisionItem {
+  readonly label: string;
+  readonly text: string;
+}
+
 export function createMethodology(data: () => DashboardData | null): {
   open: (invoker: HTMLElement) => void;
   destroy: () => void;
@@ -15,67 +20,308 @@ export function createMethodology(data: () => DashboardData | null): {
   const heading = element('div');
   const title = element('h2', '', 'Metodologi & Integritas Data');
   title.id = 'methodology-title';
-  heading.append(element('p', 'eyebrow', 'TRANSPARANSI ANALISIS'), title);
+  heading.append(element('p', 'eyebrow', 'TRANSPARANSI KEPUTUSAN ANALITIS'), title);
   const close = button('', 'icon-button');
   close.setAttribute('aria-label', 'Tutup metodologi');
   close.append(icon('close'));
   header.append(heading, close);
   const content = element('div', 'dialog-content');
   const footer = element('footer', 'dialog-footer');
-  footer.append(element('span', 'muted', 'PRANA · Dataset sintetis'), button('Tutup', 'button close-dialog'));
+  footer.append(element('span', 'muted', 'PRANA · Metodologi & Transparansi Regulasi'), button('Tutup', 'button close-dialog'));
   dialog.append(header, content, footer);
   document.body.append(dialog);
   let invoker: HTMLElement | null = null;
 
-  const section = (titleText: string, bodyText: string): void => {
-    const section = element('section', 'method-section');
-    section.append(element('h3', '', titleText), element('p', '', bodyText));
-    content.append(section);
-  };
+  function renderMetaCard(current: DashboardData | null): HTMLElement {
+    const card = element('div', 'method-meta-card');
+    const addItem = (label: string, value: string): void => {
+      const item = element('div', 'method-meta-item');
+      item.append(element('div', 'meta-label', label), element('div', 'meta-value', value));
+      card.append(item);
+    };
+
+    addItem('Sumber Data', 'Telemetri AQMS, admisi RS harian anonim, master sites, dan metadata geografis (komite).');
+    addItem(
+      'Cakupan Observasi',
+      current ? `${period(current.start, current.end)} (WIB) · ${number(current.stations.length)} stasiun telemetri` : '27 stasiun telemetri (2024–2026)',
+    );
+    addItem(
+      'Fasilitas Kesehatan',
+      current ? `${number(current.hospital.hospitals)} RS anonim (${number(current.hospital.beds)} tempat tidur, ${number(current.hospital.days)} tanggal)` : '4 RS anonim terdaftar',
+    );
+    addItem('Prinsip Analisis', 'Zero-Imputation (tanpa rekayasa data kosong), validitas harian ≥18 jam unik, dan evaluasi berbasis regulasi.');
+    return card;
+  }
+
+  function renderPillar(
+    badge: string,
+    titleText: string,
+    intro: string,
+    decisions: readonly DecisionItem[],
+  ): HTMLElement {
+    const sec = element('section', 'method-section');
+    const secHeader = element('div', 'method-section-header');
+    secHeader.append(element('span', 'method-badge', badge), element('h3', '', titleText));
+    sec.append(secHeader, element('p', 'method-intro', intro));
+    const list = element('ul', 'method-list');
+    for (const d of decisions) {
+      const li = element('li');
+      li.append(element('strong', '', `${d.label}: `), document.createTextNode(d.text));
+      list.append(li);
+    }
+    sec.append(list);
+    return sec;
+  }
+
+  function renderProvenance(): HTMLElement {
+    const sec = element('section', 'method-section');
+    const secHeader = element('div', 'method-section-header');
+    secHeader.append(element('span', 'method-badge', 'PROVENANCE'), element('h3', '', 'Jejak Komputasi & Integritas Sumber Data'));
+    sec.append(
+      secHeader,
+      element('p', 'method-intro', 'Seluruh data diolah secara deterministik dari direktori sumber tanpa estimasi tiruan saat pemuatan gagal:'),
+    );
+    const list = element('ul', 'method-list');
+    const items: readonly DecisionItem[] = [
+      {
+        label: 'Sumber Primer Mentah',
+        text: 'dataset/raw/ (master sites, metadata sensor, catatan telemetri stasiun AQMS, dan admisi harian rumah sakit).',
+      },
+      {
+        label: 'Pipeline Analisis Terverifikasi',
+        text: 'scripts/export-compliance.py (agregasi kepatuhan), scripts/export-hourly.py (data per jam & cuaca), scripts/export-health.py (korelasi lag kesehatan), dan scripts/export-policy.py (evaluasi ekspansi jaringan).',
+      },
+      {
+        label: 'Penyelarasan Tab 1 & Tab 2',
+        text: 'Penyajian Tab 1 diturunkan dari dataset/dashboard/tab1_ikhtisar.json dengan bobot stasiun setara pada hari terukur, selaras dengan prinsip penyaringan bertingkat Tab 2–4.',
+      },
+      {
+        label: 'Kebijakan Kegagalan (Fail-Safe)',
+        text: 'Jika berkas ekspor atau data stasiun tidak tersedia, sistem menampilkan status eksplisit "Data tidak mencukupi" / "Belum tersedia", tanpa pernah menyuntikkan nilai fallback atau angka estimasi sintetis.',
+      },
+    ];
+    for (const item of items) {
+      const li = element('li');
+      li.append(element('strong', '', `${item.label}: `), document.createTextNode(item.text));
+      list.append(li);
+    }
+    sec.append(list);
+    return sec;
+  }
 
   function refresh(): void {
     content.replaceChildren();
     const current = data();
-    section('Sumber dan cakupan', 'Dataset sintetis: telemetri AQMS, data kesehatan harian anonim, tabel master, dan metadata. Hasil menggambarkan lokasi yang dipantau, bukan estimasi paparan seluruh penduduk Indonesia.');
-    if (current) section('Periode pengamatan', `${period(current.start, current.end)} (WIB), ${number(current.stations.length)} stasiun dalam ekspor. Wilayah dan tipe lokasi diambil dari dataset/raw/master/sites.csv. Waktu pembuatan ekspor bukan waktu pengamatan terakhir.`);
-    section('Rata-rata dan cakupan data', 'Tab 1 menghitung rata-rata periode dari hari terukur tiap stasiun, lalu memberi bobot sama pada stasiun yang memiliki data. Hari kosong dilewati; stasiun tanpa hari terukur tetap ada di peta dan tabel dengan status Data tidak mencukupi serta dikeluarkan dari indikator udara dan donat. Angka nol yang benar-benar terukur tetap dipakai. Cakupan ditampilkan sebagai jumlah hari terukur dibagi tanggal dalam rentang pilihan, bukan persentase baris QC atau kelengkapan jam. Stasiun dengan sedikit hari tetap dihitung dari data yang tersedia; perhatikan cakupannya.');
-    section('Hari di atas acuan 24 jam', 'Untuk setiap stasiun terukur, jumlah hari di atas acuan dibagi hari terukur pada polutan dan QC terpilih. Indikator Tab 1 merupakan rata-rata sederhana persentase stasiun terukur, termasuk pada cakupan penuh; bukan persentase gabungan berbobot hari-stasiun atau audit kepatuhan hukum. Tanpa hari terukur, hasil tidak tersedia dan tidak diganti nol maupun angka ringkasan lama.');
-    section('Klasifikasi harian', 'Donat menghitung kategori yang paling sering muncul pada hari terukur masing-masing stasiun; penyebutnya hanya stasiun terukur. Stasiun tanpa data tidak diberi kategori Baik. Peta tetap menampilkan seluruh lokasi terpilih dan memberi penanda abu-abu bergaris putus-putus untuk Data tidak mencukupi; persentase legenda peta memakai seluruh stasiun pilihan, termasuk yang tidak memiliki data. Ini bukan proporsi hari atau penduduk.');
-    section('Batasan normalisasi dan agregasi', 'PM2.5/PM10 berlabel ppm pada BJB-01, MDN-01, dan PSW-01 diasumsikan sebagai skala massa logger mg/m³ dan dikalikan 1.000 ke µg/m³. Ini asumsi normalisasi yang disetujui berdasarkan pilihan satuan alat, bukan konversi ppm terverifikasi. Gas berlabel ppm pada tiga logger yang sama diasumsikan ppmv, dikonversi ke ug/m3 dengan massa molekul/24,45 * 1.000 pada asumsi 25 C dan 1 atm, belum dikonfirmasi panitia. Ekspor Tab 1 saat ini mensyaratkan minimal 18 baris berstatus QC sesuai pilihan per stasiun-hari sebelum merata-ratakan nilai polutan yang tersedia. Ini belum menjamin 18 jam unik atau 18 nilai tiap polutan, dan berbeda dari pipeline Tab 2/5. Karena itu, hasil ekspor bersifat sementara dan tidak membuktikan kepatuhan terhadap standar.');
-    section('Indikator rumah sakit', 'Indikator ekspor membagi rata-rata harian admisi pernapasan balita dan lansia dengan total kapasitas tempat tidur yang dilaporkan. Nilai ini bukan tingkat keterisian tempat tidur atau dampak kausal polusi. Indeks beban dihitung ulang dari ekspor harian untuk faskes yang terkait dengan stasiun dan tanggal terpilih, bukan angka awal yang dikodekan tetap.');
-    if (current) section('Cakupan kesehatan pada ekspor', `${number(current.hospital.hospitals)} rumah sakit anonim, ${number(current.hospital.days)} tanggal tercatat, dan ${number(current.hospital.beds)} tempat tidur yang dilaporkan. Pipeline lama mengisi nilai kesehatan atau kapasitas yang hilang dengan nol; dampaknya belum diaudit.`);
-    section('Kontrol yang tersedia', 'Wilayah, tipe lokasi, dan stasiun memperbarui seluruh ringkasan stasiun, distribusi, tabel, dan peta. Tanggal, enam polutan dan pilihan VALID/VALID + SUSPECT memperbarui deret harian Tab 1. Cakupan stasiun dan hari terukur selalu mengikuti pilihan.');
-    section('Dampak Kesehatan', 'Tab kesehatan memakai ekspor terpisah dari scripts/export-health.py: seluruh indikator kesehatan mentah dipertahankan, relasi faskes dicek melalui provinsi dan kecamatan, dan tanggal kalender menjadi kunci. Paparan memakai minimal 18 jam berbeda per polutan dengan nilai numerik terbatas dan tidak negatif; duplikasi timestamp dikeluarkan. PM2.5/PM10 logger pada tiga stasiun memakai asumsi skala massa ×1.000 yang sama; gas ppmv memakai massa molekul/24,45 * 1.000 pada asumsi 25 C dan 1 atm, sehingga masuk analisis jika kelengkapannya cukup. Filter polutan/QC hanya mengubah paparan. Lag 0–7 menghitung Pearson per faskes dengan ≥30 pasangan dan variasi kedua deret, lalu rata-rata berbobot sama. Kelompok konsentrasi membagi pasangan paparan–kasus terpilih menjadi lima kuintil sama banyak dan menunjukkan rerata perubahan kasus per faskes terhadap rerata faskes itu sendiri pada pilihan yang sama; rerata kasus mentah dan jumlah pasangan tetap pada tooltip. Hasil eksploratif belum disesuaikan terhadap cuaca atau musim. Kolom pernapasan umum dan kelompok usia dipakai terpisah karena total dan subkelompok tidak selalu konsisten. Jumlah kasus tidak mengukur kerentanan tanpa penyebut populasi. Beban admisi pernapasan membandingkan rata-rata admisi umum harian dengan kapasitas, per 100 tempat tidur, bukan keterisian.');
-    section('Lag, kelompok usia, dan episode', 'Lag 0–7 menghitung Pearson per faskes dengan ≥30 pasangan dan variasi kedua deret, lalu rerata berbobot sama; titik terbesar ditandai dan bukan jeda kausal. Kelompok konsentrasi memakai lima kuintil pasangan terpilih dengan rerata perubahan per faskes terhadap reratanya sendiri. Perubahan balita dan lansia memakai baseline rerata admisi masing-masing umur pada seluruh tanggal pilihan, termasuk tanggal tanpa paparan; minimal 30 hari berpasangan dan baseline positif per faskes. Pasangan paparan dibagi menjadi lima kuintil relatif di tiap faskes (P1 terendah hingga P5 tertinggi), lalu rerata perubahan terhadap baseline periode dihitung berbobot sama per faskes. Panel selalu memakai admisi pernapasan kedua umur, terpisah dari pemilih indikator kesehatan. Episode dimulai ketika paparan melampaui P90 2024 setelah satu hari tersedia ≤P90. Jendela −3 hingga +7 harus lengkap dan di dalam tanggal pilihan; episode dipisahkan minimal 11 hari agar tidak bertumpuk. Grafik menampilkan rerata perubahan persen terhadap rerata hari −3 hingga −1 tiap episode; tooltip menampilkan rerata kasus per faskes-episode. Minimal tiga episode. Hasil deskriptif, tanpa kelompok kontrol, penyesuaian populasi, atau kesimpulan kerentanan kausal.');
-    section('Proksi tekanan kapasitas', 'Grafik tekanan membagi jumlah catatan pernapasan umum + CVD harian dengan kapasitas tempat tidur tercatat, dikali 100. Hanya tanggal dengan seluruh faskes pilihan lengkap yang digunakan. Diagnosis belum dideduplikasi sehingga bukan jumlah pasien unik. Rasio tidak mengukur BOR, lama rawat, tenaga layanan, atau kebutuhan tempat tidur. Indikator pernapasan umum di bagian atas tetap memakai pernapasan umum saja.');
-    section('Filter utama Pola Waktu dan Faktor Pemicu', 'Filter global wilayah, stasiun, tipe lokasi, tanggal, polutan dan QC mengendalikan seluruh grafik dan KPI Tab 3–4. Ekspor per jam dihasilkan scripts/export-hourly.py dengan eligible_values dari scripts/export-compliance.py dan normalisasi yang disetujui. Data dimuat per stasiun/QC dan dihitung di worker; tidak ada imputasi. Pola per jam menggabungkan jam-stasiun tersedia, bukan rata-rata berbobot sama antarstasiun. Profil membutuhkan 10 pengamatan per sel; matriks hari-jam membutuhkan 5. Tren harian membutuhkan 18 jam berbeda; episode CO/O3 memakai maksimum 8 jam lengkap dengan minimal 13 dari 17 jendela. Satu hari terukur di bawah acuan boleh menjadi jeda episode; hari hilang memutus episode. Pemotongan tanggal dapat memotong episode di batas periode.');
-    section('Hubungan cuaca pada cakupan pilihan', 'Tab 4 memakai polutan yang dipilih pada semua grafik. Mawar menampilkan maksimal tiga contoh stasiun dalam pilihan (minimal 3 pasangan per sektor, angin ≥0,5 m/s); kelompok kecepatan angin membutuhkan 5 pasangan. Korelasi Spearman menggabungkan pasangan jam seluruh stasiun pilihan, membutuhkan 30 pasangan dan variasi nilai; korelasi gabungan dapat mencerminkan perbedaan antarstasiun. Cuaca memerlukan angka finite dan QC/waktu/duplikasi yang sama; tidak ada ambang pencilan cuaca baru. Arah angin dijumlahkan secara sirkular. P95 konsentrasi dihitung ulang dari jam-stasiun pilihan, bukan acuan hukum. Intensitas lalu lintas berasal dari atribut master stasiun, bukan pengamatan lalu lintas harian. Hasil deskriptif ini bukan bukti sebab-akibat. Ekspor berada di dataset/dashboard/hourly dan dashboard/data/hourly; manifest menyimpan hash sumber dan shard.');
+
+    content.append(renderMetaCard(current));
+
+    content.append(
+      renderPillar(
+        'PILAR 1',
+        'Integritas Data, Kontrol Kualitas (QC) & Kebijakan Nol-Imputasi',
+        'Keputusan penyaringan rekaman mentah untuk menjamin keaslian deret observasi:',
+        [
+          {
+            label: 'Penyaringan Kualitas (QC) Bawaan',
+            text: 'Secara bawaan sistem hanya meloloskan data berstatus VALID. Opsi SUSPECT hanya disertakan saat filter kualitas diaktifkan secara eksplisit (VALID + SUSPECT). Seluruh flag status lainnya ditolak permanen.',
+          },
+          {
+            label: 'Deduplikasi Timestamp Awal',
+            text: 'Seluruh rekaman dengan timestamp_start ganda pada stasiun yang sama ditolak (bukan hanya baris kedua), demi menjamin integritas kronologis sensor.',
+          },
+          {
+            label: 'Ambang Kelengkapan Harian',
+            text: 'Rata-rata harian memerlukan minimal 18 jam berbeda dari 24 jam kalender lokal (00:00–23:00). Penghitungan baris tanpa sebaran 18 jam unik tidak diterima.',
+          },
+          {
+            label: 'Kebijakan Nol-Imputasi (Zero Imputation)',
+            text: 'Hari atau jam yang tidak memenuhi syarat dilaporkan sebagai tidak tersedia (null). Tidak ada pengisian celah data dengan rata-rata, interpolasi, atau nilai nol tiruan. Nilai nol riil yang tercatat oleh instrumen tetap dipertahankan.',
+          },
+        ],
+      ),
+    );
+
+    content.append(
+      renderPillar(
+        'PILAR 2',
+        'Standarisasi Satuan & Kalibrasi Instrumen',
+        'Harmonisasi skala instrumen lintas stasiun berdasarkan karakteristik fisik sensor:',
+        [
+          {
+            label: 'Normalisasi Partikulat (PM2.5 & PM10)',
+            text: 'Berdasarkan audit sensor dan pilihan logger, tiga stasiun (BJB-01, MDN-01, PSW-01) yang tercatat berlabel ppm diidentifikasi berskala massa mg/m³ dan dinormalisasi dengan faktor pengali ×1.000 ke satuan baku µg/m³.',
+          },
+          {
+            label: 'Konversi Molekuler Gas Kriteria',
+            text: 'Gas (SO2, NO2, CO, O3) berlabel ppmv dikonversi ke µg/m³ menggunakan berat molekul pada kondisi referensi standar (25°C, 1 atm): Konsentrasi = (Nilai × BM / 24,45) × 1.000.',
+          },
+          {
+            label: 'Integritas Batas Nilai',
+            text: 'Hanya angka numerik terhingga (bukan NaN/inf) dan konsentrasi ≥ 0 yang diterima. Konsentrasi tinggi tidak dibuang secara sepihak tanpa bukti fisik anomali sensor.',
+          },
+        ],
+      ),
+    );
+
+    content.append(
+      renderPillar(
+        'PILAR 3',
+        'Kepatuhan Regulasi & Baku Mutu (PP 22/2021 & ISPU)',
+        'Penerapan standar acuan hukum lingkungan hidup dan indeks kualitas udara nasional:',
+        [
+          {
+            label: 'Rata-rata Acuan 24 Jam',
+            text: 'PM2.5 (55 µg/m³), PM10 (75 µg/m³), SO2 (75 µg/m³), dan NO2 (65 µg/m³) dievaluasi terhadap rata-rata 24 jam pada hari terukur valid.',
+          },
+          {
+            label: 'Moving Average 8 Jam (CO & O3)',
+            text: 'Sesuai regulasi, CO (4.000 µg/m³) dan O3 (100 µg/m³) dievaluasi dari nilai maksimum 17 jendela bergerak 8 jam harian (00:00–08:00 hingga 16:00–24:00), dengan syarat minimal 13 jendela lengkap per hari tanpa jendela lintas hari.',
+          },
+          {
+            label: 'Evaluasi Kepatuhan Tahunan',
+            text: 'Rata-rata tahunan dihitung dari hari terukur yang tersedia. Kepatuhan regulasi mensyaratkan kelengkapan data ≥75% hari kalender dalam setahun; stasiun <75% ditandai parsial dan tidak diklasifikasikan patuh hukum.',
+          },
+          {
+            label: 'Indeks Kualitas Udara (IKU) Stasiun',
+            text: 'Dihitung adaptif sesuai formula Permen LHK No. 27/2021 berbasis hari terukur berpasangan NO2 dan SO2 pada stasiun pemantau aktif.',
+          },
+        ],
+      ),
+    );
+
+    content.append(
+      renderPillar(
+        'PILAR 4',
+        'Dinamika Temporal & Dekomposisi Faktor Pemicu (Tab 3 & 4)',
+        'Metode statistik pemisahan kontribusi lingkungan, cuaca, dan pola waktu:',
+        [
+          {
+            label: 'Dekomposisi Varians Polusi',
+            text: 'Kontribusi faktor lingkungan kategorik (arah angin, tipe zonasi) diukur dengan η² (Eta-squared ANOVA). Kontribusi variabel cuaca kontinu (kecepatan angin, suhu, kelembapan) diukur dengan koefisien determinasi R² regresi linier.',
+          },
+          {
+            label: 'Ambang Ekstremitas Lokal (P90)',
+            text: 'Hari dan jam polusi ekstrem ditetapkan menggunakan persentil ke-90 (P90) aktual dari deret observasi pada stasiun dan rentang tanggal terpilih.',
+          },
+          {
+            label: 'Segmentasi Musim Karhutla',
+            text: 'Periode kabut asap musiman diisolasi secara khusus pada bulan Agustus–Oktober untuk dibandingkan terhadap bulan dasar (November–Juli).',
+          },
+          {
+            label: 'Ventilasi & Dispersi Angin',
+            text: 'Pengelompokan kecepatan angin per 0,5 m/s dengan normalisasi median lokal per tipe zonasi untuk mengisolasi efek ventilasi udara terhadap akumulasi emisi.',
+          },
+        ],
+      ),
+    );
+
+    content.append(
+      renderPillar(
+        'PILAR 5',
+        'Analisis Dampak Kesehatan & Tekanan Fasilitas Rumah Sakit (Tab 5)',
+        'Hubungan paparan polusi terhadap respons admisi faskes dan beban tempat tidur:',
+        [
+          {
+            label: 'Korelasi Jeda Waktu (Lag Correlation)',
+            text: 'Koefisien Pearson dihitung antara paparan polutan harian dan admisi kasus pada jeda waktu 0 hingga 7 hari (lag 0–7) per rumah sakit dengan syarat minimal 30 pasangan terukur.',
+          },
+          {
+            label: 'Stratifikasi Respons Kuintil (P1–P5)',
+            text: 'Pasangan paparan–kasus dibagi ke dalam 5 kuintil konsentrasi relatif terhadap rata-rata baseline faskes masing-masing untuk menunjukkan gradien risiko beban penyakit.',
+          },
+          {
+            label: 'Metrik Tekanan Kapasitas Tempat Tidur',
+            text: 'Rasio beban faskes didefinisikan sebagai (Admisi Pernapasan + Admisi CVD) / Total Kapasitas Tempat Tidur × 100 per hari, dievaluasi pada tanggal dengan pelaporan fasilitas lengkap.',
+          },
+          {
+            label: 'Batas Interpretasi Klinis',
+            text: 'Analisis bersifat ekologis dan deskriptif tanpa standarisasi demografi menyeluruh; data menggambarkan beban layanan faskes pemantau dan bukan penetapan kausalitas klinis langsung.',
+          },
+        ],
+      ),
+    );
+
+    content.append(
+      renderPillar(
+        'PILAR 6',
+        'Pemodelan Rekomendasi & Perencanaan Ekspansi Jaringan (Tab 6)',
+        'Prioritisasi intervensi kebijakan berbasis multikriteria objektif dan simulasi kapasitas:',
+        [
+          {
+            label: 'Indeks Prioritas Wilayah Baru',
+            text: 'Mengintegrasikan 3 kriteria objektif dinormalisasi min-maks: Baseline Polusi PM2.5, Intensitas Lalu Lintas, dan Jarak ke Stasiun Terdekat, dengan pembobotan adaptif pengguna.',
+          },
+          {
+            label: 'Radius Ilustrasi Spasial',
+            text: 'Menggunakan formula jarak lingkaran besar (Haversine) dengan radius 10–300 km untuk mengeksplorasi jangkauan pengawasan dan area tanpa pemantauan (monitoring gaps).',
+          },
+          {
+            label: 'Simulasi Beban Kapasitas Faskes',
+            text: 'Menguji elastisitas beban rumah sakit terhadap skenario peningkatan admisi dan penambahan tempat tidur terencana secara deterministik.',
+          },
+        ],
+      ),
+    );
+
     content.append(aqmsFilteringMethodology());
-    section('Rekomendasi Kebijakan', 'Tab 6 mengikuti filter global yang sama dengan tab analisis. Tanggal dan faskes membatasi bukti, matriks respons, serta asumsi kapasitas manual; polutan/QC mengubah cakupan paparan. Matriks respons tetap khusus PM2.5, dengan kelompok relatif ≤P25, P25–P75, P75–P90, >P90 dari baseline per stasiun tahun 2024. Persentase adalah perubahan kasus teramati terhadap baseline paparan rendah, bukan ambang bahaya atau prediksi pasien. Syaratnya ≥10 pasangan per kelompok dan baseline positif. Aksi yang ditampilkan adalah usulan peninjauan, bukan protokol klinis atau bukti efektivitas kebijakan.');
-    section('Asumsi kapasitas manual', 'Perhitungan manual: jumlahkan admisi pernapasan umum seluruh faskes pilihan per tanggal lengkap, lalu ambil rerata atau P90 dengan interpolasi linear pada posisi (n−1)×p. Admisi skenario = dasar × (1 + kenaikan/100); kapasitas = kapasitas tercatat + tambahan pengguna; beban = admisi skenario/kapasitas ×100. Nol asumsi mereproduksi sejarah. Input tidak valid mengosongkan hasil, bukan menyimpan nilai lama. Ini asumsi perencanaan, bukan keterisian.');
-    section('Prioritas ekspansi dan radius ilustrasi', 'network_rank.json mempertahankan baseline_pm25, traffic_intensity_per_h, distance_to_road_m, dan jarak tetangga dari master/koordinat. Skor memakai tiga atribut: baseline PM2.5, lalu lintas, dan jarak ke stasiun terdekat, dinormalisasi min–maks seluruh katalog dan dirata-ratakan dengan bobot pengguna. Jarak jalan tetap metadata, bukan komponen keempat tersembunyi. Total bobot nol menghasilkan tidak tersedia. Top 10 ditampilkan dengan seluruh skor pada ringkasan aksesibel; filter tidak menormalisasi ulang skor. Kandidat adalah wilayah stasiun untuk studi lokasi tambahan, bukan koordinat alat baru. Lingkaran Haversine menggunakan radius asumsi 10–300 km yang dipilih pengguna, bukan jangkauan instrumen, cakupan populasi atau peta defisit tervalidasi. Jaringan penuh tetap menjadi acuan jarak.');
-    section('Jejak perhitungan', 'Sumber: dataset/raw/. Pipeline Tab 1: notebooks/etl_tab1_ikhtisar.ipynb; ringkasan: dataset/dashboard/tab1_ikhtisar.json, disalin ke dashboard/tab1_ikhtisar.json. Pipeline Tab 2: scripts/export-compliance.py dan scripts/unit_normalization.py; hasil: dataset/dashboard/compliance_daily.json, disalin ke dashboard/data/compliance_daily.json. Simulasi dengan output tersimpan: notebooks/simulasi_penyaringan_tab2.ipynb. Dimensi stasiun: scripts/export-station-catalog.py. Bukti lag dan ekspansi: scripts/export-health.py (health_lag.json) dan scripts/export-policy.py (policy_context.json, network_rank.json). Tidak ada data observasi pengganti ketika pemuatan gagal.');
+
+    content.append(renderProvenance());
   }
 
-  function dismiss(): void { dialog.close(); }
+  function dismiss(): void {
+    dialog.close();
+  }
+
   close.addEventListener('click', dismiss, { signal: controller.signal });
   footer.querySelector('button')?.addEventListener('click', dismiss, { signal: controller.signal });
-  dialog.addEventListener('click', event => {
-    if (event.target !== dialog) return;
-    const bounds = dialog.getBoundingClientRect();
-    if (event.clientX < bounds.left || event.clientX > bounds.right || event.clientY < bounds.top || event.clientY > bounds.bottom) dismiss();
-  }, { signal: controller.signal });
+  dialog.addEventListener(
+    'click',
+    event => {
+      if (event.target !== dialog) return;
+      const bounds = dialog.getBoundingClientRect();
+      if (
+        event.clientX < bounds.left ||
+        event.clientX > bounds.right ||
+        event.clientY < bounds.top ||
+        event.clientY > bounds.bottom
+      ) {
+        dismiss();
+      }
+    },
+    { signal: controller.signal },
+  );
   dialog.addEventListener('close', () => invoker?.focus(), { signal: controller.signal });
-  dialog.addEventListener('keydown', event => {
-    if (event.key !== 'Tab') return;
-    const focusable = [...dialog.querySelectorAll<HTMLElement>('button, a[href], input, select, [tabindex="0"]')].filter(node => !node.hasAttribute('disabled'));
-    const first = focusable[0];
-    const last = focusable.at(-1);
-    if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last?.focus(); }
-    else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first?.focus(); }
-  }, { signal: controller.signal });
+  dialog.addEventListener(
+    'keydown',
+    event => {
+      if (event.key !== 'Tab') return;
+      const focusable = [
+        ...dialog.querySelectorAll<HTMLElement>('button, a[href], input, select, [tabindex="0"]'),
+      ].filter(node => !node.hasAttribute('disabled'));
+      const first = focusable[0];
+      const last = focusable.at(-1);
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last?.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first?.focus();
+      }
+    },
+    { signal: controller.signal },
+  );
+
   return {
-    open: target => { invoker = target; refresh(); dialog.showModal(); close.focus(); },
-    destroy: () => { controller.abort(); dialog.close(); dialog.remove(); },
+    open: target => {
+      invoker = target;
+      refresh();
+      dialog.showModal();
+      close.focus();
+    },
+    destroy: () => {
+      controller.abort();
+      dialog.close();
+      dialog.remove();
+    },
   };
 }

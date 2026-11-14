@@ -60,9 +60,9 @@ test('invalid or missing exports fail validation rather than showing fallback ob
 });
 
 test('reference indicators read the export and reject invalid exceedance values', () => {
-  assert.equal(data.nationalExceedance, 17.7);
+  assert.equal(data.nationalExceedance, 17.3);
   assert.deepEqual(data.reference, { daily: 55, annual: 15, whoAnnual: 5 });
-  const invalid: unknown = JSON.parse(JSON.stringify(raw).replace('"pct_days_exceed_24h":17.7', '"pct_days_exceed_24h":101'));
+  const invalid: unknown = JSON.parse(JSON.stringify(raw).replace('"pct_days_exceed_24h":17.3', '"pct_days_exceed_24h":101'));
   assert.throws(() => parseDashboard(invalid, catalog), /pct_days_exceed_24h/);
 });
 

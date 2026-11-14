@@ -45,8 +45,6 @@ export function createFilters(data: DashboardData, onChange: (state: FilterState
   root.id = 'dashboard-filters';
   const summary = element('summary', 'filter-heading');
   const copy = element('span', 'filter-heading-copy');
-  const scopeStatus = element('span', 'filter-scope-status', 'Tanggal dan faskes membatasi bukti Tab 6; polutan dan QC mengubah cakupan paparan');
-  scopeStatus.hidden = true;
   const selected = element('span', 'filter-summary');
   selected.id = 'filter-summary';
   const action = element('span', 'filter-disclosure');
@@ -54,7 +52,7 @@ export function createFilters(data: DashboardData, onChange: (state: FilterState
   const arrow = icon('down');
   arrow.classList.add('disclosure-arrow');
   action.append(arrow);
-  copy.append(element('strong', '', 'Filter data'), scopeStatus, selected);
+  copy.append(element('strong', '', 'Filter data'), selected);
   summary.append(copy, action);
   const body = element('div', 'filter-body');
   const controls = element('fieldset', 'filter-controls');
@@ -320,7 +318,6 @@ export function createFilters(data: DashboardData, onChange: (state: FilterState
     root, state: effectiveState, close, apply,
     setScope: feature => {
       close();
-      scopeStatus.hidden = feature !== 'recommendations';
       explanation.textContent = feature === 'recommendations'
         ? 'Tanggal dan faskes membatasi bukti, matriks respons, dan asumsi kapasitas manual; polutan dan QC mengubah cakupan paparan.'
         : feature === 'temporal' || feature === 'drivers'

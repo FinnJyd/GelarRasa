@@ -13,6 +13,7 @@
     "test:browser": "playwright test",
     "dev": "vite",
     "data:catalog": "python3 scripts/export-station-catalog.py",
+    "data:overview": "python3 scripts/export-tab1.py",
     "data:health": "python3 scripts/export-health.py",
     "data:compliance": "python3 scripts/export-compliance.py",
     "data:hourly": "python3 scripts/export-hourly.py",

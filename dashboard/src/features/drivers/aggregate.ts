@@ -127,11 +127,11 @@ export function aggregateDrivers(selection: HourlySelection): DriversData {
     stationValuesMap[station.station.code] = sValues;
   }
 
-  const globalThreshold = quantile(allHourlyValues, 0.95);
+  const globalThreshold = quantile(allHourlyValues, 0.90);
   const stationThresholdMap: Record<string, number | null> = {};
   const validStationThresholds: number[] = [];
   for (const [code, sVals] of Object.entries(stationValuesMap)) {
-    const stThresh = quantile(sVals, 0.95);
+    const stThresh = quantile(sVals, 0.90);
     stationThresholdMap[code] = stThresh;
     if (stThresh !== null) validStationThresholds.push(stThresh);
   }
@@ -439,7 +439,7 @@ export function aggregateDrivers(selection: HourlySelection): DriversData {
 
   const stationStats: ExtremeStatsByThresholdMode = {
     threshold: medianStationThreshold,
-    threshold_label: medianStationThreshold !== null ? `Median P95: ${medianStationThreshold.toFixed(1)} µg/m³` : '—',
+    threshold_label: medianStationThreshold !== null ? `Median P90: ${medianStationThreshold.toFixed(1)} µg/m³` : '—',
     haze_season_share: stationGrouped.extreme.count ? stationGrouped.extreme.haze / stationGrouped.extreme.count : null,
     conditions: {
       all: { extreme: makeConditionMetrics(stationSplit.all.ext), normal: makeConditionMetrics(stationSplit.all.norm) },
@@ -558,7 +558,7 @@ export function aggregateDrivers(selection: HourlySelection): DriversData {
       haze_months: [8, 9, 10],
       calm_wind_threshold_ms: 0.5,
       correlation_min_obs: 30,
-      extreme_percentile: 95,
+      extreme_percentile: 90,
       pollutant,
     },
     pollution_rose,

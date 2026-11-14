@@ -31,27 +31,33 @@ export function selectObservations(stations: readonly Station[], state: FilterSt
   return filterStations(stations, state).map(station => {
     const source = cube?.stations[station.code];
     const series = source?.[mode][key];
+    const comparisons = (key === 'co' || key === 'o3') && source?.m8 ? source.m8[mode][key] ?? series : series;
     const unsupported = source?.unavailable.includes(key) ?? false;
-    let sum = 0; let count = 0; let exceed = 0;
+    let sum = 0; let count = 0; let exceed = 0; let comparisonDays = 0;
     const counts: Record<Category, number> = { Baik: 0, Sedang: 0, 'Tidak Sehat': 0, 'Sangat Tidak Sehat': 0, Berbahaya: 0 };
     if (series && threshold && !unsupported) for (const i of indices) {
       const value = series[i];
       if (typeof value !== 'number' || !Number.isFinite(value) || value < 0) continue;
       sum += value; count++;
-      if (value > threshold.pp22_24h) exceed++;
-      const category = value <= (threshold.ispu_bins[1] ?? 15.5) ? 'Baik'
-        : value <= (threshold.ispu_bins[2] ?? 55.4) ? 'Sedang'
-        : value <= (threshold.ispu_bins[3] ?? 150.4) ? 'Tidak Sehat'
-        : value <= (threshold.ispu_bins[4] ?? 250.4) ? 'Sangat Tidak Sehat' : 'Berbahaya';
-      counts[category]++;
+      const compValue = comparisons ? comparisons[i] : value;
+      if (typeof compValue === 'number' && Number.isFinite(compValue) && compValue >= 0) {
+        comparisonDays++;
+        if (compValue > threshold.pp22_24h) exceed++;
+        const category = compValue <= (threshold.ispu_bins[1] ?? 15.5) ? 'Baik'
+          : compValue <= (threshold.ispu_bins[2] ?? 55.4) ? 'Sedang'
+          : compValue <= (threshold.ispu_bins[3] ?? 150.4) ? 'Tidak Sehat'
+          : compValue <= (threshold.ispu_bins[4] ?? 250.4) ? 'Sangat Tidak Sehat' : 'Berbahaya';
+        counts[category]++;
+      }
     }
     let category: Category | null = null;
     if (count) for (const candidate of CATEGORIES) if (category === null || counts[candidate] > counts[category]) category = candidate;
     const unavailableReason = count ? null : !cube || !source || !series || !threshold ? 'Ekspor harian polutan tidak tersedia.'
       : unsupported ? 'Satuan polutan belum didukung.' : !indices.length ? 'Tidak ada tanggal pengamatan dalam rentang pilihan.'
       : 'Tidak ada hari terukur yang memenuhi syarat ekspor pada pilihan ini.';
+    const exceedDenominator = comparisonDays || count;
     return { ...station, average: count ? Number((sum / count).toFixed(1)) : null,
-      exceedance: count ? Number((exceed / count * 100).toFixed(1)) : null, category,
+      exceedance: exceedDenominator ? Number((exceed / exceedDenominator * 100).toFixed(1)) : null, category,
       validPercentage: indices.length ? Number((count / indices.length * 100).toFixed(1)) : 0,
       measuredDays: count, periodDays: indices.length, unavailableReason };
   }).sort((a, b) => (b.average ?? -1) - (a.average ?? -1) || a.code.localeCompare(b.code));

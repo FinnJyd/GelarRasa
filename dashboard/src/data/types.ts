@@ -30,6 +30,10 @@ export interface DailyCube {
     unavailable: readonly string[];
     v: Record<string, readonly (number | null)[]>;
     s: Record<string, readonly (number | null)[]>;
+    m8?: {
+      v: Record<string, readonly (number | null)[]>;
+      s: Record<string, readonly (number | null)[]>;
+    } | undefined;
   }>;
   health_daily: {
     total_bed_capacity: number;

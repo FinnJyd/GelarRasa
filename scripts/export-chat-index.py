@@ -225,7 +225,7 @@ def build():
          )},
         {'id': 'howto-controls-tab46', 'topic': 'Cara menggunakan kontrol Tab Faktor Pemicu dan Rekomendasi Kebijakan',
          'text': (
-             'Tab Faktor Pemicu: pada Ringkasan, toggle Ambang Global (P95) vs Ambang per Stasiun (P95) mengubah definisi jam ekstrem pada seluruh KPI, tabel, dan grafik probabilitas; '
+             'Tab Faktor Pemicu: pada Ringkasan, toggle Ambang Global (P90) vs Ambang per Stasiun (P90) mengubah definisi jam ekstrem pada seluruh KPI, tabel, dan grafik probabilitas; '
              'mawar polusi memakai 3 dropdown stasiun (default 3 stasiun dengan rerata tertinggi polutan terpilih) dan tombol Skala Sama untuk menyamakan skala radial; '
              'grafik Angin & Konsentrasi memakai toggle Ternormalisasi (Rasio) vs Konsentrasi Absolut per tipe lokasi (bin di bawah 5 jam disembunyikan); '
              'grafik Lalu Lintas punya pemilih polutan NO2/CO/PM2.5 dan toggle Tanpa Musim Karhutla (Nov-Jul); '

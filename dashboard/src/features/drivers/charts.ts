@@ -704,7 +704,7 @@ export function createExtremeComparisonBarChart(host: HTMLElement): {
       labels: metrics.map(m => `${m.label} (${m.unit})`),
       datasets: [
         {
-          label: 'Jam Ekstrem (>P95)',
+          label: 'Jam Ekstrem (>P90)',
           data: [],
           backgroundColor: '#ef4444',
           hoverBackgroundColor: '#dc2626',
@@ -712,7 +712,7 @@ export function createExtremeComparisonBarChart(host: HTMLElement): {
           borderWidth: 0,
         },
         {
-          label: 'Jam Normal (≤P95)',
+          label: 'Jam Normal (≤P90)',
           data: [],
           backgroundColor: '#0284c7',
           hoverBackgroundColor: '#0369a1',

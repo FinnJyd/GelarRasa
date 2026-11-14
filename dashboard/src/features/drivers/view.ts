@@ -32,8 +32,8 @@ export function mountDriversView(
 
   // --- 1. Summary Panel ---
   const summary = panel('Ringkasan Faktor Pemicu', '', 'analysis-summary');
-  const threshGlobalBtn = choiceButton('Ambang Global (P95)', true);
-  const threshStationBtn = choiceButton('Ambang per Stasiun (P95)', false);
+  const threshGlobalBtn = choiceButton('Ambang Global (P90)', true);
+  const threshStationBtn = choiceButton('Ambang per Stasiun (P90)', false);
   const threshGroup = choiceGroup('Mode ambang ekstrem', [threshGlobalBtn, threshStationBtn]);
   threshGroup.classList.add('summary-toolbar', 'mb-3');
   const metrics = element('div', 'metrics-grid analysis-metrics');
@@ -147,7 +147,7 @@ export function mountDriversView(
   );
 
   // --- 6. Extreme Conditions & Diurnal Panel ---
-  const extremePanel = panel('Karakteristik & Waktu Jam Ekstrem', 'Analisis meteorologi dan probabilitas waktu terjadinya jam di atas persentil 95');
+  const extremePanel = panel('Karakteristik & Waktu Jam Ekstrem', 'Analisis meteorologi dan probabilitas waktu terjadinya jam di atas persentil 90');
   const extremeSeasonAll = choiceButton('Semua Periode', false);
   const extremeSeasonHaze = choiceButton('Musim Karhutla (Agu–Okt)', true);
   const extremeSeasonNonhaze = choiceButton('Luar Karhutla (Nov–Jul)', false);
@@ -169,7 +169,7 @@ export function mountDriversView(
   extremePanel.body.append(
     extremeSeasonGroup,
     extremeGrid,
-    element('p', 'panel-footnote', 'Perbandingan median meteorologi saat jam ekstrem (>P95) vs normal (≤P95) serta kurva probabilitas terjadinya jam ekstrem menurut siklus 24 jam (00–23 WIB).'),
+    element('p', 'panel-footnote', 'Perbandingan median meteorologi saat jam ekstrem (>P90) vs normal (≤P90) serta kurva probabilitas terjadinya jam ekstrem menurut siklus 24 jam (00–23 WIB).'),
   );
 
   root.append(summary.root, empty, rankingPanel.root, windDynamicsPanel.root, trafficPanel.root, extremePanel.root);
@@ -215,7 +215,7 @@ export function mountDriversView(
         'Jam Ekstrem Karhutla',
         stats.haze_season_share === null ? '—' : `${number(stats.haze_season_share * 100)}%`,
         'Agu–Okt',
-        isGlobal ? 'Dari jam >P95 gabungan seluruh stasiun' : 'Dari jam >P95 dihitung per stasiun',
+        isGlobal ? 'Dari jam >P90 gabungan seluruh stasiun' : 'Dari jam >P90 dihitung per stasiun',
       ),
       metric(
         'Angin saat Ekstrem',
@@ -224,10 +224,10 @@ export function mountDriversView(
         `Jam normal: ${format(stats.normal.median_wind_speed)} m/s (${isGlobal ? 'Global' : 'Per Stasiun'})`,
       ),
       metric(
-        'Ambang Ekstrem P95',
+        'Ambang Ekstrem P90',
         stats.threshold_label,
         '',
-        isGlobal ? `Persentil 95 ${pol} gabungan pilihan` : `Baku ekstrem lokal spesifik per stasiun`,
+        isGlobal ? `Persentil 90 ${pol} gabungan pilihan` : `Baku ekstrem lokal spesifik per stasiun`,
       ),
       metric(
         'Stasiun Pilihan',
